@@ -32,7 +32,6 @@ class CreateUsersTable extends Migration
             $table->string('api_token')->nullable();
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
-            $table->string('deleted_by')->nullable();
             $table->timestamps();
         });
     }

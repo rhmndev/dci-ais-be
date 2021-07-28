@@ -14,14 +14,26 @@ use Illuminate\Http\Request;
 */
 
 Route::group(['middleware' => ['auth:api']], function () {
-    
+
+        #region Master User
         Route::get('/user', 'UserController@index');
         Route::get('/user/{id}', 'UserController@show');
 	Route::post('/user', 'UserController@store');
 	Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
 	Route::post('/userimport', 'UserController@import');
+	#endregion
 
+        #region Master Vendor
+        Route::get('/vendor', 'VendorController@index');
+        // Route::get('/user/{id}', 'UserController@show');
+	// Route::post('/user', 'UserController@store');
+	// Route::post('/user/{id}', 'UserController@store');
+        // Route::delete('/user/{id}', 'UserController@destroy');
+	// Route::post('/userimport', 'UserController@import');
+	#endregion
+
+	#region Template
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');
         Route::get('/role/list', 'RoleController@list');
@@ -44,6 +56,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/settings/{id}', 'SettingsController@show');
         Route::post('/settings/{id}', 'SettingsController@update');
         Route::delete('/settings/{id}', 'SettingsController@destroy');
+	#endregion
 
 });
 
