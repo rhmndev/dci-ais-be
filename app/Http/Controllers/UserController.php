@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Imports\UsersImport;
 use App\User;
+use Image;
+use Excel;
 
 class UserController extends Controller
 {
@@ -13,27 +16,6 @@ class UserController extends Controller
     {
         $skip = $request->perpage * ($request->page - 1);
         $users = User::where(function($where) use ($request){
-            
-                        if (!empty($request->keyword)) {
-                            foreach ($request->columns as $index => $column) {
-                                if ($index == 0) {
-                                    $where->where($column, 'like', '%'.$request->keyword.'%');
-                                } else {
-                                    $where->orWhere($column, 'like', '%'.$request->keyword.'%');
-                                }
-                            }
-                                
-                        }
-
-                    })
-                    ->when(!empty($request->sort), function($query) use ($request){
-                        $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
-                    })
-                    ->take((int)$request->perpage)
-                    ->skip((int)$skip)
-                    ->get();
-
-        $total = User::where(function($where) use ($request){
             
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
@@ -47,48 +29,33 @@ class UserController extends Controller
             }
 
         })
-        ->count();
+        ->when(!empty($request->sort), function($query) use ($request){
+            $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
+        })
+        ->take((int)$request->perpage)
+        ->skip((int)$skip)
+        ->get();
+
+        $total = User::where(function($where) use ($request){
+            
+            if (!empty($request->keyword)) {
+                foreach ($request->columns as $index => $column) {
+                    if ($index == 0) {
+                        $where->where($column, 'like', '%'.$request->keyword.'%');
+                    } else {
+                        $where->orWhere($column, 'like', '%'.$request->keyword.'%');
+                    }
+                }
+            
+            }
+
+        })->count();
 
         return response()->json([
             'type' => 'success',
             'data' => $users,
             'total' => $total
         ], 200);
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|string|unique:users,username',
-            'password' => 'required|confirmed',
-            'full_name' => 'required|string'
-        ]);
-
-        $user = new User;
-        
-        $user->username = $request->username;
-        $user->password = Hash::make($request->password);
-        $user->full_name = $request->full_name;
-        if (!empty($request->photo) && $request->photo != 'null') {
-
-            $file = $request->file('photo');
-            $file_extension = $file->extension();
-            $filename = rand(0, 99).time().'.'.$file_extension;
-            $file->storeAs('public/images', $filename);
-
-            $user->photo = $filename;
-        }
-        
-        $user->role_id = $request->role_id;
-        $user->role_name = $request->role_name;
-        $user->created_by = auth()->user()->full_name;
-        $user->changed_by = auth()->user()->full_name;
-        $user->save();
-
-        return response()->json([
-            'type' => 'success',
-            'message' => 'Data saved successfully!'
-        ], 201);
     }
 
     public function show(Request $request, $id)
@@ -101,62 +68,203 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function store(Request $request)
     {
 
-        $request->validate([
-            'username' => 'required|string|unique:users,username,'.$id.',_id',
-            'full_name' => 'required|string',
-        ]);
-
-        $user = User::findOrFail($id);
-
-        $user->username = $request->username;
-
-        if (!empty($request->password)) {
+        if ($request->id == null){
+        
             $request->validate([
-                'password' => 'confirmed'
+                'username' => 'required|string|unique:users,username',
+                'full_name' => 'required|string',
+                'department' => 'required|string',
+                'phone_number' => 'required|string',
+                'npk' => 'required|numeric',
+                'email' => 'required|email',
+                'type' => 'required|numeric',
+                'password' => 'required|confirmed',
+                'photo' => 'mimes:jpeg,jpg,png|max:2048',
             ]);
-            $user->password = Hash::make($request->password);
+
+            $User = new User;
+
+        } else {
+        
+            $request->validate([
+                'username' => 'required|string|unique:users,username,'.$request->id.',_id',
+                'full_name' => 'required|string',
+                'department' => 'required|string',
+                'phone_number' => 'required|string',
+                'npk' => 'required|numeric',
+                'email' => 'required|email',
+                'type' => 'required|numeric',
+                'photo' => 'mimes:jpeg,jpg,png|max:2048',
+            ]);
+
+            $User = User::findOrFail($request->id);
         }
 
-        $user->full_name = $request->full_name;
-        if (!empty($request->photo) && $request->photo != 'null') {
+        try {
+        
+            $User->username = $request->username;
+            $User->full_name = $request->full_name;
+            $User->department = $request->department;
+            $User->phone_number = $request->phone_number;
+            $User->npk = $request->npk;
+            $User->email = $request->email;
+            $User->type = intval($request->type);
+            $User->vendor = $request->type === 0 ? null : $request->vendor;
+    
+            if (!empty($request->password) && $request->password != null) {
 
-            if (Storage::drive('images')->exists($user->photo)) {
-                Storage::drive('images')->delete($user->photo);
+                $User->password = Hash::make($request->password);
+
+            }
+            
+            if ($request->hasFile('photo')) {
+
+                $image      = $request->file('photo');
+                $fileName   = $User->username.'-'.$User->npk.'.' . $image->getClientOriginalExtension();
+    
+                $img = Image::make($image->getRealPath());
+                $img->resize(120, 120, function ($constraint) {
+                    $constraint->aspectRatio();                 
+                });
+    
+                $img->stream(); // <-- Key point
+                
+                Storage::disk('public')->put('/images/users'.'/'.$fileName, $img, 'public');
+
+                $User->photo = $fileName;
+            }
+            
+            $User->role_id = $request->role_id;
+            $User->role_name = $request->role_name;
+
+            $User->created_by = auth()->user()->full_name;
+            $User->updated_by = auth()->user()->full_name;
+
+            $User->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Data saved successfully!',
+                'data' => NULL,
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                'type' => 'failed',
+                'message' => 'Err: '.$e.'.',
+                'data' => NULL,
+    
+            ], 400);
+
+        }
+    }
+
+    public function import(Request $request)
+    {
+        $data = array();
+        
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+            
+        try {
+
+            if ($files = $request->file('file')) {
+                
+                //store file into document folder
+                $Excels = Excel::toArray(new UsersImport, $files);
+                $Excels = $Excels[0];
+                // $Excels = json_decode(json_encode($Excels[0]), true);
+    
+                //store your file into database
+                $User = new User();
+
+                foreach ($Excels as $Excel) {
+
+                    $QueryGetDataByFilter = User::query();
+
+                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('username', $Excel['username']);
+                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('npk', $Excel['npk']);
+                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('phone_number', $Excel['phone_number']);
+                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('email', $Excel['email']);
+
+                    if (count($QueryGetDataByFilter->get()) == 0){
+
+                        $data_tmp = array();
+                        
+                        $data_tmp['username'] = $Excel['username'];
+                        $data_tmp['full_name'] = $Excel['full_name'];
+                        $data_tmp['department'] = $Excel['department'];
+                        $data_tmp['phone_number'] = $Excel['phone_number'];
+                        $data_tmp['npk'] = $Excel['npk'];
+                        $data_tmp['email'] = $Excel['email'];
+                        $data_tmp['password'] = Hash::make($Excel['password']);
+
+                        $data_tmp['created_by'] = auth()->user()->full_name;
+                        $data_tmp['created_at'] = date('Y-m-d H:i:s');
+
+                        $data_tmp['updated_by'] = auth()->user()->full_name;
+                        $data_tmp['updated_at'] = date('Y-m-d H:i:s');
+
+                        // Converting to Array
+                        array_push($data, $data_tmp);
+                        
+                    } else {
+
+                        return response()->json([
+                
+                            "result" => true,
+                            "msg_type" => 'Success',
+                            "msg" => 'Data already imported',
+                
+                        ], 200);
+
+                    }
+
+                }
+
+                $User->insert($data);
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "msg" => 'Data stored successfully!',
+                    // "msg" => $data,
+        
+                ], 200);
             }
 
-            $file = $request->file('photo');
-            $file_extension = $file->extension();
-            $filename = rand(0, 99).time().'.'.$file_extension;
-            $file->storeAs('public/images', $filename);
+        } catch (\Exception $e) {
 
-            $user->photo = $filename;
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "msg" => 'err: '.$e,
+    
+            ], 400);
+
         }
-        
-        $user->role_id = $request->role_id;
-        $user->role_name = $request->role_name;
 
-        // $user->created_by = auth()->user()->full_name;
-        $user->changed_by = auth()->user()->full_name;
-        $user->save();
-
-        return response()->json([
-            'type' => 'success',
-            'message' => 'Data updated successfully!'
-        ], 201);
     }
 
     public function destroy($id)
     {
-        $user = User::find($id);
+        $User = User::find($id);
+
+        ;
         
-        if (Storage::drive('images')->exists($user->photo)) {
-            Storage::drive('images')->delete($user->photo);
+        if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
+            Storage::disk('public')->delete('/images/users/'.$User->photo);
         }
 
-        $user->delete();
+        $User->delete();
 
         return response()->json([
             'type' => 'success',
