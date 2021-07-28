@@ -256,13 +256,15 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        $user = User::find($id);
+        $User = User::find($id);
+
+        ;
         
-        if (Storage::drive('images')->exists($user->photo)) {
-            Storage::drive('images')->delete($user->photo);
+        if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
+            Storage::disk('public')->delete('/images/users/'.$User->photo);
         }
 
-        $user->delete();
+        $User->delete();
 
         return response()->json([
             'type' => 'success',
