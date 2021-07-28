@@ -45,7 +45,7 @@ class PermissionSeeder extends Seeder
 					[
 						"name" => "Vendor",
 						"description" => null,
-						"url" => "master-vendor",
+						"url" => "vendor",
 						"icon" => null,
 						"order_number" => 2,
 						"created_by" => "seeder",
@@ -54,7 +54,7 @@ class PermissionSeeder extends Seeder
 					[
 						"name" => "Material",
 						"description" => null,
-						"url" => "master-material",
+						"url" => "material",
 						"icon" => null,
 						"order_number" => 3,
 						"created_by" => "seeder",
