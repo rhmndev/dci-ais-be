@@ -24,7 +24,7 @@ class CreateUsersTable extends Migration
             $table->string('npk');
             $table->string('email');
             $table->string('password');
-            $table->integer('type')->nullable();
+            $table->integer('type')->default(1);
             $table->string('vendor')->nullable();
             $table->integer('role_id')->nullable();
             $table->string('role_name')->nullable();
