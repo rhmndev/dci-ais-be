@@ -14,14 +14,6 @@ class User extends Authenticable
         'api_token'
     ];
 
-    protected $appends = ['photo_url'];
-    
-    public function getPhotoUrlAttribute()
-    {
-        return Storage::drive('images')->exists($this->photo) 
-        ? url('storage/images/'.$this->photo) : null;
-    }
-
     public function role()
     {
         return $this->belongsTo('App\Role');

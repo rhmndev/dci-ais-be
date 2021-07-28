@@ -16,10 +16,11 @@ use Illuminate\Http\Request;
 Route::group(['middleware' => ['auth:api']], function () {
     
         Route::get('/user', 'UserController@index');
-        Route::post('/user', 'UserController@store');
         Route::get('/user/{id}', 'UserController@show');
-        Route::post('/user/{id}', 'UserController@update');
+	Route::post('/user', 'UserController@store');
+	Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
+	Route::post('/userimport', 'UserController@import');
 
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');

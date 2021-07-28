@@ -36,7 +36,7 @@ class PermissionSeeder extends Seeder
 					[
 						"name" => "User",
 						"description" => null,
-						"url" => "master-user",
+						"url" => "user",
 						"icon" => null,
 						"order_number" => 1,
 						"created_by" => "seeder",

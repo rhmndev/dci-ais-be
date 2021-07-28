@@ -26,6 +26,7 @@ class AuthController extends Controller
                 'api_token' => hash('sha256', $token)
             ])->save();
 
+
             $permissions = Permission::whereNull('parent_id')->orderBy('order_number')->get();
             $permission_allowed = $permissions->map(function($permission) use ($user){
 
@@ -51,6 +52,8 @@ class AuthController extends Controller
                     ];
                 }
             });
+
+            $user->photo_url = asset('storage/images/users/'.$user->photo);
             
             return response()->json([
                 'type' => 'success',

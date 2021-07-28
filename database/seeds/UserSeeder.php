@@ -14,24 +14,37 @@ class UserSeeder extends Seeder
      */
     public function run()
     {
+        User::truncate();
         $datas = [
             [
                 'username' => 'admin',
-                'password' => Hash::make('password'),
                 'full_name' => 'Admin',
-                'photo' => '',
+                'department' => 'Test',
+                'phone_number' => '081',
+                'npk' => '081',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('password'),
+                'type' => 0,
+                'vendor' => null,
                 'api_token' => '',
+                'photo' => '',
                 'created_by' => 'seeder',
-                'changed_by' => 'seeder'
+                'updated_by' => 'seeder'
             ],
             [
-                'username' => 'kelola',
+                'username' => 'vendor',
+                'full_name' => 'Vendor',
+                'department' => 'Vendor',
+                'phone_number' => '081',
+                'npk' => 'V1',
+                'email' => 'vendor@example.com',
+                'type' => 1,
+                'vendor' => 'Vendor A',
                 'password' => Hash::make('password'),
-                'full_name' => 'Kelola',
-                'photo' => '',
                 'api_token' => '',
+                'photo' => '',
                 'created_by' => 'seeder',
-                'changed_by' => 'seeder'
+                'updated_by' => 'seeder'
             ]
         ];
 
@@ -41,14 +54,20 @@ class UserSeeder extends Seeder
 
             $user = User::firstOrNew(['username' => $data['username']]);
             $user->username = $data['username'];
-            $user->password = $data['password'];
             $user->full_name = $data['full_name'];
-            $user->photo = null;
+            $user->department = $data['department'];
+            $user->phone_number = $data['phone_number'];
+            $user->npk = $data['npk'];
+            $user->email = $data['email'];
+            $user->type = $data['type'];
+            $user->vendor = $data['vendor'];
+            $user->password = $data['password'];
             $user->api_token = null;
-            $user->created_by = $data['created_by'];
-            $user->changed_by = $data['changed_by'];
+            $user->photo = null;
             $user->role_id = $role->id;
             $user->role_name = $role->name;
+            $user->created_by = $data['created_by'];
+            $user->updated_by = $data['updated_by'];
             $user->save();
 
         }
