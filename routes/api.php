@@ -26,7 +26,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 	Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
 	Route::post('/userimport', 'UserController@import');
-	#endregion
+        #endregion
 
         #region Master Vendor
         Route::get('/vendor', 'VendorController@index');
@@ -36,9 +36,18 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/vendor/{id}', 'VendorController@store');
         Route::delete('/vendor/{id}', 'VendorController@destroy');
         Route::post('/vendorimport', 'VendorController@import');
-	#endregion
+        #endregion
 
-	#region Template
+        #region Master Material
+        Route::get('/material', 'MaterialController@index');
+        Route::get('/material/{id}', 'MaterialController@show');
+        Route::post('/material', 'MaterialController@store');
+        Route::post('/material/{id}', 'MaterialController@store');
+        Route::delete('/material/{id}', 'MaterialController@destroy');
+        Route::post('/materialimport', 'MaterialController@import');
+        #endregion
+
+        #region Template
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');
         Route::get('/role/list', 'RoleController@list');
@@ -61,7 +70,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/settings/{id}', 'SettingsController@show');
         Route::post('/settings/{id}', 'SettingsController@update');
         Route::delete('/settings/{id}', 'SettingsController@destroy');
-	#endregion
+        #endregion
 
 });
 
