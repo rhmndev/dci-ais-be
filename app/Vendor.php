@@ -66,4 +66,17 @@ class Vendor extends Model
         return $data;
 
     }
+
+    public function getList($keyword)
+    {
+        $query = Vendor::query();
+
+        if ($keyword != ''){
+            $query = $query->where('name', 'like', '%'.$keyword.'%');
+        }
+
+        $data = $query->take(10)->get();
+
+        return $data;
+    }
 }

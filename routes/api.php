@@ -26,11 +26,12 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         #region Master Vendor
         Route::get('/vendor', 'VendorController@index');
-        // Route::get('/user/{id}', 'UserController@show');
-	// Route::post('/user', 'UserController@store');
-	// Route::post('/user/{id}', 'UserController@store');
-        // Route::delete('/user/{id}', 'UserController@destroy');
-	// Route::post('/userimport', 'UserController@import');
+        Route::get('/vendor/{id}', 'VendorController@show');
+        Route::get('/vendorlist', 'VendorController@list');
+        Route::post('/vendor', 'VendorController@store');
+        Route::post('/vendor/{id}', 'VendorController@store');
+        Route::delete('/vendor/{id}', 'VendorController@destroy');
+        Route::post('/vendorimport', 'VendorController@import');
 	#endregion
 
 	#region Template
