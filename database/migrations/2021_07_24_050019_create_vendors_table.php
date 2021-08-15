@@ -13,6 +13,8 @@ class CreateVendorsTable extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('vendors');
+        
         Schema::create('vendors', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('code');

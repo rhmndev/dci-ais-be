@@ -39,16 +39,16 @@ class VendorSeeder extends Seeder
 
         foreach ($datas as $data) {
 
-            $user = Vendor::firstOrNew(['code' => $data['code']]);
-            $user->code = $data['code'];
-            $user->name = $data['name'];
-            $user->address = $data['address'];
-            $user->phone = $data['phone'];
-            $user->email = $data['email'];
-            $user->contact = $data['contact'];
-            $user->created_by = $data['created_by'];
-            $user->updated_by = $data['updated_by'];
-            $user->save();
+            $vendor = Vendor::firstOrNew(['code' => $data['code']]);
+            $vendor->code = $data['code'];
+            $vendor->name = $data['name'];
+            $vendor->address = $data['address'];
+            $vendor->phone = $data['phone'];
+            $vendor->email = $data['email'];
+            $vendor->contact = $data['contact'];
+            $vendor->created_by = $data['created_by'];
+            $vendor->updated_by = $data['updated_by'];
+            $vendor->save();
 
         }
     }
