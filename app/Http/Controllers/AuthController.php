@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\User;
 use App\Permission;
+use App\Mail\UserMail;
 
 class AuthController extends Controller
 {
@@ -74,6 +76,83 @@ class AuthController extends Controller
                     ]
                 ]
             ], 422);
+        }
+    }
+
+    public function show(Request $request)
+    {
+        $user = User::where('reset_token', $request->token)->firstOrFail();
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $user
+        ]);
+    }
+
+    public function resetpassword(Request $request)
+    {
+
+        $notification_text = '';
+
+        if ($request->token == null){
+        
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+            ]);
+
+            $notification_text = 'Send email success.';
+
+            $User = User::where('email', $request->email)->firstOrFail();
+
+        } else {
+        
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'token' => 'required|exists:users,reset_token',
+                'password' => 'required|confirmed',
+            ]);
+
+            $notification_text = 'Reset password success.';
+
+            $User = User::where('reset_token', $request->token)->firstOrFail();
+        }
+
+        try {
+
+            $token = Str::random(10);
+
+            if ($request->token == null){
+
+                Mail::to($request->email)->send(new UserMail($token));
+                
+            } else {
+
+                $User->password = Hash::make($request->password);
+
+            }
+
+            $User->reset_token = $token;
+
+            $User->updated_by = 'System';
+
+            $User->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => $notification_text,
+                'data' => NULL,
+            ], 200);
+
+        } catch (\Exception $e) {
+    
+            return response()->json([
+    
+                'type' => 'failed',
+                'message' => 'Err: '.$e.'.',
+                'data' => NULL,
+    
+            ], 400);
+
         }
     }
 }

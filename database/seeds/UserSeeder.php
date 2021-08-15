@@ -25,9 +25,6 @@ class UserSeeder extends Seeder
                 'email' => 'admin@example.com',
                 'password' => Hash::make('password'),
                 'type' => 0,
-                'vendor' => null,
-                'api_token' => '',
-                'photo' => '',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ],
@@ -39,10 +36,7 @@ class UserSeeder extends Seeder
                 'npk' => '89352',
                 'email' => 'vendor@example.com',
                 'type' => 1,
-                'vendor' => 'Vendor A',
                 'password' => Hash::make('password'),
-                'api_token' => '',
-                'photo' => '',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ]
@@ -60,10 +54,12 @@ class UserSeeder extends Seeder
             $user->npk = $data['npk'];
             $user->email = $data['email'];
             $user->type = $data['type'];
-            $user->vendor = $data['vendor'];
             $user->password = $data['password'];
+            $user->reset_token = null;
             $user->api_token = null;
             $user->photo = null;
+            $user->vendor_id = null;
+            $user->vendor_name = null;
             $user->role_id = $role->id;
             $user->role_name = $role->name;
             $user->created_by = $data['created_by'];
