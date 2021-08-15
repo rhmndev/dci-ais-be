@@ -82,7 +82,7 @@ class UserController extends Controller
                 'email' => 'required|email',
                 'type' => 'required|numeric',
                 'password' => 'required|confirmed',
-                'photo' => 'mimes:jpeg,jpg,png|max:2048',
+                'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
             ]);
 
             $User = new User;
@@ -97,7 +97,7 @@ class UserController extends Controller
                 'npk' => 'required|numeric',
                 'email' => 'required|email',
                 'type' => 'required|numeric',
-                'photo' => 'mimes:jpeg,jpg,png|max:2048',
+                'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
             ]);
 
             $User = User::findOrFail($request->id);
@@ -112,15 +112,19 @@ class UserController extends Controller
             $User->npk = $request->npk;
             $User->email = $request->email;
             $User->type = intval($request->type);
-            $User->vendor = $request->type === 0 ? null : $request->vendor;
     
             if (!empty($request->password) && $request->password != null) {
 
                 $User->password = Hash::make($request->password);
 
             }
+
             
-            if ($request->hasFile('photo')) {
+            if ($request->photo != null && $request->hasFile('photo')) {
+        
+                if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
+                    Storage::disk('public')->delete('/images/users/'.$User->photo);
+                }
 
                 $image      = $request->file('photo');
                 $fileName   = $User->username.'-'.$User->npk.'.' . $image->getClientOriginalExtension();
@@ -135,13 +139,21 @@ class UserController extends Controller
                 Storage::disk('public')->put('/images/users'.'/'.$fileName, $img, 'public');
 
                 $User->photo = $fileName;
+
+            } else {
+
+                $User->photo = null;
+
             }
             
+            $User->vendor_id = $request->type === 0 ? null : $request->vendor_id;
+            $User->vendor_name = $request->type === 0 ? null : $request->vendor_name;
+
             $User->role_id = $request->role_id;
             $User->role_name = $request->role_name;
 
-            $User->created_by = auth()->user()->full_name;
-            $User->updated_by = auth()->user()->full_name;
+            $User->created_by = auth()->user()->username;
+            $User->updated_by = auth()->user()->username;
 
             $User->save();
 
@@ -205,39 +217,43 @@ class UserController extends Controller
                         $data_tmp['email'] = $Excel['email'];
                         $data_tmp['password'] = Hash::make($Excel['password']);
 
-                        $data_tmp['created_by'] = auth()->user()->full_name;
+                        $data_tmp['created_by'] = auth()->user()->username;
                         $data_tmp['created_at'] = date('Y-m-d H:i:s');
 
-                        $data_tmp['updated_by'] = auth()->user()->full_name;
+                        $data_tmp['updated_by'] = auth()->user()->username;
                         $data_tmp['updated_at'] = date('Y-m-d H:i:s');
 
                         // Converting to Array
                         array_push($data, $data_tmp);
                         
-                    } else {
-
-                        return response()->json([
-                
-                            "result" => true,
-                            "msg_type" => 'Success',
-                            "msg" => 'Data already imported',
-                
-                        ], 200);
-
                     }
 
                 }
 
-                $User->insert($data);
+                if (count($data) > 0){
 
-                return response()->json([
-        
-                    "result" => true,
-                    "msg_type" => 'Success',
-                    "msg" => 'Data stored successfully!',
-                    // "msg" => $data,
-        
-                ], 200);
+                    $User->insert($data);
+    
+                    return response()->json([
+            
+                        "result" => true,
+                        "msg_type" => 'Success',
+                        "msg" => 'Data stored successfully!',
+                        // "msg" => $data,
+            
+                    ], 200);
+
+                } else {
+
+                    return response()->json([
+            
+                        "result" => false,
+                        "msg_type" => 'error',
+                        "msg" => 'Data already uploaded',
+            
+                    ], 200);
+
+                }
             }
 
         } catch (\Exception $e) {
@@ -257,8 +273,6 @@ class UserController extends Controller
     public function destroy($id)
     {
         $User = User::find($id);
-
-        ;
         
         if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
             Storage::disk('public')->delete('/images/users/'.$User->photo);

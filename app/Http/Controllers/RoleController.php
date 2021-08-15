@@ -74,8 +74,8 @@ class RoleController extends Controller
         $role->name = $request->name;
         $role->description = $request->description;
         $role->permissions = $permissions;
-        $role->created_by = auth()->user()->full_name;
-        $role->changed_by = auth()->user()->full_name;
+        $role->created_by = auth()->user()->username;
+        $role->changed_by = auth()->user()->username;
         $role->save();
 
         return response()->json([
@@ -121,7 +121,7 @@ class RoleController extends Controller
         $role->name = $request->name;
         $role->description = $request->description;
         $role->permissions = $permissions;
-        $role->changed_by = auth()->user()->full_name;
+        $role->changed_by = auth()->user()->username;
         $role->save();
 
         return response()->json([

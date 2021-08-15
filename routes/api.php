@@ -14,14 +14,40 @@ use Illuminate\Http\Request;
 */
 
 Route::group(['middleware' => ['auth:api']], function () {
-    
+
+        #region Dashboard
+        Route::get('/dashboard', 'DashboardController@index');
+        #endregion
+
+        #region Master User
         Route::get('/user', 'UserController@index');
         Route::get('/user/{id}', 'UserController@show');
 	Route::post('/user', 'UserController@store');
 	Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
 	Route::post('/userimport', 'UserController@import');
+        #endregion
 
+        #region Master Vendor
+        Route::get('/vendor', 'VendorController@index');
+        Route::get('/vendor/{id}', 'VendorController@show');
+        Route::get('/vendorlist', 'VendorController@list');
+        Route::post('/vendor', 'VendorController@store');
+        Route::post('/vendor/{id}', 'VendorController@store');
+        Route::delete('/vendor/{id}', 'VendorController@destroy');
+        Route::post('/vendorimport', 'VendorController@import');
+        #endregion
+
+        #region Master Material
+        Route::get('/material', 'MaterialController@index');
+        Route::get('/material/{id}', 'MaterialController@show');
+        Route::post('/material', 'MaterialController@store');
+        Route::post('/material/{id}', 'MaterialController@store');
+        Route::delete('/material/{id}', 'MaterialController@destroy');
+        Route::post('/materialimport', 'MaterialController@import');
+        #endregion
+
+        #region Template
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');
         Route::get('/role/list', 'RoleController@list');
@@ -44,7 +70,11 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/settings/{id}', 'SettingsController@show');
         Route::post('/settings/{id}', 'SettingsController@update');
         Route::delete('/settings/{id}', 'SettingsController@destroy');
+        #endregion
 
 });
 
 Route::post('/login', 'AuthController@login');
+Route::post('/resetpassword', 'AuthController@resetpassword');
+Route::get('/resetpassword/{token}', 'AuthController@show');
+Route::post('/resetpassword/{token}', 'AuthController@resetpassword');
