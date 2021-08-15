@@ -118,8 +118,13 @@ class UserController extends Controller
                 $User->password = Hash::make($request->password);
 
             }
+
             
             if ($request->photo != null && $request->hasFile('photo')) {
+        
+                if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
+                    Storage::disk('public')->delete('/images/users/'.$User->photo);
+                }
 
                 $image      = $request->file('photo');
                 $fileName   = $User->username.'-'.$User->npk.'.' . $image->getClientOriginalExtension();
@@ -134,6 +139,11 @@ class UserController extends Controller
                 Storage::disk('public')->put('/images/users'.'/'.$fileName, $img, 'public');
 
                 $User->photo = $fileName;
+
+            } else {
+
+                $User->photo = null;
+
             }
             
             $User->vendor_id = $request->type === 0 ? null : $request->vendor_id;
