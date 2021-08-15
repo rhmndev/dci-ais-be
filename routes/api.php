@@ -15,6 +15,10 @@ use Illuminate\Http\Request;
 
 Route::group(['middleware' => ['auth:api']], function () {
 
+        #region Dashboard
+        Route::get('/dashboard', 'DashboardController@index');
+        #endregion
+
         #region Master User
         Route::get('/user', 'UserController@index');
         Route::get('/user/{id}', 'UserController@show');
