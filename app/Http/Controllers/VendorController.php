@@ -128,8 +128,8 @@ class VendorController extends Controller
             $Vendor->email = $request->email;
             $Vendor->contact = $request->contact;
 
-            $Vendor->created_by = auth()->user()->full_name;
-            $Vendor->updated_by = auth()->user()->full_name;
+            $Vendor->created_by = auth()->user()->username;
+            $Vendor->updated_by = auth()->user()->username;
 
             $Vendor->save();
 
@@ -189,10 +189,10 @@ class VendorController extends Controller
                         $data_tmp['email'] = $Excel['email'];
                         $data_tmp['contact'] = $Excel['contact'];
 
-                        $data_tmp['created_by'] = auth()->user()->full_name;
+                        $data_tmp['created_by'] = auth()->user()->username;
                         $data_tmp['created_at'] = date('Y-m-d H:i:s');
 
-                        $data_tmp['updated_by'] = auth()->user()->full_name;
+                        $data_tmp['updated_by'] = auth()->user()->username;
                         $data_tmp['updated_at'] = date('Y-m-d H:i:s');
 
                         // Converting to Array

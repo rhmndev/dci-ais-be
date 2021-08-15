@@ -142,8 +142,8 @@ class UserController extends Controller
             $User->role_id = $request->role_id;
             $User->role_name = $request->role_name;
 
-            $User->created_by = auth()->user()->full_name;
-            $User->updated_by = auth()->user()->full_name;
+            $User->created_by = auth()->user()->username;
+            $User->updated_by = auth()->user()->username;
 
             $User->save();
 
@@ -207,10 +207,10 @@ class UserController extends Controller
                         $data_tmp['email'] = $Excel['email'];
                         $data_tmp['password'] = Hash::make($Excel['password']);
 
-                        $data_tmp['created_by'] = auth()->user()->full_name;
+                        $data_tmp['created_by'] = auth()->user()->username;
                         $data_tmp['created_at'] = date('Y-m-d H:i:s');
 
-                        $data_tmp['updated_by'] = auth()->user()->full_name;
+                        $data_tmp['updated_by'] = auth()->user()->username;
                         $data_tmp['updated_at'] = date('Y-m-d H:i:s');
 
                         // Converting to Array
