@@ -13,11 +13,14 @@ class DashboardController extends Controller
     //
     public function index()
     {
-        $resUser = User::orderBy('updated_by', 'desc')->get();
+        $resUser = User::orderBy('updated_at', 'desc')->get();
         $filterUser = User::where('username', $resUser[0]->updated_by)->first();
 
-        $resVendor = Vendor::orderBy('updated_by', 'desc')->get();
+        $resVendor = Vendor::orderBy('updated_at', 'desc')->get();
         $filterVendor = User::where('username', $resVendor[0]->updated_by)->first();
+
+        $resMaterial = Material::orderBy('updated_at', 'desc')->get();
+        $filterMaterial = User::where('username', $resMaterial[0]->updated_by)->first();
         
         #region Users
         $data['total_users'] = count($resUser);
@@ -42,14 +45,14 @@ class DashboardController extends Controller
         #endregion
         
         #region Meterials
-        $data['total_materials'] = count($resVendor);
+        $data['total_materials'] = count($resMaterial);
         $data['last_update_name_materials'] = 'System';
         $data['last_update_photo_materials'] = '';
-        if ($filterVendor != null){
-            $data['last_update_name_materials'] = $filterVendor->full_name;
-            $data['last_update_photo_materials'] = $filterVendor->photo != null ? $filterVendor->photo : '';
+        if ($filterMaterial != null){
+            $data['last_update_name_materials'] = $filterMaterial->full_name;
+            $data['last_update_photo_materials'] = $filterMaterial->photo != null ? $filterMaterial->photo : '';
         }
-        $data['last_update_date_materials'] = $resVendor[0]->updated_at;
+        $data['last_update_date_materials'] = $resMaterial[0]->updated_at;
         #endregion
         
         #region Receivings
