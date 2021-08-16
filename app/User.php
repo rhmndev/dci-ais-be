@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticable
 {
-    public $dates = ['deleted_at'];
     
     protected $hidden = [
         'password', 

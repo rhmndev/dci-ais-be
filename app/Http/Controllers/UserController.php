@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\UsersImport;
 use App\User;
+use Carbon\Carbon;
 use Image;
 use Excel;
 
@@ -218,10 +219,10 @@ class UserController extends Controller
                         $data_tmp['password'] = Hash::make($Excel['password']);
 
                         $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = date('Y-m-d H:i:s');
+                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
                         $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = date('Y-m-d H:i:s');
+                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
                         // Converting to Array
                         array_push($data, $data_tmp);
