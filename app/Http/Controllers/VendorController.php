@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Imports\VendorsImport;
 use App\Vendor;
+use Carbon\Carbon;
 use Excel;
 
 class VendorController extends Controller
@@ -190,10 +191,10 @@ class VendorController extends Controller
                         $data_tmp['contact'] = $Excel['contact'];
 
                         $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = date('Y-m-d H:i:s');
+                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
                         $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = date('Y-m-d H:i:s');
+                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
                         // Converting to Array
                         array_push($data, $data_tmp);

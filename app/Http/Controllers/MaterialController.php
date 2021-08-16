@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\MaterialsImport;
 use App\Material;
+use Carbon\Carbon;
 use Image;
 use Excel;
 
@@ -184,10 +185,10 @@ class MaterialController extends Controller
                         $data_tmp['photo'] = null;
 
                         $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = date('Y-m-d H:i:s');
+                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
                         $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = date('Y-m-d H:i:s');
+                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
                         // Converting to Array
                         array_push($data, $data_tmp);
