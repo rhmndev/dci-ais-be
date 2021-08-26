@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Imports\VendorsImport;
 use App\Vendor;
+use App\Settings;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Excel;
@@ -164,10 +165,14 @@ class VendorController extends Controller
 
         try {
 
+            $Settings = new Settings;
+            $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+            $code = $code_sap[0]['name'];
+
             $date = date('Y-m-d\TH:i:s', strtotime($request->date));
 
             $client = new Client;
-            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/vendorSet?\$filter=Comp eq '1600' and Ersda eq datetime'$date'&sap-client=110&\$format=json", [
+            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/vendorSet?\$filter=Comp eq '$code' and Ersda eq datetime'$date'&sap-client=110&\$format=json", [
                 'auth' => [
                     'wcs-abap',
                     'Wilmar12'
@@ -177,7 +182,7 @@ class VendorController extends Controller
 
             if (count($results) > 0){
 
-                $Vendor = new Vendor();
+                $Vendor = new Vendor;
 
                 foreach ($results as $result) {
 
@@ -209,7 +214,6 @@ class VendorController extends Controller
 
                 }
 
-                // print_r($data);
                 $Vendor->insert($data);
 
                 return response()->json([
