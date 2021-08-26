@@ -32,6 +32,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/vendor', 'VendorController@index');
         Route::get('/vendor/{id}', 'VendorController@show');
         Route::get('/vendorlist', 'VendorController@list');
+        Route::get('/vendorsync', 'VendorController@SyncSAP');
         Route::post('/vendor', 'VendorController@store');
         Route::post('/vendor/{id}', 'VendorController@store');
         Route::delete('/vendor/{id}', 'VendorController@destroy');
@@ -41,6 +42,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Master Material
         Route::get('/material', 'MaterialController@index');
         Route::get('/material/{id}', 'MaterialController@show');
+        Route::get('/materialsync', 'MaterialController@SyncSAP');
         Route::post('/material', 'MaterialController@store');
         Route::post('/material/{id}', 'MaterialController@store');
         Route::delete('/material/{id}', 'MaterialController@destroy');
