@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\MaterialsImport;
 use App\Material;
+use App\Settings;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Image;
@@ -159,10 +160,14 @@ class MaterialController extends Controller
 
         try {
 
+            $Settings = new Settings;
+            $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+            $code = $code_sap[1]['name'];
+
             $date = date('Y-m-d\TH:i:s', strtotime($request->date));
 
             $client = new Client;
-            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '1601' and Ersda eq datetime'$date'&\$format=json&sap-client=110", [
+            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '$code' and Ersda eq datetime'$date'&\$format=json&sap-client=110", [
                 'auth' => [
                     'wcs-abap',
                     'Wilmar12'
@@ -172,16 +177,9 @@ class MaterialController extends Controller
 
             if (count($results) > 0){
 
-                $Material = new Material();
+                $Material = new Material;
 
                 foreach ($results as $result) {
-
-                    // [Matnr] => 0401800C00100
-                    // [Werks] => 1201
-                    // [Maktx] => RING PLATE
-                    // [Mtart] => ZOHP
-                    // [Meins] => PCE
-                    // [Ersda] => /Date(1561334400000)/
 
                     $QueryGetDataByFilter = Material::query();
 
@@ -209,7 +207,6 @@ class MaterialController extends Controller
 
                 }
 
-                // print_r($data);
                 $Material->insert($data);
 
                 return response()->json([
