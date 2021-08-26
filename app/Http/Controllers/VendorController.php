@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Imports\VendorsImport;
 use App\Vendor;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Excel;
 
 class VendorController extends Controller
@@ -151,6 +152,99 @@ class VendorController extends Controller
             ], 400);
 
         }
+    }
+
+    public function SyncSAP(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+
+            $date = date('Y-m-d\TH:i:s', strtotime($request->date));
+
+            $client = new Client;
+            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/vendorSet?\$filter=Comp eq '1600' and Ersda eq datetime'$date'&sap-client=110&\$format=json", [
+                'auth' => [
+                    'wcs-abap',
+                    'Wilmar12'
+                ],
+            ]);
+            $results = json_decode($json->getBody())->d->results;
+
+            if (count($results) > 0){
+
+                $Vendor = new Vendor();
+
+                foreach ($results as $result) {
+
+                    $QueryGetDataByFilter = Vendor::query();
+
+                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $result->Vendor);
+
+                    if (count($QueryGetDataByFilter->get()) > 0){
+                        $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
+                    }
+
+                    $data_tmp = array();
+                    
+                    $data_tmp['code'] = $this->stringtoupper($result->Vendor);
+                    $data_tmp['name'] = $this->stringtoupper($result->Name);
+                    $data_tmp['address'] = $this->stringtoupper($result->Street);
+                    $data_tmp['phone'] = strval($result->Telephone);
+                    $data_tmp['email'] = $result->Smtp_addr;
+                    $data_tmp['contact'] = $result->Persnumber;
+
+                    $data_tmp['created_by'] = auth()->user()->username;
+                    $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+
+                    $data_tmp['updated_by'] = auth()->user()->username;
+                    $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+
+                    // Converting to Array
+                    array_push($data, $data_tmp);
+
+                }
+
+                // print_r($data);
+                $Vendor->insert($data);
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'success',
+                    "msg" => 'Sync SAP Success',
+        
+                ], 200);
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => false,
+                    "msg_type" => 'failed',
+                    "msg" => 'Data not found',
+        
+                ], 400);
+
+            }
+
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "msg" => 'err: '.$e,
+    
+            ], 400);
+
+        }
+
     }
 
     public function import(Request $request)

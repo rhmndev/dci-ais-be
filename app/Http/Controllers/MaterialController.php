@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Imports\MaterialsImport;
 use App\Material;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Image;
 use Excel;
 
@@ -146,6 +147,104 @@ class MaterialController extends Controller
             ], 400);
 
         }
+    }
+
+    public function SyncSAP(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+
+            $date = date('Y-m-d\TH:i:s', strtotime($request->date));
+
+            $client = new Client;
+            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '1601' and Ersda eq datetime'$date'&\$format=json&sap-client=110", [
+                'auth' => [
+                    'wcs-abap',
+                    'Wilmar12'
+                ],
+            ]);
+            $results = json_decode($json->getBody())->d->results;
+
+            if (count($results) > 0){
+
+                $Material = new Material();
+
+                foreach ($results as $result) {
+
+                    // [Matnr] => 0401800C00100
+                    // [Werks] => 1201
+                    // [Maktx] => RING PLATE
+                    // [Mtart] => ZOHP
+                    // [Meins] => PCE
+                    // [Ersda] => /Date(1561334400000)/
+
+                    $QueryGetDataByFilter = Material::query();
+
+                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $result->Matnr);
+
+                    if (count($QueryGetDataByFilter->get()) > 0){
+                        $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
+                    }
+
+                    $data_tmp = array();
+                    
+                    $data_tmp['code'] = $this->stringtoupper($result->Matnr);
+                    $data_tmp['description'] = $this->stringtoupper($result->Maktx);
+                    $data_tmp['type'] = $result->Mtart;
+                    $data_tmp['unit'] = $result->Meins;
+
+                    $data_tmp['created_by'] = auth()->user()->username;
+                    $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+
+                    $data_tmp['updated_by'] = auth()->user()->username;
+                    $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+
+                    // Converting to Array
+                    array_push($data, $data_tmp);
+
+                }
+
+                // print_r($data);
+                $Material->insert($data);
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'success',
+                    "msg" => 'Sync SAP Success',
+        
+                ], 200);
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => false,
+                    "msg_type" => 'failed',
+                    "msg" => 'Data not found',
+        
+                ], 400);
+
+            }
+
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "msg" => 'err: '.$e,
+    
+            ], 400);
+
+        }
+        
     }
 
     public function import(Request $request)
