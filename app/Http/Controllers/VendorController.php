@@ -25,19 +25,20 @@ class VendorController extends Controller
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $order = ($request->order != null) ? $request->order : 'ascend';
 
         try {
     
             $Vendor = new Vendor;
             $data = array();
 
-            $resultAlls = $Vendor->getAllData($keyword, $request->columns, $request->sort, $request->order);
-            $results = $Vendor->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $request->order);
+            $resultAlls = $Vendor->getAllData($keyword, $request->columns, $request->sort, $order);
+            $results = $Vendor->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
 
             return response()->json([
                 'type' => 'success',
                 'data' => $results,
-                'total' => count($resultAlls)
+                'total' => count($resultAlls),
             ], 200);
 
         } catch (\Exception $e) {

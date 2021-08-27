@@ -79,4 +79,5 @@ class Vendor extends Model
 
         return $data;
     }
+
 }

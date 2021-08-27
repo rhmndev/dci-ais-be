@@ -27,14 +27,15 @@ class MaterialController extends Controller
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $order = ($request->order != null) ? $request->order : 'ascend';
 
         try {
     
             $Material = new Material;
             $data = array();
 
-            $resultAlls = $Material->getAllData($keyword, $request->columns, $request->sort, $request->order);
-            $results = $Material->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $request->order);
+            $resultAlls = $Material->getAllData($keyword, $request->columns, $request->sort, $order);
+            $results = $Material->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
 
             return response()->json([
                 'type' => 'success',

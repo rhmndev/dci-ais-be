@@ -80,3 +80,9 @@ Route::post('/login', 'AuthController@login');
 Route::post('/resetpassword', 'AuthController@resetpassword');
 Route::get('/resetpassword/{token}', 'AuthController@show');
 Route::post('/resetpassword/{token}', 'AuthController@resetpassword');
+
+Route::get('/dataVendorSAP', 'SAPController@getVendor');
+Route::post('/dataVendorSAP', 'SAPController@storeVendor');
+
+Route::get('/dataMaterialSAP', 'SAPController@getMaterial');
+Route::post('/dataMaterialSAP', 'SAPController@storeMaterial');
