@@ -72,11 +72,20 @@ class PermissionSeeder extends Seeder
 				"changed_by" => "seeder",
 				"children" => [
 					[
-						"name" => "Receiving Materia",
+						"name" => "Prepreration Delivery Vendor",
+						"description" => null,
+						"url" => "receiving-vendor",
+						"icon" => null,
+						"order_number" => 1,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
+						"name" => "Receiving Material",
 						"description" => null,
 						"url" => "receiving",
 						"icon" => null,
-						"order_number" => 1,
+						"order_number" => 2,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					],

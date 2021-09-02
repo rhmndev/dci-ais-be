@@ -25,6 +25,23 @@ class SettingSeeder extends Seeder
                 'created_by' => 'seeder',
                 'changed_by' => 'seeder'
             ],
+            [
+                'variable' => 'POStatus',
+                'value' => json_decode('[
+                    {"id":0.39275581724538133,"name":"Complete"},
+                    {"id":0.13603751390670915,"name":"In Progress"}
+                ]'),
+                'created_by' => 'seeder',
+                'changed_by' => 'seeder'
+            ],
+            [
+                'variable' => 'PPN',
+                'value' => json_decode('[
+                    {"id":0.8180006182929263,"name":"V1;10%"}
+                ]'),
+                'created_by' => 'seeder',
+                'changed_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {
