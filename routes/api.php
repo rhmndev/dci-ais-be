@@ -49,6 +49,16 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/materialimport', 'MaterialController@import');
         #endregion
 
+        #region Master Material
+        Route::get('/receive', 'ReceivingController@index');
+        // Route::get('/material/{id}', 'MaterialController@show');
+        Route::get('/receivesync', 'ReceivingController@SyncSAP');
+        // Route::post('/material', 'MaterialController@store');
+        // Route::post('/material/{id}', 'MaterialController@store');
+        // Route::delete('/material/{id}', 'MaterialController@destroy');
+        // Route::post('/materialimport', 'MaterialController@import');
+        #endregion
+
         #region Template
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');

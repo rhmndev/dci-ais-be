@@ -59,6 +59,15 @@ class PermissionSeeder extends Seeder
 						"order_number" => 3,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
+					],
+					[
+						"name" => "News",
+						"description" => null,
+						"url" => "news",
+						"icon" => null,
+						"order_number" => 4,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
 					]
 				]
 			],
