@@ -40,6 +40,7 @@ class ReceivingController extends Controller
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
                 $data_tmp['data'] = array();
+                $total_po = 0;
 
                 $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number);
                 foreach ($PODetails as $PODetail) {
@@ -49,9 +50,9 @@ class ReceivingController extends Controller
                     $data_tmp_d['PO_Number'] = $PODetail->PO_Number;
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
-                    $data_tmp_d['qty'] = $PODetail->qty;
+                    $data_tmp_d['qty'] = number_format($PODetail->qty);
                     $data_tmp_d['unit'] = $PODetail->unit;
-                    $data_tmp_d['price'] = $PODetail->price;
+                    $data_tmp_d['price'] = number_format($PODetail->price);
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
             
@@ -62,14 +63,19 @@ class ReceivingController extends Controller
                             $data_tmp_d['ppn'] = $ppn[1];
                         }
                     };
-                    // $code = $code_sap[0]['name'];
 
-                    // $data_tmp_d['ppn'] = $PODetail->ppn;
-                    // $data_tmp_d['ppn'] = $SettingPPNs;
+                    $total = $PODetail->qty * $PODetail->price;
+                    $total = ((str_replace("%", "", $data_tmp_d['ppn']) / 100) * $total) + $total;
+
+                    $data_tmp_d['total'] = number_format($total);
+
     
+                    $total_po = $total_po + $total;
+
                     array_push($data_tmp['data'], $data_tmp_d);
 
                 }
+                $data_tmp['total'] = number_format($total_po);
     
                 array_push($data, $data_tmp);
             }
