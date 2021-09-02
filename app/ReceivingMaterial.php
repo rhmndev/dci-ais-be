@@ -4,13 +4,13 @@ namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class Receiving extends Model
+class ReceivingMaterial extends Model
 {
     //
     public function getAllData($keyword, $columns, $sort, $order)
     {
 
-        $query = Receiving::query();
+        $query = ReceivingMaterial::query();
         
         if(!empty($keyword)){
 
@@ -39,7 +39,7 @@ class Receiving extends Model
     public function getData($keyword, $columns, $perpage, $page, $sort, $order)
     {
 
-        $query = Receiving::query();
+        $query = ReceivingMaterial::query();
         $skip = $perpage * ($page - 1);
         
         if(!empty($keyword)){
@@ -65,5 +65,15 @@ class Receiving extends Model
 
         return $data;
 
+    }
+
+    public function getPODetails($PONumber)
+    {
+
+        $query = ReceivingMaterial::query();
+        $query = $query->where('PO_Number', $PONumber);
+        $data = $query->get();
+
+        return $data;
     }
 }

@@ -222,6 +222,7 @@ class VendorController extends Controller
                     "result" => true,
                     "msg_type" => 'success',
                     "msg" => 'Sync SAP Success',
+                    "total" => count($results).' data synced',
         
                 ], 200);
 
