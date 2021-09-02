@@ -52,16 +52,14 @@ class SAPController extends Controller
     public function storeVendor(Request $request)
     {
         $data = array();
-        
-        $request->validate([
-            'json' => 'required|string',
-        ]);
+
+        $json = $request->getContent();
             
         try {
 
             $Vendor = new Vendor();
 
-            $inputs = json_decode($request->json);
+            $inputs = json_decode($json);
 
             foreach ($inputs as $input) {
 
@@ -159,16 +157,14 @@ class SAPController extends Controller
     public function storeMaterial(Request $request)
     {
         $data = array();
-        
-        $request->validate([
-            'json' => 'required|string',
-        ]);
+
+        $json = $request->getContent();
             
         try {
 
             $Material = new Material();
 
-            $inputs = json_decode($request->json);
+            $inputs = json_decode($json);
 
             foreach ($inputs as $input) {
 
