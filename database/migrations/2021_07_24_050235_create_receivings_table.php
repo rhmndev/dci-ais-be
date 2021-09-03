@@ -13,12 +13,14 @@ class CreateReceivingsTable extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('receivings');
         Schema::create('receivings', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('PO_Number');
             $table->string('create_date');
             $table->string('send_date');
-            $table->string('status', 1)->default(0);
+            $table->string('PO_Status');
+            $table->string('flag', 1)->default('0');
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();

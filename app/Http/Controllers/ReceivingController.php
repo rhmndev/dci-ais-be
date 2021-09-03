@@ -20,10 +20,12 @@ class ReceivingController extends Controller
             'page' => 'required|numeric',
             'sort' => 'required|string',
             'order' => 'string',
+            'flag' => 'required|numeric',
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
+        $flag = ($request->flag != 0) ? 1 : 0;
 
         try {
     
@@ -32,18 +34,19 @@ class ReceivingController extends Controller
             $ReceivingMaterial = new ReceivingMaterial;
             $Settings = new Settings;
 
-            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order);
-            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
+            $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage')[0]['name'];
+
+            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag);
+            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag);
 
             foreach ($results as $result) {
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
-                $data_tmp['status'] = $result->status;
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number);
+                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage);
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
@@ -66,6 +69,8 @@ class ReceivingController extends Controller
                     };
 
                     $total = $PODetail->qty * $PODetail->price;
+                    $data_tmp_d['sub_total'] = number_format($total);
+
                     $total = ((str_replace("%", "", $data_tmp_d['ppn']) / 100) * $total) + $total;
 
                     $data_tmp_d['total'] = number_format($total);
@@ -85,6 +90,7 @@ class ReceivingController extends Controller
                 'type' => 'success',
                 'data' => $data,
                 'total' => count($resultAlls),
+                'Material_Perpage' => $Material_Perpage
             ], 200);
 
         } catch (\Exception $e) {
@@ -155,7 +161,10 @@ class ReceivingController extends Controller
                         if (end($data_po)['PO_Number'] != $PO_Number){
 
                             $data_tmp['PO_Number'] = $PO_Number;
-                            $data_tmp['status'] = 0;
+                            $data_tmp['create_date'] = '-';
+                            $data_tmp['send_date'] = '-';
+                            $data_tmp['PO_Status'] = 0;
+                            $data_tmp['flag'] = 0;
 
                             $data_tmp['created_by'] = auth()->user()->username;
                             $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -170,7 +179,10 @@ class ReceivingController extends Controller
                     } else {
 
                         $data_tmp['PO_Number'] = $PO_Number;
-                        $data_tmp['status'] = 0;
+                        $data_tmp['create_date'] = '-';
+                        $data_tmp['send_date'] = '-';
+                        $data_tmp['PO_Status'] = 0;
+                        $data_tmp['flag'] = 0;
 
                         $data_tmp['created_by'] = auth()->user()->username;
                         $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());

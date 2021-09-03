@@ -42,6 +42,14 @@ class SettingSeeder extends Seeder
                 'created_by' => 'seeder',
                 'changed_by' => 'seeder'
             ],
+            [
+                'variable' => 'Material_Perpage',
+                'value' => json_decode('[
+                    {"id":0.8293378662731039,"name":"20"}
+                ]'),
+                'created_by' => 'seeder',
+                'changed_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {
