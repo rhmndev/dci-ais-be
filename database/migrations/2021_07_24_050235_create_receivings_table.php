@@ -18,7 +18,7 @@ class CreateReceivingsTable extends Migration
             $table->string('PO_Number');
             $table->string('create_date');
             $table->string('send_date');
-            $table->string('status', 1);
+            $table->string('status', 1)->default(0);
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();

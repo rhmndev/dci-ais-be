@@ -39,6 +39,7 @@ class ReceivingController extends Controller
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
+                $data_tmp['status'] = $result->status;
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
@@ -154,6 +155,7 @@ class ReceivingController extends Controller
                         if (end($data_po)['PO_Number'] != $PO_Number){
 
                             $data_tmp['PO_Number'] = $PO_Number;
+                            $data_tmp['status'] = 0;
 
                             $data_tmp['created_by'] = auth()->user()->username;
                             $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -168,6 +170,7 @@ class ReceivingController extends Controller
                     } else {
 
                         $data_tmp['PO_Number'] = $PO_Number;
+                        $data_tmp['status'] = 0;
 
                         $data_tmp['created_by'] = auth()->user()->username;
                         $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
