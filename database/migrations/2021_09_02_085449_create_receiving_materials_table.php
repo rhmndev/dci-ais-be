@@ -13,6 +13,7 @@ class CreateReceivingMaterialsTable extends Migration
      */
     public function up()
     {
+        Schema::dropIfExists('receiving_materials');
         Schema::create('receiving_materials', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('PO_Number');

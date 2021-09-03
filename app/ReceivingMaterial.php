@@ -67,12 +67,14 @@ class ReceivingMaterial extends Model
 
     }
 
-    public function getPODetails($PONumber)
+    public function getPODetails($PONumber, $perpage)
     {
 
         $query = ReceivingMaterial::query();
+        $skip = $perpage * 0;
+
         $query = $query->where('PO_Number', $PONumber);
-        $data = $query->get();
+        $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
         return $data;
     }

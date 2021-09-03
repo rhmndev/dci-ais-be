@@ -7,7 +7,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 class Receiving extends Model
 {
     //
-    public function getAllData($keyword, $columns, $sort, $order)
+    public function getAllData($keyword, $columns, $sort, $order, $flag)
     {
 
         $query = Receiving::query();
@@ -29,6 +29,8 @@ class Receiving extends Model
             }
         }
 
+        $query = $query->where('flag', $flag);
+
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
         $data = $query->get();
@@ -36,7 +38,7 @@ class Receiving extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $flag)
     {
 
         $query = Receiving::query();
@@ -58,6 +60,8 @@ class Receiving extends Model
 
             }
         }
+
+        $query = $query->where('flag', $flag);
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
