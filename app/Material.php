@@ -68,4 +68,13 @@ class Material extends Model
         return $data;
 
     }
+
+    public function checkMaterial($code)
+    {
+        $query = Material::query();
+
+        $query = $query->where('code', $code)->get();
+
+        return count($query);
+    }
 }

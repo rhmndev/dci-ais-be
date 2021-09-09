@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Receiving;
 use App\ReceivingMaterial;
+use App\Material;
 use App\Settings;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
@@ -132,98 +133,85 @@ class ReceivingController extends Controller
 
             if (count($results) > 0){
 
+                // [Comp] =>
+                // [Ersda] =>
+                // [PoNo] => 5611000006
+                // [ItemNo] => 00010
+                // [Mtart] => ZOHP
+                // [Matnr] => 01CI120DLF2OHP
+                // [Maktx] => INNER CABLE DIA 1 0 CI FR DL 2004 02
+                // [Quantity] => 1000.000
+                // [Meins] => PCE
+                // [Price] => 10000.000
+                // [Currency] => IDR
+                // [Vendor] => 0000100097
+                // [Mwskz] => V1
+                // [Crdate] => 10.08.2021
+                // [Deldate] => 24.08.2021
+                // [Reldate] => 10.08.2021
+
                 $data_po = array();
                 $data_material = array();
 
-                $Receiving = new Receiving;
-                $ReceivingMaterial = new ReceivingMaterial;
+                $Material = new Material;
 
                 foreach ($results as $result) {
-
-                    $data_tmp = array();
-                    $data_tmp_m = array();
 
                     $PO_Number = $this->stringtoupper($result->PoNo);
                     $material_id = $this->stringtoupper($result->Matnr);
                     $material_name = $this->stringtoupper($result->Maktx);
 
-                    $QueryGetDataByFilter = Receiving::query();
+                    $create_date = $this->dateMaking($result->Crdate);
+                    $delivery_date = $this->dateMaking($result->Deldate);
+                    $release_date = $this->dateMaking($result->Reldate);
 
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('PO_Number', $PO_Number);
+                    $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+                    $Receiving->PO_Number = $PO_Number;
+                    $Receiving->create_date = $create_date;
+                    $Receiving->delivery_date = $delivery_date;
+                    $Receiving->release_date = $release_date;
+                    $Receiving->PO_Status = 0;
+                    $Receiving->flag = 0;
 
-                    if (count($QueryGetDataByFilter->get()) > 0){
-                        $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
-                        ReceivingMaterial::where('PO_Number', $PO_Number)->delete();
+                    $Receiving->created_by = auth()->user()->username;
+                    $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $Receiving->updated_by = auth()->user()->username;
+                    $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $Receiving->save();
+
+                    $checkMaterial = $Material->checkMaterial($material_id);
+
+                    if ($checkMaterial > 0) {
+
+                        $ReceivingMaterial = ReceivingMaterial::firstOrNew([
+                            'PO_Number' => $PO_Number,
+                            'material_id' => $material_id,
+                        ]);
+                        $ReceivingMaterial->PO_Number = $PO_Number;
+                        $ReceivingMaterial->material_id = $material_id;
+                        $ReceivingMaterial->material_name = $material_name;
+                        $ReceivingMaterial->qty = $result->Quantity;
+                        $ReceivingMaterial->unit = $result->Meins;
+                        $ReceivingMaterial->price = $result->Price;
+                        $ReceivingMaterial->currency = $result->Currency;
+                        $ReceivingMaterial->vendor = $result->Vendor;
+                        $ReceivingMaterial->ppn = $result->Mwskz;
+
+                        $ReceivingMaterial->created_by = auth()->user()->username;
+                        $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $ReceivingMaterial->updated_by = auth()->user()->username;
+                        $ReceivingMaterial->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $ReceivingMaterial->save();
+                        
                     }
-
-                    if (count($data_po) > 0){
-
-                        if (end($data_po)['PO_Number'] != $PO_Number){
-
-                            $data_tmp['PO_Number'] = $PO_Number;
-                            $data_tmp['create_date'] = '-';
-                            $data_tmp['send_date'] = '-';
-                            $data_tmp['PO_Status'] = 0;
-                            $data_tmp['flag'] = 0;
-
-                            $data_tmp['created_by'] = auth()->user()->username;
-                            $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-        
-                            $data_tmp['updated_by'] = auth()->user()->username;
-                            $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-    
-                            array_push($data_po, $data_tmp);
-                            
-                        }
-
-                    } else {
-
-                        $data_tmp['PO_Number'] = $PO_Number;
-                        $data_tmp['create_date'] = '-';
-                        $data_tmp['send_date'] = '-';
-                        $data_tmp['PO_Status'] = 0;
-                        $data_tmp['flag'] = 0;
-
-                        $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-    
-                        $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        array_push($data_po, $data_tmp);
-
-                    }
-                    
-                    $data_tmp_m['PO_Number'] = $PO_Number;
-                    $data_tmp_m['material_id'] = $material_id;
-                    $data_tmp_m['material_name'] = $material_name;
-                    $data_tmp_m['qty'] = $result->Quantity;
-                    $data_tmp_m['unit'] = $result->Meins;
-                    $data_tmp_m['price'] = $result->Price;
-                    $data_tmp_m['currency'] = $result->Currency;
-                    $data_tmp_m['vendor'] = $result->Vendor;
-                    $data_tmp_m['ppn'] = $result->Mwskz;
-
-                    $data_tmp_m['created_by'] = auth()->user()->username;
-                    $data_tmp_m['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    $data_tmp_m['updated_by'] = auth()->user()->username;
-                    $data_tmp_m['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    // Converting to Array
-                    array_push($data_material, $data_tmp_m);
 
                 }
-
-                $Receiving->insert($data_po);
-                $ReceivingMaterial->insert($data_material);
 
                 return response()->json([
         
                     "result" => true,
                     "msg_type" => 'success',
                     "msg" => 'Sync SAP Success',
-                    // "msg" => $data_material,
         
                 ], 200);
 
@@ -259,5 +247,13 @@ class ReceivingController extends Controller
         $string = strtolower($string);
         $string = strtoupper($string);
         return $string;
+    }
+
+    private function dateMaking($date)
+    {
+        $date = explode('.', $date);
+        $date = $date[0].'-'.$date[1].'-'.$date[2];
+        $date = date('Y-m-d', strtotime($date));
+        return $date;
     }
 }

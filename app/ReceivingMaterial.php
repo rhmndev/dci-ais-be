@@ -7,6 +7,11 @@ use Jenssegers\Mongodb\Eloquent\Model;
 class ReceivingMaterial extends Model
 {
     //
+    protected $fillable = [
+        'PO_Number',
+        'material_id'
+    ];
+
     public function getAllData($keyword, $columns, $sort, $order)
     {
 
