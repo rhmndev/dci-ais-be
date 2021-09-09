@@ -7,6 +7,8 @@ use Jenssegers\Mongodb\Eloquent\Model;
 class Vendor extends Model
 {
     //
+    protected $fillable = ['code'];
+
     public function getAllData($keyword, $columns, $sort, $order)
     {
 

@@ -183,39 +183,28 @@ class VendorController extends Controller
 
             if (count($results) > 0){
 
-                $Vendor = new Vendor;
-
                 foreach ($results as $result) {
 
-                    $QueryGetDataByFilter = Vendor::query();
+                    $code = $this->stringtoupper($result->Vendor);
+                    $name = $this->stringtoupper($result->Name);
+                    $address = $this->stringtoupper($result->Street);
+                    $phone = strval($result->Telephone);
 
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $result->Vendor);
+                    $Vendor = Vendor::firstOrNew(['code' => $code]);
+                    $Vendor->code = $code;
+                    $Vendor->name = $name;
+                    $Vendor->address = $address;
+                    $Vendor->phone = $phone;
+                    $Vendor->email = $result->Smtp_addr;
+                    $Vendor->contact = $result->Persnumber;
 
-                    if (count($QueryGetDataByFilter->get()) > 0){
-                        $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
-                    }
-
-                    $data_tmp = array();
-                    
-                    $data_tmp['code'] = $this->stringtoupper($result->Vendor);
-                    $data_tmp['name'] = $this->stringtoupper($result->Name);
-                    $data_tmp['address'] = $this->stringtoupper($result->Street);
-                    $data_tmp['phone'] = strval($result->Telephone);
-                    $data_tmp['email'] = $result->Smtp_addr;
-                    $data_tmp['contact'] = $result->Persnumber;
-
-                    $data_tmp['created_by'] = auth()->user()->username;
-                    $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    $data_tmp['updated_by'] = auth()->user()->username;
-                    $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    // Converting to Array
-                    array_push($data, $data_tmp);
+                    $Vendor->created_by = auth()->user()->username;
+                    $Vendor->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $Vendor->updated_by = auth()->user()->username;
+                    $Vendor->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $Vendor->save();
 
                 }
-
-                $Vendor->insert($data);
 
                 return response()->json([
         
