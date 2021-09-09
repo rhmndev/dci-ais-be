@@ -178,44 +178,30 @@ class MaterialController extends Controller
 
             if (count($results) > 0){
 
-                $Material = new Material;
-
                 foreach ($results as $result) {
 
-                    $QueryGetDataByFilter = Material::query();
+                    $code = $this->stringtoupper($result->Matnr);
+                    $description = $this->stringtoupper($result->Maktx);
 
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $result->Matnr);
+                    $Material = Material::firstOrNew(['code' => $code]);
+                    $Material->code = $code;
+                    $Material->description = $description;
+                    $Material->type = $result->Mtart;
+                    $Material->unit = $result->Meins;
 
-                    if (count($QueryGetDataByFilter->get()) > 0){
-                        $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
-                    }
-
-                    $data_tmp = array();
-                    
-                    $data_tmp['code'] = $this->stringtoupper($result->Matnr);
-                    $data_tmp['description'] = $this->stringtoupper($result->Maktx);
-                    $data_tmp['type'] = $result->Mtart;
-                    $data_tmp['unit'] = $result->Meins;
-
-                    $data_tmp['created_by'] = auth()->user()->username;
-                    $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    $data_tmp['updated_by'] = auth()->user()->username;
-                    $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    // Converting to Array
-                    array_push($data, $data_tmp);
+                    $Material->created_by = auth()->user()->username;
+                    $Material->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $Material->updated_by = auth()->user()->username;
+                    $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $Material->save();
 
                 }
-
-                $Material->insert($data);
 
                 return response()->json([
         
                     "result" => true,
                     "msg_type" => 'success',
-                    "msg" => 'Sync SAP Success',
-                    "total" => count($results).' data synced',
+                    "msg" => 'Sync SAP Success. '.count($results).' data synced',
         
                 ], 200);
 
