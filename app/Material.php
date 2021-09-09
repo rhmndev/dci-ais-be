@@ -7,6 +7,8 @@ use Jenssegers\Mongodb\Eloquent\Model;
 class Material extends Model
 {
     //
+    protected $fillable = ['code'];
+
     public function getAllData($keyword, $columns, $sort, $order)
     {
 
@@ -65,5 +67,14 @@ class Material extends Model
 
         return $data;
 
+    }
+
+    public function checkMaterial($code)
+    {
+        $query = Material::query();
+
+        $query = $query->where('code', $code)->get();
+
+        return count($query);
     }
 }
