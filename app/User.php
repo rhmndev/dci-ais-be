@@ -13,6 +13,8 @@ class User extends Authenticable
         'api_token'
     ];
 
+    protected $fillable = ['username'];
+
     public function role()
     {
         return $this->belongsTo('App\Role');

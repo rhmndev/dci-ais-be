@@ -25,10 +25,10 @@ class CreateUsersTable extends Migration
             $table->string('email');
             $table->string('password');
             $table->integer('type')->default(1);
-            $table->string('vendor_id')->nullable();
-            $table->string('vendor_name')->nullable();
             $table->string('role_id')->nullable();
             $table->string('role_name')->nullable();
+            $table->string('vendor_code')->nullable();
+            $table->string('vendor_name')->nullable();
             $table->string('photo')->nullable();
             $table->string('reset_token')->nullable();
             $table->string('api_token')->nullable();

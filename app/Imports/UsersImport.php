@@ -6,14 +6,12 @@ use App\User;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
+use Maatwebsite\Excel\Concerns\WithColumnLimit;
+use Maatwebsite\Excel\Concerns\Importable;
 
-class UsersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas
+class UsersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas, WithColumnLimit
 {
-    /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+    use Importable;
 
     public function model(array $row)
     {
@@ -25,11 +23,18 @@ class UsersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas
             'npk' => $row[4],
             'email' => $row[5],
             'password' => $row[6],
+            'type' => $row[7],
+            'vendor_code' => $row[8],
         ]);
     }
     
     public function headingRow(): int
     {
         return 1;
+    }
+
+    public function endColumn(): string
+    {
+        return 'I';
     }
 }
