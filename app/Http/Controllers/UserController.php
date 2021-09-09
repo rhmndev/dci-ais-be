@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\UsersImport;
 use App\User;
+use App\Vendor;
 use Carbon\Carbon;
 use Image;
 use Excel;
@@ -193,68 +194,50 @@ class UserController extends Controller
                 $Excels = Excel::toArray(new UsersImport, $files);
                 $Excels = $Excels[0];
                 // $Excels = json_decode(json_encode($Excels[0]), true);
-    
-                //store your file into database
-                $User = new User();
 
                 foreach ($Excels as $Excel) {
 
-                    $QueryGetDataByFilter = User::query();
+                    if ($Excel['username'] != null){
 
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('username', $Excel['username']);
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('npk', $Excel['npk']);
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('phone_number', $Excel['phone_number']);
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('email', $Excel['email']);
-
-                    if (count($QueryGetDataByFilter->get()) == 0){
-
-                        $data_tmp = array();
-                        
-                        $data_tmp['username'] = $Excel['username'];
-                        $data_tmp['full_name'] = $Excel['full_name'];
-                        $data_tmp['department'] = $Excel['department'];
-                        $data_tmp['phone_number'] = $Excel['phone_number'];
-                        $data_tmp['npk'] = $Excel['npk'];
-                        $data_tmp['email'] = $Excel['email'];
-                        $data_tmp['password'] = Hash::make($Excel['password']);
-
-                        $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        // Converting to Array
-                        array_push($data, $data_tmp);
-                        
-                    }
-
-                }
-
-                if (count($data) > 0){
-
-                    $User->insert($data);
+                        if ($Excel['type'] == 1){
+                            $vendor_code = $Excel['vendor_code'];
+                            $Vendor = Vendor::where('code', $vendor_code)->first();
+                            $vendor_name = $Vendor->name;
+                        } else {
+                            $vendor_code = null;
+                            $vendor_name = null;
+                        }
+        
+                        //store your file into database
+                        $User = User::firstOrNew(['username' => $Excel['username']]);
+                        $User->username = $Excel['username'];
+                        $User->full_name = $Excel['full_name'];
+                        $User->department = $Excel['department'];
+                        $User->phone_number = $Excel['phone_number'];
+                        $User->npk = $Excel['npk'];
+                        $User->email = $Excel['email'];
+                        $User->password = Hash::make($Excel['password']);
+                        $User->type = $Excel['type'];
+                        $User->vendor_code = $vendor_code;
+                        $User->vendor_name = $vendor_name;
     
-                    return response()->json([
-            
-                        "result" => true,
-                        "msg_type" => 'Success',
-                        "msg" => 'Data stored successfully!',
-                        // "msg" => $data,
-            
-                    ], 200);
+                        $User->created_by = auth()->user()->username;
+                        $User->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $User->updated_by = auth()->user()->username;
+                        $User->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $User->save();
 
-                } else {
-
-                    return response()->json([
-            
-                        "result" => false,
-                        "msg_type" => 'error',
-                        "msg" => 'Data already uploaded',
-            
-                    ], 200);
-
+                    }
                 }
+    
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "msg" => 'Data stored successfully!',
+                    // "msg" => $Excels,
+        
+                ], 200);
             }
 
         } catch (\Exception $e) {

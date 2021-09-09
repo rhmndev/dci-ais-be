@@ -35,8 +35,10 @@ class UserSeeder extends Seeder
                 'phone_number' => '081',
                 'npk' => '89352',
                 'email' => 'vendor@example.com',
-                'type' => 1,
                 'password' => Hash::make('password'),
+                'type' => 1,
+                'vendor_code' => '0000100097',
+                'vendor_name' => 'INDONESIA STEEL TUBE WORKS PT',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ]
@@ -53,15 +55,20 @@ class UserSeeder extends Seeder
             $user->phone_number = $data['phone_number'];
             $user->npk = $data['npk'];
             $user->email = $data['email'];
-            $user->type = $data['type'];
             $user->password = $data['password'];
-            $user->reset_token = null;
-            $user->api_token = null;
-            $user->photo = null;
-            $user->vendor_id = null;
-            $user->vendor_name = null;
+            $user->type = $data['type'];
             $user->role_id = $role->id;
             $user->role_name = $role->name;
+            if ($data['type'] == 1){
+                $user->vendor_code = $data['vendor_code'];
+                $user->vendor_name = $data['vendor_name'];
+            } else {
+                $user->vendor_code = null;
+                $user->vendor_name = null;
+            }
+            $user->photo = null;
+            $user->reset_token = null;
+            $user->api_token = null;
             $user->created_by = $data['created_by'];
             $user->updated_by = $data['updated_by'];
             $user->save();
