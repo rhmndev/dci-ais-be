@@ -72,11 +72,20 @@ class PermissionSeeder extends Seeder
 				]
 			],
 			[
+				"name" => "Scan",
+				"description" => null,
+				"url" => "scanmaterial",
+				"icon" => "search",
+				"order_number" => 3,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
 				"name" => "Transaction",
 				"description" => null,
 				"url" => "transaction",
 				"icon" => "exchange-alt",
-				"order_number" => 3,
+				"order_number" => 4,
 				"created_by" => "seeder",
 				"changed_by" => "seeder",
 				"children" => [
