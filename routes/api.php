@@ -54,6 +54,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/receivesync', 'ReceivingController@SyncSAP');
         #endregion
 
+        #region Transaction Receive Details
+        Route::get('/receivedetail', 'ReceivingMaterialController@index');
         #endregion
 
         #region Template
@@ -93,3 +95,6 @@ Route::post('/dataVendorSAP', 'SAPController@storeVendor');
 
 Route::get('/dataMaterialSAP', 'SAPController@getMaterial');
 Route::post('/dataMaterialSAP', 'SAPController@storeMaterial');
+
+Route::get('/dataPOSAP', 'SAPController@getPO');
+Route::post('/dataPOSAP', 'SAPController@storePO');

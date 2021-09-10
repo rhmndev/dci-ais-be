@@ -12,27 +12,29 @@ class ReceivingMaterial extends Model
         'material_id'
     ];
 
-    public function getAllData($keyword, $columns, $sort, $order)
+    public function getAllData($PONumber, $search, $columns, $sort, $order)
     {
 
         $query = ReceivingMaterial::query();
         
-        if(!empty($keyword)){
+        if(!empty($search)){
 
             foreach ($columns as $index => $column) {
 
                 if ($index == 0) {
 
-                    $query = $query->where($column, 'like', '%'.$keyword.'%');
+                    $query = $query->where($column, 'like', '%'.$search.'%');
 
                 } else {
 
-                    $query = $query->orWhere($column, 'like', '%'.$keyword.'%');
+                    $query = $query->orWhere($column, 'like', '%'.$search.'%');
 
                 }
 
             }
         }
+
+        $query = $query->where('PO_Number', $PONumber);
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
@@ -41,28 +43,30 @@ class ReceivingMaterial extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order)
+    public function getData($PONumber, $search, $columns, $perpage, $page, $sort, $order)
     {
 
         $query = ReceivingMaterial::query();
         $skip = $perpage * ($page - 1);
         
-        if(!empty($keyword)){
+        if(!empty($search)){
 
             foreach ($columns as $index => $column) {
 
                 if ($index == 0) {
 
-                    $query = $query->where($column, 'like', '%'.$keyword.'%');
+                    $query = $query->where($column, 'like', '%'.$search.'%');
 
                 } else {
 
-                    $query = $query->orWhere($column, 'like', '%'.$keyword.'%');
+                    $query = $query->orWhere($column, 'like', '%'.$search.'%');
 
                 }
 
             }
         }
+
+        $query = $query->where('PO_Number', $PONumber);
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
@@ -72,13 +76,14 @@ class ReceivingMaterial extends Model
 
     }
 
-    public function getPODetails($PONumber, $perpage)
+    public function getPODetails($PONumber, $perpage, $vendor)
     {
 
         $query = ReceivingMaterial::query();
         $skip = $perpage * 0;
 
         $query = $query->where('PO_Number', $PONumber);
+        $query = $query->where('vendor', $vendor);
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
         return $data;

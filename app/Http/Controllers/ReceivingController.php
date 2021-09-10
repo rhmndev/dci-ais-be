@@ -27,6 +27,7 @@ class ReceivingController extends Controller
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
         $flag = ($request->flag != 0) ? 1 : 0;
+        $vendor = auth()->user()->vendor_code;
 
         try {
     
@@ -36,18 +37,23 @@ class ReceivingController extends Controller
             $Settings = new Settings;
 
             $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage')[0]['name'];
+            $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag);
-            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag);
+            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag, $vendor);
+            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
+                $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
+                $data_tmp['create_date'] = $result->create_date;
+                $data_tmp['delivery_date'] = $result->delivery_date;
+                $data_tmp['release_date'] = $result->release_date;
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage);
+                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage, $vendor);
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
@@ -60,6 +66,7 @@ class ReceivingController extends Controller
                     $data_tmp_d['price'] = number_format($PODetail->price);
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
+                    $data_tmp_d['QRCode'] = $result->_id.';'.$PODetail->_id;
             
                     $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                     foreach ($SettingPPNs as $SettingPPN) {
@@ -150,9 +157,6 @@ class ReceivingController extends Controller
                 // [Deldate] => 24.08.2021
                 // [Reldate] => 10.08.2021
 
-                $data_po = array();
-                $data_material = array();
-
                 $Material = new Material;
 
                 foreach ($results as $result) {
@@ -170,6 +174,7 @@ class ReceivingController extends Controller
                     $Receiving->create_date = $create_date;
                     $Receiving->delivery_date = $delivery_date;
                     $Receiving->release_date = $release_date;
+                    $Receiving->vendor = $result->Vendor;
                     $Receiving->PO_Status = 0;
                     $Receiving->flag = 0;
 
@@ -196,6 +201,14 @@ class ReceivingController extends Controller
                         $ReceivingMaterial->currency = $result->Currency;
                         $ReceivingMaterial->vendor = $result->Vendor;
                         $ReceivingMaterial->ppn = $result->Mwskz;
+                        $ReceivingMaterial->del_note = null;
+                        $ReceivingMaterial->del_date = $delivery_date;
+                        $ReceivingMaterial->del_qty = $result->Quantity;
+                        $ReceivingMaterial->prod_date = $create_date;
+                        $ReceivingMaterial->prod_lot = null;
+                        $ReceivingMaterial->material = null;
+                        $ReceivingMaterial->o_name = null;
+                        $ReceivingMaterial->o_code = null;
 
                         $ReceivingMaterial->created_by = auth()->user()->username;
                         $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());

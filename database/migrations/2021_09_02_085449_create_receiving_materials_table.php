@@ -17,8 +17,6 @@ class CreateReceivingMaterialsTable extends Migration
         Schema::create('receiving_materials', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('PO_Number');
-            $table->string('create_date');
-            $table->string('send_date');
             $table->string('material_id');
             $table->string('material_name');
             $table->string('qty');
@@ -27,6 +25,14 @@ class CreateReceivingMaterialsTable extends Migration
             $table->string('currency');
             $table->string('vendor');
             $table->string('ppn');
+            $table->string('del_note')->nullable();
+            $table->string('del_date')->nullable();
+            $table->string('del_qty')->nullable();
+            $table->string('prod_date')->nullable();
+            $table->string('prod_lot')->nullable();
+            $table->string('material')->nullable();
+            $table->string('o_name')->nullable();
+            $table->string('o_code')->nullable();
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();
