@@ -27,6 +27,7 @@ class ReceivingController extends Controller
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
         $flag = ($request->flag != 0) ? 1 : 0;
+        $vendor = auth()->user()->vendor_code;
 
         try {
     
@@ -38,8 +39,8 @@ class ReceivingController extends Controller
             $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage')[0]['name'];
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag);
-            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag);
+            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag, $vendor);
+            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -52,7 +53,7 @@ class ReceivingController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage);
+                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage, $vendor);
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
@@ -173,6 +174,7 @@ class ReceivingController extends Controller
                     $Receiving->create_date = $create_date;
                     $Receiving->delivery_date = $delivery_date;
                     $Receiving->release_date = $release_date;
+                    $Receiving->vendor = $result->Vendor;
                     $Receiving->PO_Status = 0;
                     $Receiving->flag = 0;
 

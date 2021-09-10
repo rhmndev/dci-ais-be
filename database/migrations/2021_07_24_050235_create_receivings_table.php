@@ -20,6 +20,7 @@ class CreateReceivingsTable extends Migration
             $table->string('create_date');
             $table->string('delivery_date');
             $table->string('release_date');
+            $table->string('vendor');
             $table->string('PO_Status');
             $table->string('flag', 1)->default('0');
             $table->string('created_by')->nullable();

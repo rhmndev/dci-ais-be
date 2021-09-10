@@ -350,6 +350,7 @@ class SAPController extends Controller
                     $Receiving->create_date = $create_date;
                     $Receiving->delivery_date = $delivery_date;
                     $Receiving->release_date = $release_date;
+                    $Receiving->vendor = $input->vendor;
                     $Receiving->PO_Status = 0;
                     $Receiving->flag = 0;
 
@@ -383,7 +384,7 @@ class SAPController extends Controller
                                 $ReceivingMaterial->unit = $detail->unit;
                                 $ReceivingMaterial->price = $detail->price;
                                 $ReceivingMaterial->currency = $detail->currency;
-                                $ReceivingMaterial->vendor = $detail->vendor;
+                                $ReceivingMaterial->vendor = $input->vendor;
                                 $ReceivingMaterial->ppn = $detail->ppn;
                                 $ReceivingMaterial->del_note = null;
                                 $ReceivingMaterial->del_date = $delivery_date;
