@@ -35,6 +35,27 @@ class VendorSeeder extends Seeder
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ],
+            [
+                'code' => '0000100059',
+                'name' => 'SUNCOAT INDONESIA PT.',
+                'address' => 'KAWASAN INDUSTRI MM2100  JL.FLORES',
+                'phone' => '021 898037189',
+                'email' => 'victor@suncoat.co.id',
+                'contact' => 'BP.VICTOR',
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                '_id' => '613ad086836b00007e00b0dd',
+                'code' => '0000100097',
+                'name' => 'INDONESIA STEEL TUBE WORKS PT',
+                'address' => 'JL RAWA SUMUR I NO 1 KWS INDUSTRI',
+                'phone' => '2146821826',
+                'email' => 'abdul.halim@istw.co.id',
+                'contact' => 'ABDUL HALI',
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {
