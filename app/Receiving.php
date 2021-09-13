@@ -31,7 +31,9 @@ class Receiving extends Model
             }
         }
 
-        $query = $query->where('vendor', $vendor);
+        if ($vendor != '') {
+            $query = $query->where('vendor', $vendor);
+        }
 
         $query = $query->where('flag', $flag);
 
@@ -63,6 +65,10 @@ class Receiving extends Model
                 }
 
             }
+        }
+
+        if ($vendor != '') {
+            $query = $query->where('vendor', $vendor);
         }
 
         $query = $query->where('flag', $flag);

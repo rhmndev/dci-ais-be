@@ -231,9 +231,11 @@ class SAPController extends Controller
             'sort'      => 'required|string',
             'order'     => 'required|string',
             'MPerpage'  => 'required|numeric',
+            'vendor'    => 'nullable|numeric',
         ]);
 
         $search = ($request->search != null) ? $request->search : '';
+        $vendor = ($request->vendor != null) ? $request->vendor : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
         $columns = array('PO_Number');
 
@@ -246,8 +248,8 @@ class SAPController extends Controller
 
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($search, $columns, $request->sort, $order, 0);
-            $results = $Receiving->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0);
+            $resultAlls = $Receiving->getAllData($search, $columns, $request->sort, $order, 0, $vendor);
+            $results = $Receiving->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -260,7 +262,7 @@ class SAPController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $result->MPerpage);
+                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $result->MPerpage, $vendor);
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
