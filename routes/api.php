@@ -56,6 +56,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         #region Transaction Receive Details
         Route::get('/receivedetail', 'ReceivingMaterialController@index');
+        Route::get('/receivedetail/{id}', 'ReceivingMaterialController@show');
         #endregion
 
         #region Template
