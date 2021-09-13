@@ -53,7 +53,7 @@ class ReceivingController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage, $vendor);
+                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
