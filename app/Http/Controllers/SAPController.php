@@ -342,7 +342,7 @@ class SAPController extends Controller
 
                 foreach ($inputs as $input) {
 
-                    $PO_Number = $this->stringtoupper($input->PO_Number);
+                    $PO_Number = $this->stringtoupper($input->po_number);
                     $create_date = $input->create_date;
                     $delivery_date = $input->delivery_date;
                     $release_date = $input->release_date;
@@ -371,6 +371,9 @@ class SAPController extends Controller
                             $material_id = $this->stringtoupper($detail->material_id);
                             $material_name = $this->stringtoupper($detail->material_name);
 
+                            $qty = $this->checkNumber($detail->qty);
+                            $price = $this->checkNumber($detail->price);
+
                             $checkMaterial = $Material->checkMaterial($material_id);
 
                             if ($checkMaterial > 0) {
@@ -382,15 +385,15 @@ class SAPController extends Controller
                                 $ReceivingMaterial->PO_Number = $PO_Number;
                                 $ReceivingMaterial->material_id = $material_id;
                                 $ReceivingMaterial->material_name = $material_name;
-                                $ReceivingMaterial->qty = $detail->qty;
+                                $ReceivingMaterial->qty = $qty;
                                 $ReceivingMaterial->unit = $detail->unit;
-                                $ReceivingMaterial->price = $detail->price;
+                                $ReceivingMaterial->price = $price;
                                 $ReceivingMaterial->currency = $detail->currency;
                                 $ReceivingMaterial->vendor = $input->vendor;
                                 $ReceivingMaterial->ppn = $detail->ppn;
                                 $ReceivingMaterial->del_note = null;
                                 $ReceivingMaterial->del_date = $delivery_date;
-                                $ReceivingMaterial->del_qty = $detail->qty;
+                                $ReceivingMaterial->del_qty = $qty;
                                 $ReceivingMaterial->prod_date = $create_date;
                                 $ReceivingMaterial->prod_lot = null;
                                 $ReceivingMaterial->material = null;
@@ -439,5 +442,12 @@ class SAPController extends Controller
         $string = strtolower($string);
         $string = strtoupper($string);
         return $string;
+    }
+
+    private function checkNumber($num)
+    {
+        $num = str_replace(' ', '', $num);
+        $num = intval($num);
+        return $num;
     }
 }
