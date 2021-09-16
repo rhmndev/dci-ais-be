@@ -81,8 +81,13 @@ class ReceivingMaterialController extends Controller
         }
     }
 
-    public function show(Request $request)
+    public function show(Request $request, $id)
     {
-        # code...
+        $ReceivingMaterial = ReceivingMaterial::findOrFail($id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $ReceivingMaterial
+        ]);
     }
 }
