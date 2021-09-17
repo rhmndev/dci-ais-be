@@ -75,6 +75,6 @@ class Material extends Model
 
         $query = $query->where('code', $code)->get();
 
-        return count($query);
+        return $query;
     }
 }

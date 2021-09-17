@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\ReceivingMaterial;
+use App\Vendor;
 use App\Settings;
 use Carbon\Carbon;
 
@@ -54,7 +55,6 @@ class ReceivingMaterialController extends Controller
                 $data_tmp['currency'] = $result->currency;
                 $data_tmp['vendor'] = $result->vendor;
                 $data_tmp['ppn'] = $result->ppn;
-            
                 $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                 foreach ($SettingPPNs as $SettingPPN) {
                     $ppn = explode(';', $SettingPPN['name']);
@@ -96,6 +96,21 @@ class ReceivingMaterialController extends Controller
     public function show(Request $request, $id)
     {
         $ReceivingMaterial = ReceivingMaterial::findOrFail($id);
+
+        $Vendor = new Vendor;
+
+        $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor)[0];
+        $ReceivingMaterial->vendor_name = $vendor_data->name;
+
+        $Settings = new Settings;
+        $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
+        
+        foreach ($SettingPPNs as $SettingPPN) {
+            $ppn = explode(';', $SettingPPN['name']);
+            if ($ppn[0] === $ReceivingMaterial->ppn){
+                $ReceivingMaterial->ppn_p = $ppn[1];
+            }
+        };
 
         return response()->json([
             'type' => 'success',
