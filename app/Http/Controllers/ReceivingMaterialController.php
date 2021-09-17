@@ -99,8 +99,17 @@ class ReceivingMaterialController extends Controller
 
         $Vendor = new Vendor;
 
-        $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor)[0];
-        $ReceivingMaterial->vendor_name = $vendor_data->name;
+        $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor);
+        if (count($vendor_data) > 0){
+
+            $vendor_data = $vendor_data[0];
+            $ReceivingMaterial->vendor_name = $vendor_data->name;
+
+        } else {
+
+            $ReceivingMaterial->vendor_name = '';
+
+        }
 
         $Settings = new Settings;
         $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
