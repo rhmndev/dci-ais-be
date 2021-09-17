@@ -17,8 +17,12 @@ class CreateReceivingMaterialsTable extends Migration
         Schema::create('receiving_materials', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('PO_Number');
+            $table->string('create_date');
+            $table->string('delivery_date');
+            $table->string('release_date');
             $table->string('material_id');
             $table->string('material_name');
+            $table->string('material_number');
             $table->string('qty');
             $table->string('unit');
             $table->string('price');

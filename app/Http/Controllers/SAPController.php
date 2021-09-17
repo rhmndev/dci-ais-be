@@ -268,8 +268,12 @@ class SAPController extends Controller
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $PODetail->_id;
                     $data_tmp_d['PO_Number'] = $PODetail->PO_Number;
+                    $data_tmp_d['create_date'] = $result->create_date;
+                    $data_tmp_d['delivery_date'] = $result->delivery_date;
+                    $data_tmp_d['release_date'] = $result->release_date;
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
+                    $data_tmp_d['material_number'] = $PODetail->material_number;
                     $data_tmp_d['qty'] = number_format($PODetail->qty);
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = number_format($PODetail->price);
@@ -383,8 +387,12 @@ class SAPController extends Controller
                                     'material_id' => $material_id,
                                 ]);
                                 $ReceivingMaterial->PO_Number = $PO_Number;
+                                $ReceivingMaterial->create_date = $create_date;
+                                $ReceivingMaterial->delivery_date = $delivery_date;
+                                $ReceivingMaterial->release_date = $release_date;
                                 $ReceivingMaterial->material_id = $material_id;
                                 $ReceivingMaterial->material_name = $material_name;
+                                $ReceivingMaterial->material_number = $detail->material_number;
                                 $ReceivingMaterial->qty = $qty;
                                 $ReceivingMaterial->unit = $detail->unit;
                                 $ReceivingMaterial->price = $price;
