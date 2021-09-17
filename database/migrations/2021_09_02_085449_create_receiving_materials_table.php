@@ -22,7 +22,7 @@ class CreateReceivingMaterialsTable extends Migration
             $table->string('release_date');
             $table->string('material_id');
             $table->string('material_name');
-            $table->string('material_number');
+            $table->string('item_po');
             $table->string('qty');
             $table->string('unit');
             $table->string('price');
