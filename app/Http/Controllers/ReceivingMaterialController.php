@@ -48,7 +48,7 @@ class ReceivingMaterialController extends Controller
                 $data_tmp['release_date'] = $result->release_date;
                 $data_tmp['material_id'] = $result->material_id;
                 $data_tmp['material_name'] = $result->material_name;
-                $data_tmp['material_number'] = $result->material_number;
+                $data_tmp['item_po'] = $result->item_po;
                 $data_tmp['qty'] = number_format($result->qty);
                 $data_tmp['unit'] = $result->unit;
                 $data_tmp['price'] = number_format($result->price);

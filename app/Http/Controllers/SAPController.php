@@ -273,7 +273,7 @@ class SAPController extends Controller
                     $data_tmp_d['release_date'] = $result->release_date;
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
-                    $data_tmp_d['material_number'] = $PODetail->material_number;
+                    $data_tmp_d['item_po'] = $PODetail->item_po;
                     $data_tmp_d['qty'] = number_format($PODetail->qty);
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = number_format($PODetail->price);
@@ -400,7 +400,7 @@ class SAPController extends Controller
                                     $ReceivingMaterial->release_date = $release_date;
                                     $ReceivingMaterial->material_id = $material_id;
                                     $ReceivingMaterial->material_name = $material_name;
-                                    $ReceivingMaterial->material_number = $detail->material_number;
+                                    $ReceivingMaterial->item_po = $detail->item_po;
                                     $ReceivingMaterial->qty = $qty;
                                     $ReceivingMaterial->unit = $detail->unit;
                                     $ReceivingMaterial->price = $price;
