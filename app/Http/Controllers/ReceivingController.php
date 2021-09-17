@@ -59,8 +59,12 @@ class ReceivingController extends Controller
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $PODetail->_id;
                     $data_tmp_d['PO_Number'] = $PODetail->PO_Number;
+                    $data_tmp_d['create_date'] = $result->create_date;
+                    $data_tmp_d['delivery_date'] = $result->delivery_date;
+                    $data_tmp_d['release_date'] = $result->release_date;
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
+                    $data_tmp_d['material_number'] = $PODetail->material_number;
                     $data_tmp_d['qty'] = number_format($PODetail->qty);
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = number_format($PODetail->price);
@@ -75,6 +79,15 @@ class ReceivingController extends Controller
                             $data_tmp_d['ppn'] = $ppn[1];
                         }
                     };
+
+                    $data_tmp_d['del_note'] = $PODetail->del_note;
+                    $data_tmp_d['del_date'] = $PODetail->del_date;
+                    $data_tmp_d['del_qty'] = number_format($PODetail->qty);
+                    $data_tmp_d['prod_date'] = $PODetail->prod_date;
+                    $data_tmp_d['prod_lot'] = $PODetail->prod_lot;
+                    $data_tmp_d['material'] = $PODetail->material;
+                    $data_tmp_d['o_name'] = $PODetail->o_name;
+                    $data_tmp_d['o_code'] = $PODetail->o_code;
 
                     $total = $PODetail->qty * $PODetail->price;
                     $data_tmp_d['sub_total'] = number_format($total);
@@ -193,8 +206,12 @@ class ReceivingController extends Controller
                             'material_id' => $material_id,
                         ]);
                         $ReceivingMaterial->PO_Number = $PO_Number;
+                        $ReceivingMaterial->create_date = $create_date;
+                        $ReceivingMaterial->delivery_date = $delivery_date;
+                        $ReceivingMaterial->release_date = $release_date;
                         $ReceivingMaterial->material_id = $material_id;
                         $ReceivingMaterial->material_name = $material_name;
+                        $ReceivingMaterial->material_number = $result->ItemNo;
                         $ReceivingMaterial->qty = $result->Quantity;
                         $ReceivingMaterial->unit = $result->Meins;
                         $ReceivingMaterial->price = $result->Price;

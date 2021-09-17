@@ -42,22 +42,34 @@ class ReceivingMaterialController extends Controller
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
+                $data_tmp['create_date'] = $result->create_date;
+                $data_tmp['delivery_date'] = $result->delivery_date;
+                $data_tmp['release_date'] = $result->release_date;
                 $data_tmp['material_id'] = $result->material_id;
                 $data_tmp['material_name'] = $result->material_name;
+                $data_tmp['material_number'] = $result->material_number;
                 $data_tmp['qty'] = number_format($result->qty);
                 $data_tmp['unit'] = $result->unit;
                 $data_tmp['price'] = number_format($result->price);
                 $data_tmp['currency'] = $result->currency;
                 $data_tmp['vendor'] = $result->vendor;
                 $data_tmp['ppn'] = $result->ppn;
-                $data_tmp['del_note'] = null;
+            
+                $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
+                foreach ($SettingPPNs as $SettingPPN) {
+                    $ppn = explode(';', $SettingPPN['name']);
+                    if ($ppn[0] === $result->ppn){
+                        $data_tmp['ppn_p'] = $ppn[1];
+                    }
+                };
+                $data_tmp['del_note'] = $result->del_note;
                 $data_tmp['del_date'] = $result->del_date;
                 $data_tmp['del_qty'] = number_format($result->qty);
                 $data_tmp['prod_date'] = $result->prod_date;
-                $data_tmp['prod_lot'] = null;
-                $data_tmp['material'] = null;
-                $data_tmp['o_name'] = null;
-                $data_tmp['o_code'] = null;
+                $data_tmp['prod_lot'] = $result->prod_lot;
+                $data_tmp['material'] = $result->material;
+                $data_tmp['o_name'] = $result->o_name;
+                $data_tmp['o_code'] = $result->o_code;
 
                 array_push($data, $data_tmp);
             }
