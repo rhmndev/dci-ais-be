@@ -343,94 +343,134 @@ class SAPController extends Controller
             if (count($inputs) > 0){
 
                 $Material = new Material;
+                $Vendor = new Vendor;
+
+                $vendor_nf = array();
+                $material_nf = array();
 
                 foreach ($inputs as $input) {
 
-                    $PO_Number = $this->stringtoupper($input->po_number);
-                    $create_date = $input->create_date;
-                    $delivery_date = $input->delivery_date;
-                    $release_date = $input->release_date;
+                    $checkVendor = $Vendor->checkVendor($input->vendor);
+    
+                    if (count($checkVendor) > 0) {
 
-                    $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
-                    $Receiving->PO_Number = $PO_Number;
-                    $Receiving->create_date = $create_date;
-                    $Receiving->delivery_date = $delivery_date;
-                    $Receiving->release_date = $release_date;
-                    $Receiving->vendor = $input->vendor;
-                    $Receiving->PO_Status = 0;
-                    $Receiving->flag = 0;
-
-                    $Receiving->created_by = 'SAP';
-                    $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                    $Receiving->updated_by = 'SAP';
-                    $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                    $Receiving->save();
-
-                    $details = $input->data;
-
-                    if (count($details) > 0){
-
-                        foreach ($details as $detail) {
-
-                            $material_id = $this->stringtoupper($detail->material_id);
-                            $material_name = $this->stringtoupper($detail->material_name);
-
-                            $qty = $this->checkNumber($detail->qty);
-                            $price = $this->checkNumber($detail->price);
-
-                            $checkMaterial = $Material->checkMaterial($material_id);
-
-                            if ($checkMaterial > 0) {
-        
-                                $ReceivingMaterial = ReceivingMaterial::firstOrNew([
-                                    'PO_Number' => $PO_Number,
-                                    'material_id' => $material_id,
-                                ]);
-                                $ReceivingMaterial->PO_Number = $PO_Number;
-                                $ReceivingMaterial->create_date = $create_date;
-                                $ReceivingMaterial->delivery_date = $delivery_date;
-                                $ReceivingMaterial->release_date = $release_date;
-                                $ReceivingMaterial->material_id = $material_id;
-                                $ReceivingMaterial->material_name = $material_name;
-                                $ReceivingMaterial->material_number = $detail->material_number;
-                                $ReceivingMaterial->qty = $qty;
-                                $ReceivingMaterial->unit = $detail->unit;
-                                $ReceivingMaterial->price = $price;
-                                $ReceivingMaterial->currency = $detail->currency;
-                                $ReceivingMaterial->vendor = $input->vendor;
-                                $ReceivingMaterial->ppn = $detail->ppn;
-                                $ReceivingMaterial->del_note = null;
-                                $ReceivingMaterial->del_date = $delivery_date;
-                                $ReceivingMaterial->del_qty = $qty;
-                                $ReceivingMaterial->prod_date = $create_date;
-                                $ReceivingMaterial->prod_lot = null;
-                                $ReceivingMaterial->material = null;
-                                $ReceivingMaterial->o_name = null;
-                                $ReceivingMaterial->o_code = null;
-        
-                                $ReceivingMaterial->created_by = 'SAP';
-                                $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                                $ReceivingMaterial->updated_by = 'SAP';
-                                $ReceivingMaterial->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                                $ReceivingMaterial->save();
-                                
+                        $PO_Number = $this->stringtoupper($input->po_number);
+                        $create_date = $input->create_date;
+                        $delivery_date = $input->delivery_date;
+                        $release_date = $input->release_date;
+    
+                        $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+                        $Receiving->PO_Number = $PO_Number;
+                        $Receiving->create_date = $create_date;
+                        $Receiving->delivery_date = $delivery_date;
+                        $Receiving->release_date = $release_date;
+                        $Receiving->vendor = $input->vendor;
+                        $Receiving->PO_Status = 0;
+                        $Receiving->flag = 0;
+    
+                        $Receiving->created_by = 'SAP';
+                        $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Receiving->updated_by = 'SAP';
+                        $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Receiving->save();
+    
+                        $details = $input->data;
+    
+                        if (count($details) > 0){
+    
+                            foreach ($details as $detail) {
+    
+                                $material_id = $this->stringtoupper($detail->material_id);
+                                $material_name = $this->stringtoupper($detail->material_name);
+    
+                                $qty = $this->checkNumber($detail->qty);
+                                $price = $this->checkNumber($detail->price);
+    
+                                $checkMaterial = $Material->checkMaterial($material_id);
+    
+                                if (count($checkMaterial) > 0) {
+            
+                                    $ReceivingMaterial = ReceivingMaterial::firstOrNew([
+                                        'PO_Number' => $PO_Number,
+                                        'material_id' => $material_id,
+                                    ]);
+                                    $ReceivingMaterial->PO_Number = $PO_Number;
+                                    $ReceivingMaterial->create_date = $create_date;
+                                    $ReceivingMaterial->delivery_date = $delivery_date;
+                                    $ReceivingMaterial->release_date = $release_date;
+                                    $ReceivingMaterial->material_id = $material_id;
+                                    $ReceivingMaterial->material_name = $material_name;
+                                    $ReceivingMaterial->material_number = $detail->material_number;
+                                    $ReceivingMaterial->qty = $qty;
+                                    $ReceivingMaterial->unit = $detail->unit;
+                                    $ReceivingMaterial->price = $price;
+                                    $ReceivingMaterial->currency = $detail->currency;
+                                    $ReceivingMaterial->vendor = $input->vendor;
+                                    $ReceivingMaterial->ppn = $detail->ppn;
+                                    $ReceivingMaterial->del_note = null;
+                                    $ReceivingMaterial->del_date = $delivery_date;
+                                    $ReceivingMaterial->del_qty = $qty;
+                                    $ReceivingMaterial->prod_date = $create_date;
+                                    $ReceivingMaterial->prod_lot = null;
+                                    $ReceivingMaterial->material = null;
+                                    $ReceivingMaterial->o_name = null;
+                                    $ReceivingMaterial->o_code = null;
+            
+                                    $ReceivingMaterial->created_by = 'SAP';
+                                    $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                    $ReceivingMaterial->updated_by = 'SAP';
+                                    $ReceivingMaterial->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                    $ReceivingMaterial->save();
+                                    
+                                } else {
+                                    array_push($material_nf, $material_id);
+                                }
+    
                             }
-
+    
                         }
 
+                    } else {
+                        array_push($vendor_nf, $result->Vendor);
                     }
 
                 }
 
             }
 
-            return response()->json([
-    
-                "result" => true,
-                "msg_type" => 'Success',
-                "msg" => 'Data stored successfully!',
-    
-            ], 200);
+            if (count($vendor_nf) > 0){
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "msg" => 'Data stored successfully!',
+                    "Not Found Vendor" => array_unique($vendor_nf),
+        
+                ], 200);
+
+            } elseif (count($material_nf) > 0){
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "msg" => 'Data stored successfully!',
+                    "Not Found Material" => array_unique($material_nf),
+        
+                ], 200);
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "msg" => 'Data stored successfully!',
+        
+                ], 200);
+
+            }
 
         } catch (\Exception $e) {
 
