@@ -82,4 +82,13 @@ class Vendor extends Model
         return $data;
     }
 
+    public function checkVendor($code)
+    {
+        $query = Vendor::query();
+
+        $query = $query->where('code', $code)->get();
+
+        return $query;
+    }
+
 }
