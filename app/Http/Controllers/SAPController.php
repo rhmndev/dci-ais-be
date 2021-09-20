@@ -274,9 +274,9 @@ class SAPController extends Controller
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
-                    $data_tmp_d['qty'] = number_format($PODetail->qty);
+                    $data_tmp_d['qty'] = $PODetail->qty;
                     $data_tmp_d['unit'] = $PODetail->unit;
-                    $data_tmp_d['price'] = number_format($PODetail->price);
+                    $data_tmp_d['price'] = $PODetail->price;
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
                     $data_tmp_d['QRCode'] = $result->_id.';'.$PODetail->_id;
@@ -290,11 +290,11 @@ class SAPController extends Controller
                     };
 
                     $total = $PODetail->qty * $PODetail->price;
-                    $data_tmp_d['sub_total'] = number_format($total);
+                    $data_tmp_d['sub_total'] = $total;
 
                     $total = ((str_replace("%", "", $data_tmp_d['ppn']) / 100) * $total) + $total;
 
-                    $data_tmp_d['total'] = number_format($total);
+                    $data_tmp_d['total'] = $total;
 
     
                     $total_po = $total_po + $total;
@@ -302,7 +302,7 @@ class SAPController extends Controller
                     array_push($data_tmp['data'], $data_tmp_d);
 
                 }
-                $data_tmp['total'] = number_format($total_po);
+                $data_tmp['total'] = $total_po;
     
                 array_push($data, $data_tmp);
             }
