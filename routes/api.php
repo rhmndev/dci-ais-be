@@ -49,6 +49,14 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/materialimport', 'MaterialController@import');
         #endregion
 
+        #region Master News
+        Route::get('/news', 'NewsController@index');
+        Route::get('/news/{id}', 'NewsController@show');
+        Route::post('/news', 'NewsController@store');
+        Route::post('/news/{id}', 'NewsController@store');
+        Route::delete('/news/{id}', 'NewsController@destroy');
+        #endregion
+
         #region Transaction Receive
         Route::get('/receive', 'ReceivingController@index');
         Route::get('/receivesync', 'ReceivingController@SyncSAP');

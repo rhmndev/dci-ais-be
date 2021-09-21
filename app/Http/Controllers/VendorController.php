@@ -96,34 +96,19 @@ class VendorController extends Controller
 
     public function store(Request $request)
     {
-        if ($request->id == null){
         
-            $request->validate([
-                'code' => 'required|string|unique:vendors,code',
-                'name' => 'required|string',
-                'address' => 'required|string',
-                'phone' => 'required|string',
-                'email' => 'required|email',
-                'contact' => 'required|string',
-            ]);
-
-            $Vendor = new Vendor;
-
-        } else {
-        
-            $request->validate([
-                'code' => 'required|string|unique:vendors,code,'.$request->id.',_id',
-                'name' => 'required|string',
-                'address' => 'required|string',
-                'phone' => 'required|string',
-                'email' => 'required|email',
-                'contact' => 'required|string',
-            ]);
-
-            $Vendor = Vendor::findOrFail($request->id);
-        }
+        $request->validate([
+            'code' => 'required|string',
+            'name' => 'required|string',
+            'address' => 'required|string',
+            'phone' => 'required|string',
+            'email' => 'required|email',
+            'contact' => 'required|string',
+        ]);
 
         try {
+
+            $Vendor = Vendor::firstOrNew(['code' => $request->code]);
         
             $Vendor->code = $this->stringtoupper($request->code);
             $Vendor->name = $this->stringtoupper($request->name);

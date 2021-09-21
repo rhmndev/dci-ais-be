@@ -66,9 +66,9 @@ class ReceivingController extends Controller
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
-                    $data_tmp_d['qty'] = number_format($PODetail->qty);
+                    $data_tmp_d['qty'] = $PODetail->qty;
                     $data_tmp_d['unit'] = $PODetail->unit;
-                    $data_tmp_d['price'] = number_format($PODetail->price);
+                    $data_tmp_d['price'] = $PODetail->price;
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
                     $data_tmp_d['QRCode'] = $result->_id.';'.$PODetail->_id;
@@ -83,7 +83,7 @@ class ReceivingController extends Controller
 
                     $data_tmp_d['del_note'] = $PODetail->del_note;
                     $data_tmp_d['del_date'] = $PODetail->del_date;
-                    $data_tmp_d['del_qty'] = number_format($PODetail->qty);
+                    $data_tmp_d['del_qty'] = $PODetail->qty;
                     $data_tmp_d['prod_date'] = $PODetail->prod_date;
                     $data_tmp_d['prod_lot'] = $PODetail->prod_lot;
                     $data_tmp_d['material'] = $PODetail->material;
@@ -91,11 +91,11 @@ class ReceivingController extends Controller
                     $data_tmp_d['o_code'] = $PODetail->o_code;
 
                     $total = $PODetail->qty * $PODetail->price;
-                    $data_tmp_d['sub_total'] = number_format($total);
+                    $data_tmp_d['sub_total'] = $total;
 
                     $total = ((str_replace("%", "", $data_tmp_d['ppn']) / 100) * $total) + $total;
 
-                    $data_tmp_d['total'] = number_format($total);
+                    $data_tmp_d['total'] = $total;
 
     
                     $total_po = $total_po + $total;
@@ -103,7 +103,7 @@ class ReceivingController extends Controller
                     array_push($data_tmp['data'], $data_tmp_d);
 
                 }
-                $data_tmp['total'] = number_format($total_po);
+                $data_tmp['total'] = $total_po;
     
                 array_push($data, $data_tmp);
             }

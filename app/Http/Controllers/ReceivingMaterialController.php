@@ -49,9 +49,9 @@ class ReceivingMaterialController extends Controller
                 $data_tmp['material_id'] = $result->material_id;
                 $data_tmp['material_name'] = $result->material_name;
                 $data_tmp['item_po'] = $result->item_po;
-                $data_tmp['qty'] = number_format($result->qty);
+                $data_tmp['qty'] = $result->qty;
                 $data_tmp['unit'] = $result->unit;
-                $data_tmp['price'] = number_format($result->price);
+                $data_tmp['price'] = $result->price;
                 $data_tmp['currency'] = $result->currency;
                 $data_tmp['vendor'] = $result->vendor;
                 $data_tmp['ppn'] = $result->ppn;
@@ -64,7 +64,7 @@ class ReceivingMaterialController extends Controller
                 };
                 $data_tmp['del_note'] = $result->del_note;
                 $data_tmp['del_date'] = $result->del_date;
-                $data_tmp['del_qty'] = number_format($result->qty);
+                $data_tmp['del_qty'] = $result->qty;
                 $data_tmp['prod_date'] = $result->prod_date;
                 $data_tmp['prod_lot'] = $result->prod_lot;
                 $data_tmp['material'] = $result->material;
@@ -99,8 +99,17 @@ class ReceivingMaterialController extends Controller
 
         $Vendor = new Vendor;
 
-        $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor)[0];
-        $ReceivingMaterial->vendor_name = $vendor_data->name;
+        $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor);
+        if (count($vendor_data) > 0){
+
+            $vendor_data = $vendor_data[0];
+            $ReceivingMaterial->vendor_name = $vendor_data->name;
+
+        } else {
+
+            $ReceivingMaterial->vendor_name = '';
+
+        }
 
         $Settings = new Settings;
         $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');

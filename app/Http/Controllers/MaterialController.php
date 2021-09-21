@@ -68,33 +68,18 @@ class MaterialController extends Controller
 
     public function store(Request $request)
     {
-
-        if ($request->id == null){
         
-            $request->validate([
-                'code' => 'required|string|unique:materials,code',
-                'description' => 'required|string',
-                'type' => 'required|string',
-                'unit' => 'required|string',
-                'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
-            ]);
-
-            $Material = new Material;
-
-        } else {
-        
-            $request->validate([
-                'code' => 'required|string|unique:materials,code,'.$request->id.',_id',
-                'description' => 'required|string',
-                'type' => 'required|string',
-                'unit' => 'required|string',
-                'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
-            ]);
-
-            $Material = Material::findOrFail($request->id);
-        }
+        $request->validate([
+            'code' => 'required|string',
+            'description' => 'required|string',
+            'type' => 'required|string',
+            'unit' => 'required|string',
+            'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
+        ]);
 
         try {
+
+            $Material = Material::firstOrNew(['code' => $request->code]);
         
             $Material->code = $this->stringtoupper($request->code);
             $Material->description = $this->stringtoupper($request->description);
@@ -121,10 +106,6 @@ class MaterialController extends Controller
 
                 $Material->photo = $fileName;
                 
-            } else {
-                
-                $Material->photo = null;
-
             }
 
             $Material->created_by = auth()->user()->username;

@@ -72,40 +72,22 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-
-        if ($request->id == null){
         
-            $request->validate([
-                'username' => 'required|string|unique:users,username',
-                'full_name' => 'required|string',
-                'department' => 'required|string',
-                'phone_number' => 'required|string',
-                'npk' => 'required|numeric',
-                'email' => 'required|email',
-                'type' => 'required|numeric',
-                'password' => 'required|confirmed',
-                'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
-            ]);
-
-            $User = new User;
-
-        } else {
-        
-            $request->validate([
-                'username' => 'required|string|unique:users,username,'.$request->id.',_id',
-                'full_name' => 'required|string',
-                'department' => 'required|string',
-                'phone_number' => 'required|string',
-                'npk' => 'required|numeric',
-                'email' => 'required|email',
-                'type' => 'required|numeric',
-                'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
-            ]);
-
-            $User = User::findOrFail($request->id);
-        }
+        $request->validate([
+            'username' => 'required|string',
+            'full_name' => 'required|string',
+            'department' => 'required|string',
+            'phone_number' => 'required|string',
+            'npk' => 'required|numeric',
+            'email' => 'required|email',
+            'type' => 'required|numeric',
+            'password' => 'nullable|confirmed',
+            'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
+        ]);
 
         try {
+
+            $User = User::firstOrNew(['username' => $request->username]);
         
             $User->username = $request->username;
             $User->full_name = $request->full_name;
