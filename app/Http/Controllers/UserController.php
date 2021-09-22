@@ -184,7 +184,11 @@ class UserController extends Controller
                         if ($Excel['type'] == 1){
                             $vendor_code = $Excel['vendor_code'];
                             $Vendor = Vendor::where('code', $vendor_code)->first();
-                            $vendor_name = $Vendor->name;
+                            if ($Vendor){
+                                $vendor_name = $Vendor->name;
+                            } else {
+                                $vendor_name = null;
+                            }
                         } else {
                             $vendor_code = null;
                             $vendor_name = null;
