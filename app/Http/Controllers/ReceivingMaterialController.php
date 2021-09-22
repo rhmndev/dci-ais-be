@@ -64,7 +64,7 @@ class ReceivingMaterialController extends Controller
                 };
                 $data_tmp['del_note'] = $result->del_note;
                 $data_tmp['del_date'] = $result->del_date;
-                $data_tmp['del_qty'] = $result->qty;
+                $data_tmp['del_qty'] = $result->del_qty;
                 $data_tmp['prod_date'] = $result->prod_date;
                 $data_tmp['prod_lot'] = $result->prod_lot;
                 $data_tmp['material'] = $result->material;
