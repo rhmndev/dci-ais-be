@@ -130,7 +130,7 @@ class UserController extends Controller
 
             }
             
-            $User->vendor_id = $request->type === 0 ? null : $request->vendor_id;
+            $User->vendor_code = $request->type === 0 ? null : $request->vendor_id;
             $User->vendor_name = $request->type === 0 ? null : $request->vendor_name;
 
             $User->role_id = $request->role_id;
