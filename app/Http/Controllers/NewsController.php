@@ -91,7 +91,7 @@ class NewsController extends Controller
                 $fileName   = rand().'.' . $image->getClientOriginalExtension();
     
                 $img = Image::make($image->getRealPath());
-                $img->resize(250, 250, function ($constraint) {
+                $img->resize(400, 320, function ($constraint) {
                     $constraint->aspectRatio();                 
                 });
     
