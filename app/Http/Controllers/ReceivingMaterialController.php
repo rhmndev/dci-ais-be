@@ -24,6 +24,7 @@ class ReceivingMaterialController extends Controller
 
         $search = ($request->search != null) ? $request->search : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
+        $vendor = auth()->user()->vendor_code;
 
         try {
     
@@ -35,9 +36,9 @@ class ReceivingMaterialController extends Controller
 
             $perpage = $request->perpage != null ? $request->perpage : $Material_Perpage[0];
 
-            $resultAlls = $ReceivingMaterial->getAllData($request->PO_Number, $search, $request->columns, $request->sort, $order);
+            $resultAlls = $ReceivingMaterial->getAllData($request->PO_Number, $search, $request->columns, $request->sort, $order, $vendor);
 
-            $results = $ReceivingMaterial->getData($request->PO_Number, $search, $request->columns, $perpage, $request->page, $request->sort, $order);
+            $results = $ReceivingMaterial->getData($request->PO_Number, $search, $request->columns, $perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -95,36 +96,52 @@ class ReceivingMaterialController extends Controller
 
     public function show(Request $request, $id)
     {
-        $ReceivingMaterial = ReceivingMaterial::findOrFail($id);
+        $vendor = auth()->user()->vendor_code;
 
-        $Vendor = new Vendor;
+        $ReceivingMaterial = ReceivingMaterial::where('_id', $id)->where('vendor', $vendor)->first();
 
-        $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor);
-        if (count($vendor_data) > 0){
+        if ($ReceivingMaterial){
 
-            $vendor_data = $vendor_data[0];
-            $ReceivingMaterial->vendor_name = $vendor_data->name;
+            $Vendor = new Vendor;
+    
+            $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor);
+            if (count($vendor_data) > 0){
+    
+                $vendor_data = $vendor_data[0];
+                $ReceivingMaterial->vendor_name = $vendor_data->name;
+    
+            } else {
+    
+                $ReceivingMaterial->vendor_name = '';
+    
+            }
+    
+            $Settings = new Settings;
+            $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
+            
+            foreach ($SettingPPNs as $SettingPPN) {
+                $ppn = explode(';', $SettingPPN['name']);
+                if ($ppn[0] === $ReceivingMaterial->ppn){
+                    $ReceivingMaterial->ppn_p = $ppn[1];
+                }
+            };
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $ReceivingMaterial,
+            ], 200);
 
         } else {
-
-            $ReceivingMaterial->vendor_name = '';
+    
+            return response()->json([
+    
+                'type' => 'failed',
+                'message' => 'data not found.',
+                'data' => NULL,
+    
+            ], 400);
 
         }
-
-        $Settings = new Settings;
-        $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
-        
-        foreach ($SettingPPNs as $SettingPPN) {
-            $ppn = explode(';', $SettingPPN['name']);
-            if ($ppn[0] === $ReceivingMaterial->ppn){
-                $ReceivingMaterial->ppn_p = $ppn[1];
-            }
-        };
-
-        return response()->json([
-            'type' => 'success',
-            'data' =>  $ReceivingMaterial
-        ]);
     }
 
     public function update(Request $request)
