@@ -126,4 +126,58 @@ class ReceivingMaterialController extends Controller
             'data' =>  $ReceivingMaterial
         ]);
     }
+
+    public function update(Request $request)
+    {
+
+        $json = $request->getContent();
+
+        try {
+
+            $inputs = json_decode($json);
+
+            if (count($inputs) > 0){
+
+                foreach ($inputs as $input) {
+            
+                    $ReceivingMaterial = ReceivingMaterial::where('_id', $input->_id)->first();
+
+                    $ReceivingMaterial->del_note = $input->del_note;
+                    $ReceivingMaterial->del_date = $input->del_date;
+                    $ReceivingMaterial->del_qty = $input->del_qty;
+                    $ReceivingMaterial->prod_date = $input->prod_date;
+                    $ReceivingMaterial->prod_lot = $input->prod_lot;
+                    $ReceivingMaterial->material = $input->material;
+                    $ReceivingMaterial->o_name = $input->o_name;
+                    $ReceivingMaterial->o_code = $input->o_code;
+
+                    $ReceivingMaterial->updated_by = auth()->user()->username;
+                    $ReceivingMaterial->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+
+                    $ReceivingMaterial->save();
+
+                }
+
+            }
+
+            return response()->json([
+    
+                "result" => true,
+                "msg_type" => 'Success',
+                "msg" => 'Data stored successfully!',
+    
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "msg" => 'err: '.$e,
+    
+            ], 400);
+
+        }
+    }
 }
