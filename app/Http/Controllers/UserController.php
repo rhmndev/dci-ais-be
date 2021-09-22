@@ -184,7 +184,11 @@ class UserController extends Controller
                         if ($Excel['type'] == 1){
                             $vendor_code = $Excel['vendor_code'];
                             $Vendor = Vendor::where('code', $vendor_code)->first();
-                            $vendor_name = $Vendor->name;
+                            if ($Vendor){
+                                $vendor_name = $Vendor->name;
+                            } else {
+                                $vendor_name = null;
+                            }
                         } else {
                             $vendor_code = null;
                             $vendor_name = null;
@@ -198,7 +202,7 @@ class UserController extends Controller
                         $User->phone_number = $Excel['phone_number'];
                         $User->npk = $Excel['npk'];
                         $User->email = $Excel['email'];
-                        $User->password = Hash::make($Excel['password']);
+                        $User->password = Hash::make('dci12345');
                         $User->type = $Excel['type'];
                         $User->vendor_code = $vendor_code;
                         $User->vendor_name = $vendor_name;

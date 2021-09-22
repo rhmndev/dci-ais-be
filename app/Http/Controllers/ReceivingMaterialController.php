@@ -98,7 +98,11 @@ class ReceivingMaterialController extends Controller
     {
         $vendor = auth()->user()->vendor_code;
 
-        $ReceivingMaterial = ReceivingMaterial::where('_id', $id)->where('vendor', $vendor)->first();
+        $ReceivingMaterial = ReceivingMaterial::where('_id', $id);
+        if ($vendor != ''){
+            $ReceivingMaterial = $ReceivingMaterial->where('vendor', $vendor);
+        }
+        $ReceivingMaterial = $ReceivingMaterial->first();
 
         if ($ReceivingMaterial){
 

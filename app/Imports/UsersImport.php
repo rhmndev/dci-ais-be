@@ -35,6 +35,6 @@ class UsersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas, Wi
 
     public function endColumn(): string
     {
-        return 'I';
+        return 'H';
     }
 }
