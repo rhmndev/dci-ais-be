@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\News;
 use App\User;
 use App\Vendor;
 use App\Material;
@@ -13,6 +14,12 @@ class DashboardController extends Controller
     //
     public function index()
     {
+        #region News
+        $resNews = News::orderBy('updated_at', 'desc')->get();
+
+        $data['total_ann'] = count($resNews);
+        $data['dataAnn'] = $resNews;
+        #endregion
         
         #region Users
         $resUser = User::orderBy('updated_at', 'desc')->get();
