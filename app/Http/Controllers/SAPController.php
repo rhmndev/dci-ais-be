@@ -336,8 +336,6 @@ class SAPController extends Controller
             
         try {
 
-            $Material = new Material();
-
             $inputs = json_decode($json);
 
             if (count($inputs) > 0){
