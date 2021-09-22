@@ -12,7 +12,7 @@ class ReceivingMaterial extends Model
         'material_id'
     ];
 
-    public function getAllData($PONumber, $search, $columns, $sort, $order)
+    public function getAllData($PONumber, $search, $columns, $sort, $order, $vendor)
     {
 
         $query = ReceivingMaterial::query();
@@ -34,6 +34,10 @@ class ReceivingMaterial extends Model
             }
         }
 
+        if ($vendor != '') {
+            $query = $query->where('vendor', $vendor);
+        }
+
         $query = $query->where('PO_Number', $PONumber);
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
@@ -43,7 +47,7 @@ class ReceivingMaterial extends Model
         return $data;
     }
 
-    public function getData($PONumber, $search, $columns, $perpage, $page, $sort, $order)
+    public function getData($PONumber, $search, $columns, $perpage, $page, $sort, $order, $vendor)
     {
 
         $query = ReceivingMaterial::query();
@@ -64,6 +68,10 @@ class ReceivingMaterial extends Model
                 }
 
             }
+        }
+
+        if ($vendor != '') {
+            $query = $query->where('vendor', $vendor);
         }
 
         $query = $query->where('PO_Number', $PONumber);
