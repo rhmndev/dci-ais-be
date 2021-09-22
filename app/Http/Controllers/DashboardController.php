@@ -106,4 +106,34 @@ class DashboardController extends Controller
             'data' =>  $data
         ]);
     }
+    
+    public function indexV()
+    {
+        $vendor = auth()->user()->vendor_code;
+
+        #region Receivings
+        $resReceiving = Receiving::where('vendor', $vendor)->orderBy('updated_at', 'desc')->get();
+
+        $data['total_receiving'] = count($resReceiving);
+        $data['last_update_name_receiving'] = '-';
+        $data['last_update_photo_receiving'] = '';
+        $data['last_update_date_receiving'] = '-';
+        if (count($resReceiving) > 0){
+            $filterReceiving = User::where('username', $resReceiving[0]->updated_by)->first();
+
+            if ($filterReceiving){
+                $data['last_update_name_receiving'] = $filterReceiving->full_name;
+                $data['last_update_photo_receiving'] = $filterReceiving->photo != null ? $filterReceiving->photo : '';
+            } else {
+                $data['last_update_name_receiving'] = 'System';
+            }
+            $data['last_update_date_receiving'] = $resReceiving[0]->updated_at;
+        }
+        #endregion
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $data
+        ]);
+    }
 }

@@ -17,6 +17,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         #region Dashboard
         Route::get('/dashboard', 'DashboardController@index');
+        Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
 
         #region Master User
