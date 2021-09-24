@@ -84,6 +84,23 @@ class ReceivingMaterial extends Model
 
     }
 
+    public function scanData($PONumber, $materialId, $itemNo, $vendor)
+    {
+        $query = ReceivingMaterial::query();
+
+        if ($vendor != '') {
+            $query = $query->where('vendor', $vendor);
+        }
+
+        $query = $query->where('PO_Number', $PONumber);
+        $query = $query->where('material_id', $materialId);
+        $query = $query->where('item_po', $itemNo);
+        $data = $query->first();
+
+        return $data; 
+
+    }
+
     public function getPODetails($PONumber, $perpage, $vendor)
     {
 

@@ -148,6 +148,79 @@ class ReceivingMaterialController extends Controller
         }
     }
 
+    public function scanData(Request $request)
+    {
+        $request->validate([
+            'PO_Number' => 'required|string',
+            'material_id' => 'required|string',
+            'item_no' => 'required|string',
+        ]);
+
+        $vendor = auth()->user()->vendor_code;
+
+        try {
+
+            $ReceivingMaterial = new ReceivingMaterial;
+
+            $data = $ReceivingMaterial->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
+
+            if ($data){
+
+                $Vendor = new Vendor;
+        
+                $vendor_data = $Vendor->checkVendor($data->vendor);
+                if (count($vendor_data) > 0){
+        
+                    $vendor_data = $vendor_data[0];
+                    $data->vendor_name = $vendor_data->name;
+        
+                } else {
+        
+                    $data->vendor_name = '';
+        
+                }
+        
+                $Settings = new Settings;
+                $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
+                
+                foreach ($SettingPPNs as $SettingPPN) {
+                    $ppn = explode(';', $SettingPPN['name']);
+                    if ($ppn[0] === $data->ppn){
+                        $data->ppn_p = $ppn[1];
+                    }
+                };
+
+                return response()->json([
+                    'type' => 'success',
+                    'message' => NULL,
+                    'data' => $data,
+                ], 200);
+
+            } else {
+    
+                return response()->json([
+        
+                    'type' => 'failed',
+                    'message' => 'Data not found.',
+                    'data' => NULL,
+        
+                ], 400);
+
+            }
+
+        } catch (\Exception $e) {
+    
+            return response()->json([
+    
+                'type' => 'failed',
+                'message' => 'Err: '.$e.'.',
+                'data' => NULL,
+    
+            ], 400);
+
+        }
+    }
+
     public function update(Request $request)
     {
 
