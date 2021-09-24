@@ -78,7 +78,6 @@ class UserController extends Controller
             'full_name' => 'required|string',
             'department' => 'required|string',
             'phone_number' => 'required|string',
-            'npk' => 'required|numeric',
             'email' => 'required|email',
             'type' => 'required|numeric',
             'password' => 'nullable|confirmed',
