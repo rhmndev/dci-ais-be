@@ -22,9 +22,8 @@ class UsersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas, Wi
             'phone_number' => $row[3],
             'npk' => $row[4],
             'email' => $row[5],
-            'password' => $row[6],
-            'type' => $row[7],
-            'vendor_code' => $row[8],
+            'type' => $row[6],
+            'vendor_code' => $row[7],
         ]);
     }
     
