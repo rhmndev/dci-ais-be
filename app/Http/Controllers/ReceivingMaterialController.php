@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\ReceivingMaterial;
 use App\Vendor;
 use App\Settings;
+use App\Scale;
 use Carbon\Carbon;
 
 class ReceivingMaterialController extends Controller
@@ -189,6 +190,12 @@ class ReceivingMaterialController extends Controller
                         $data->ppn_p = $ppn[1];
                     }
                 };
+
+                $Scale = new Scale;
+                $ScaleData = $Scale->getData(1);
+                $data->scale_qty = $ScaleData->qty;
+
+                $data->receive_qty = $data->del_qty;
 
                 return response()->json([
                     'type' => 'success',

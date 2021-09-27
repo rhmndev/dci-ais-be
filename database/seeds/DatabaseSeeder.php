@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call(VendorSeeder::class);
         $this->call(UserSeeder::class);
         $this->call(MaterialSeeder::class);
+        $this->call(ScaleSeeder::class);
         $this->call(SettingSeeder::class);
         
     }
