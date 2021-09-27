@@ -92,7 +92,13 @@ class UserController extends Controller
             $User->full_name = $request->full_name;
             $User->department = $request->department;
             $User->phone_number = $request->phone_number;
-            $User->npk = $request->npk;
+            
+            if ( $request->npk ){
+
+                $User->npk = $request->npk;
+
+            }
+            
             $User->email = $request->email;
             $User->type = intval($request->type);
     
@@ -123,14 +129,14 @@ class UserController extends Controller
 
                 $User->photo = $fileName;
 
-            } else {
-
-                $User->photo = null;
-
             }
             
-            $User->vendor_code = $request->type === 0 ? null : $request->vendor_id;
-            $User->vendor_name = $request->type === 0 ? null : $request->vendor_name;
+            if ( $request->type == 1 ){
+
+                $User->vendor_code = $request->vendor_id;
+                $User->vendor_name = $request->vendor_name;
+
+            }
 
             $User->role_id = $request->role_id;
             $User->role_name = $request->role_name;
@@ -180,17 +186,20 @@ class UserController extends Controller
 
                     if ($Excel['username'] != null){
 
+                        $vendor_code = null;
+                        $vendor_name = null;
+
                         if ($Excel['type'] == 1){
+                            
                             $vendor_code = $Excel['vendor_code'];
                             $Vendor = Vendor::where('code', $vendor_code)->first();
+
                             if ($Vendor){
+
                                 $vendor_name = $Vendor->name;
-                            } else {
-                                $vendor_name = null;
+                                
                             }
-                        } else {
-                            $vendor_code = null;
-                            $vendor_name = null;
+                            
                         }
         
                         //store your file into database
@@ -199,10 +208,17 @@ class UserController extends Controller
                         $User->full_name = $Excel['full_name'];
                         $User->department = $Excel['department'];
                         $User->phone_number = $Excel['phone_number'];
-                        $User->npk = $Excel['npk'];
+            
+                        if ( $Excel['npk'] ){
+            
+                            $User->npk = $Excel['npk'];
+            
+                        }
+
                         $User->email = $Excel['email'];
                         $User->password = Hash::make('dci12345');
                         $User->type = $Excel['type'];
+
                         $User->vendor_code = $vendor_code;
                         $User->vendor_name = $vendor_name;
     
