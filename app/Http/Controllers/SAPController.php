@@ -429,7 +429,7 @@ class SAPController extends Controller
                         }
 
                     } else {
-                        array_push($vendor_nf, $result->Vendor);
+                        array_push($vendor_nf, $input->vendor);
                     }
 
                 }
