@@ -190,6 +190,8 @@ class ReceivingMaterialController extends Controller
                     }
                 };
 
+                $data->receive_qty = $data->del_qty;
+
                 return response()->json([
                     'type' => 'success',
                     'message' => NULL,
