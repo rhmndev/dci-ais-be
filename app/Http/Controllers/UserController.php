@@ -93,10 +93,12 @@ class UserController extends Controller
             $User->department = $request->department;
             $User->phone_number = $request->phone_number;
             
-            if ( $request->npk ){
+            if ( $request->npk != '' ){
 
                 $User->npk = $request->npk;
 
+            } else {
+                $User->npk = '';
             }
             
             $User->email = $request->email;
@@ -135,6 +137,11 @@ class UserController extends Controller
 
                 $User->vendor_code = $request->vendor_id;
                 $User->vendor_name = $request->vendor_name;
+
+            } else {
+
+                $User->vendor_code = null;
+                $User->vendor_name = null;
 
             }
 
@@ -209,18 +216,31 @@ class UserController extends Controller
                         $User->department = $Excel['department'];
                         $User->phone_number = $Excel['phone_number'];
             
-                        if ( $Excel['npk'] ){
+                        if ( $Excel['npk'] != '' ){
             
                             $User->npk = $Excel['npk'];
             
+                        } else {
+
+                            $User->npk = '';
+
                         }
 
                         $User->email = $Excel['email'];
                         $User->password = Hash::make('dci12345');
                         $User->type = $Excel['type'];
+            
+                        if ( $Excel['type'] == 1 ){
 
-                        $User->vendor_code = $vendor_code;
-                        $User->vendor_name = $vendor_name;
+                            $User->vendor_code = $vendor_code;
+                            $User->vendor_name = $vendor_name;
+
+                        } else {
+
+                            $User->vendor_code = null;
+                            $User->vendor_name = null;
+
+                        }
     
                         $User->created_by = auth()->user()->username;
                         $User->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
