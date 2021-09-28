@@ -452,8 +452,8 @@ class SAPController extends Controller
                 return response()->json([
         
                     "result" => true,
-                    "msg_type" => 'Success with skiped material',
-                    "msg" => 'Data stored successfully!',
+                    "msg_type" => 'Success',
+                    "msg" => 'Data stored successfully with skiped material!',
                     "Not Found Material" => array_unique($material_nf),
         
                 ], 200);
