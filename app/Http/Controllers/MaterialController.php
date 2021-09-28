@@ -182,7 +182,7 @@ class MaterialController extends Controller
         
                     "result" => true,
                     "msg_type" => 'success',
-                    "msg" => 'Sync SAP Success. '.count($results).' data synced',
+                    "message" => 'Sync SAP Success. '.count($results).' data synced',
         
                 ], 200);
 
@@ -192,7 +192,7 @@ class MaterialController extends Controller
         
                     "result" => false,
                     "msg_type" => 'failed',
-                    "msg" => 'Data not found',
+                    "message" => 'Data not found',
         
                 ], 400);
 
@@ -205,7 +205,7 @@ class MaterialController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 
@@ -270,8 +270,8 @@ class MaterialController extends Controller
             
                         "result" => true,
                         "msg_type" => 'Success',
-                        "msg" => 'Data stored successfully!',
-                        // "msg" => $data,
+                        "message" => 'Data stored successfully!',
+                        // "message" => $data,
             
                     ], 200);
 
@@ -281,7 +281,7 @@ class MaterialController extends Controller
             
                         "result" => false,
                         "msg_type" => 'error',
-                        "msg" => 'Data already uploaded',
+                        "message" => 'Data already uploaded',
             
                     ], 200);
 
@@ -294,7 +294,7 @@ class MaterialController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 

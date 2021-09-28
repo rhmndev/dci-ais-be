@@ -265,7 +265,7 @@ class ReceivingMaterialController extends Controller
     
                 "result" => true,
                 "msg_type" => 'Success',
-                "msg" => 'Data stored successfully!',
+                "message" => 'Data stored successfully!',
     
             ], 200);
 
@@ -275,7 +275,7 @@ class ReceivingMaterialController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 

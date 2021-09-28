@@ -101,7 +101,7 @@ class SAPController extends Controller
     
                 "result" => true,
                 "msg_type" => 'Success',
-                "msg" => 'Data stored successfully!',
+                "message" => 'Data stored successfully!',
     
             ], 200);
 
@@ -111,7 +111,7 @@ class SAPController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 
@@ -204,7 +204,7 @@ class SAPController extends Controller
     
                 "result" => true,
                 "msg_type" => 'Success',
-                "msg" => 'Data stored successfully!',
+                "message" => 'Data stored successfully!',
     
             ], 200);
 
@@ -214,7 +214,7 @@ class SAPController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 
@@ -442,7 +442,7 @@ class SAPController extends Controller
         
                     "result" => true,
                     "msg_type" => 'failed',
-                    "msg" => 'Data stored unsuccessfully!',
+                    "message" => 'Data stored unsuccessfully!',
                     "Not Found Vendor" => array_unique($vendor_nf),
         
                 ], 400);
@@ -453,7 +453,7 @@ class SAPController extends Controller
         
                     "result" => true,
                     "msg_type" => 'Success',
-                    "msg" => 'Data stored successfully with skiped material!',
+                    "message" => 'Data stored successfully with skiped material!',
                     "Not Found Material" => array_unique($material_nf),
         
                 ], 200);
@@ -464,7 +464,7 @@ class SAPController extends Controller
         
                     "result" => true,
                     "msg_type" => 'Success',
-                    "msg" => 'Data stored successfully!',
+                    "message" => 'Data stored successfully!',
         
                 ], 200);
 
@@ -476,7 +476,7 @@ class SAPController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 

@@ -280,7 +280,7 @@ class ReceivingController extends Controller
             
                         "result" => true,
                         "msg_type" => 'success',
-                        "msg" => 'Sync SAP Success',
+                        "message" => 'Sync SAP Success',
             
                     ], 200);
 
@@ -292,7 +292,7 @@ class ReceivingController extends Controller
         
                     "result" => false,
                     "msg_type" => 'failed',
-                    "msg" => 'Data not found',
+                    "message" => 'Data not found',
         
                 ], 400);
 
@@ -305,7 +305,7 @@ class ReceivingController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 
