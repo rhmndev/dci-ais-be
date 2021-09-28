@@ -61,6 +61,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Transaction Receive
         Route::get('/receive', 'ReceivingController@index');
         Route::get('/receivesync', 'ReceivingController@SyncSAP');
+        Route::post('/postGR', 'ReceivingController@postGR');
         #endregion
 
         #region Transaction Receive Details

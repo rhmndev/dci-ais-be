@@ -322,6 +322,51 @@ class ReceivingController extends Controller
 
     }
 
+    public function postGR(Request $request)
+    {
+
+        $json = $request->getContent();
+
+        try {
+
+            $inputs = json_decode($json);
+
+            if (count($inputs) > 0){
+
+                return response()->json([
+            
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data success sended',
+                    "data" => $inputs,
+        
+                ], 200);
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => false,
+                    "msg_type" => 'failed',
+                    "message" => 'Data not found!',
+        
+                ], 400);
+
+            }
+            
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: '.$e,
+    
+            ], 400);
+
+        }
+    }
+
     private function stringtoupper($string)
     {
         $string = strtolower($string);
