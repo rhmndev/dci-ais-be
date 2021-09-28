@@ -202,6 +202,7 @@ class ReceivingController extends Controller
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
                         $Receiving->flag = 0;
+                        $Receiving->reference = '';
     
                         $Receiving->created_by = auth()->user()->username;
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -242,6 +243,12 @@ class ReceivingController extends Controller
                                 $ReceivingMaterial->material = null;
                                 $ReceivingMaterial->o_name = null;
                                 $ReceivingMaterial->o_code = null;
+
+                                $ReceivingMaterial->receive_qty = $result->Quantity;
+                                $ReceivingMaterial->reference = '';
+                                $ReceivingMaterial->gudang_id = '';
+                                $ReceivingMaterial->gudang_nm = '';
+                                $ReceivingMaterial->batch = '';
 
                             }
     

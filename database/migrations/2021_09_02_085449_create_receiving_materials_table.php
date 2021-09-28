@@ -40,6 +40,7 @@ class CreateReceivingMaterialsTable extends Migration
             $table->string('o_code')->nullable();
 
             $table->string('reference')->nullable();
+            $table->string('receive_qty')->nullable();
             $table->string('gudang_id')->nullable();
             $table->string('gudang_nm')->nullable();
             $table->string('batch')->nullable();
