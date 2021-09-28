@@ -44,9 +44,9 @@ class UserSeeder extends Seeder
             ]
         ];
 
-        $role = Role::first();
-
         foreach ($datas as $data) {
+
+            $role = new Role;
 
             $user = User::firstOrNew(['username' => $data['username']]);
             $user->username = $data['username'];
@@ -57,12 +57,22 @@ class UserSeeder extends Seeder
             $user->email = $data['email'];
             $user->password = $data['password'];
             $user->type = $data['type'];
-            $user->role_id = $role->id;
-            $user->role_name = $role->name;
+
             if ($data['type'] == 1){
+
+                $role = $role->getUserRole($data['type']);
+            
+                $user->role_id = $role->id;
+                $user->role_name = $role->name;
                 $user->vendor_code = $data['vendor_code'];
                 $user->vendor_name = $data['vendor_name'];
+
             } else {
+
+                $role = $role->getUserRole($data['type']);
+            
+                $user->role_id = $role->id;
+                $user->role_name = $role->name;
                 $user->vendor_code = null;
                 $user->vendor_name = null;
             }
