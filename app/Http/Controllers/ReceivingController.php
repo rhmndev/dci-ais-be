@@ -66,6 +66,7 @@ class ReceivingController extends Controller
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
+                    $data_tmp_d['index_po'] = $PODetail->index_po;
                     $data_tmp_d['qty'] = $PODetail->qty;
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = $PODetail->price;
@@ -176,9 +177,11 @@ class ReceivingController extends Controller
 
                 $vendor_nf = array();
                 $material_nf = array();
+                $x = 0;
 
                 foreach ($results as $result) {
 
+                    $x++;
                     $checkVendor = $Vendor->checkVendor($result->Vendor);
     
                     if (count($checkVendor) > 0) {
@@ -199,6 +202,7 @@ class ReceivingController extends Controller
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
                         $Receiving->flag = 0;
+                        $Receiving->reference = '';
     
                         $Receiving->created_by = auth()->user()->username;
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -221,20 +225,32 @@ class ReceivingController extends Controller
                             $ReceivingMaterial->material_id = $material_id;
                             $ReceivingMaterial->material_name = $material_name;
                             $ReceivingMaterial->item_po = $result->ItemNo;
+                            $ReceivingMaterial->index_po = $x;
                             $ReceivingMaterial->qty = $result->Quantity;
                             $ReceivingMaterial->unit = $result->Meins;
                             $ReceivingMaterial->price = $result->Price;
                             $ReceivingMaterial->currency = $result->Currency;
                             $ReceivingMaterial->vendor = $result->Vendor;
                             $ReceivingMaterial->ppn = $result->Mwskz;
-                            $ReceivingMaterial->del_note = null;
-                            $ReceivingMaterial->del_date = $delivery_date;
-                            $ReceivingMaterial->del_qty = $result->Quantity;
-                            $ReceivingMaterial->prod_date = $create_date;
-                            $ReceivingMaterial->prod_lot = null;
-                            $ReceivingMaterial->material = null;
-                            $ReceivingMaterial->o_name = null;
-                            $ReceivingMaterial->o_code = null;
+                            
+                            if (!$ReceivingMaterial->exists) {
+
+                                $ReceivingMaterial->del_note = null;
+                                $ReceivingMaterial->del_date = $delivery_date;
+                                $ReceivingMaterial->del_qty = $result->Quantity;
+                                $ReceivingMaterial->prod_date = $create_date;
+                                $ReceivingMaterial->prod_lot = null;
+                                $ReceivingMaterial->material = null;
+                                $ReceivingMaterial->o_name = null;
+                                $ReceivingMaterial->o_code = null;
+
+                                $ReceivingMaterial->receive_qty = $result->Quantity;
+                                $ReceivingMaterial->reference = '';
+                                $ReceivingMaterial->gudang_id = '';
+                                $ReceivingMaterial->gudang_nm = '';
+                                $ReceivingMaterial->batch = '';
+
+                            }
     
                             $ReceivingMaterial->created_by = auth()->user()->username;
                             $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -256,20 +272,20 @@ class ReceivingController extends Controller
 
                     return response()->json([
             
-                        "result" => true,
-                        "msg_type" => 'success',
-                        "msg" => 'Sync SAP Success',
+                        "result" => false,
+                        "msg_type" => 'failed',
+                        "message" => 'Sync SAP unsuccessfully!',
                         "Not Found Vendor" => array_unique($vendor_nf),
             
-                    ], 200);
+                    ], 400);
 
                 } elseif (count($material_nf) > 0){
 
                     return response()->json([
             
                         "result" => true,
-                        "msg_type" => 'success',
-                        "msg" => 'Sync SAP Success',
+                        "msg_type" => 'Success',
+                        "message" => 'Sync SAP successfully with skiped material!',
                         "Not Found Material" => array_unique($material_nf),
             
                     ], 200);
@@ -280,7 +296,7 @@ class ReceivingController extends Controller
             
                         "result" => true,
                         "msg_type" => 'success',
-                        "msg" => 'Sync SAP Success',
+                        "message" => 'Sync SAP Success',
             
                     ], 200);
 
@@ -292,7 +308,7 @@ class ReceivingController extends Controller
         
                     "result" => false,
                     "msg_type" => 'failed',
-                    "msg" => 'Data not found',
+                    "message" => 'Data not found',
         
                 ], 400);
 
@@ -305,12 +321,57 @@ class ReceivingController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 
         }
 
+    }
+
+    public function postGR(Request $request)
+    {
+
+        $json = $request->getContent();
+
+        try {
+
+            $inputs = json_decode($json);
+
+            if (count($inputs) > 0){
+
+                return response()->json([
+            
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data success sended',
+                    "data" => $inputs,
+        
+                ], 200);
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => false,
+                    "msg_type" => 'failed',
+                    "message" => 'Data not found!',
+        
+                ], 400);
+
+            }
+            
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: '.$e,
+    
+            ], 400);
+
+        }
     }
 
     private function stringtoupper($string)

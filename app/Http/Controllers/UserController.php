@@ -255,8 +255,8 @@ class UserController extends Controller
         
                     "result" => true,
                     "msg_type" => 'Success',
-                    "msg" => 'Data stored successfully!',
-                    // "msg" => $Excels,
+                    "message" => 'Data stored successfully!',
+                    // "message" => $Excels,
         
                 ], 200);
             }
@@ -267,7 +267,7 @@ class UserController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 

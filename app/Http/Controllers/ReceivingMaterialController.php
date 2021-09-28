@@ -51,6 +51,7 @@ class ReceivingMaterialController extends Controller
                 $data_tmp['material_id'] = $result->material_id;
                 $data_tmp['material_name'] = $result->material_name;
                 $data_tmp['item_po'] = $result->item_po;
+                $data_tmp['index_po'] = $result->index_po;
                 $data_tmp['qty'] = $result->qty;
                 $data_tmp['unit'] = $result->unit;
                 $data_tmp['price'] = $result->price;
@@ -191,11 +192,28 @@ class ReceivingMaterialController extends Controller
                     }
                 };
 
+                $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
+                $gudangData = array();
+                foreach ($SettingGudangDatas as $SettingGudangData) {
+                    $gd = explode(';', $SettingGudangData['name']);
+                    $temp = array(
+                        'id' => $gd[0],
+                        'name' => $gd[1],
+                    );
+                    array_push($gudangData, $temp);
+                };
+                $data->gudangData = $gudangData;
+
                 $Scale = new Scale;
                 $ScaleData = $Scale->getData(1);
                 $data->scale_qty = $ScaleData->qty;
 
-                $data->receive_qty = $data->del_qty;
+                $data->receive_qty = intval($data->del_qty);
+
+                $data->reference = '';
+                $data->gudang_id = '';
+                $data->gudang_nm = '';
+                $data->batch = '';
 
                 return response()->json([
                     'type' => 'success',
@@ -265,7 +283,7 @@ class ReceivingMaterialController extends Controller
     
                 "result" => true,
                 "msg_type" => 'Success',
-                "msg" => 'Data stored successfully!',
+                "message" => 'Data stored successfully!',
     
             ], 200);
 
@@ -275,7 +293,7 @@ class ReceivingMaterialController extends Controller
     
                 "result" => false,
                 "msg_type" => 'error',
-                "msg" => 'err: '.$e,
+                "message" => 'err: '.$e,
     
             ], 400);
 

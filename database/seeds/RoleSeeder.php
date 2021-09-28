@@ -15,18 +15,47 @@ class RoleSeeder extends Seeder
     {
         Role::truncate();
         $permissions = Permission::get();
+        $datas = [
+            [
+                'name' => 'Admin',
+                'description' => 'Administrator',
+                'permissions' => $permissions->map(function($perm){
+                    return [
+                        'permission_id' => $perm->id,
+                        'allow' => true
+                    ];
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                'name' => 'Vendor',
+                'description' => 'Vendor',
+                'permissions' => $permissions->map(function($perm){
+                    if ( $perm->url == 'dashboard' || $perm->url == 'transaction' || $perm->url == 'receiving-vendor' ){
 
-        $role = new Role;
-        $role->name = 'Admin';
-        $role->description = 'Administrator';
-        $role->permissions = $permissions->map(function($perm){
-            return [
-                'permission_id' => $perm->id,
-                'allow' => true
-            ];
-        })->toArray();
-        $role->created_by = 'seeder';
-        $role->changed_by = 'seeder';
-        $role->save();
+                        return [
+                            'permission_id' => $perm->id,
+                            'allow' => true
+                        ];
+
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ]
+        ];
+
+        foreach ($datas as $data) {
+
+            $role = Role::firstOrNew(['name' => $data['name']]);
+            $role->name = $data['name'];
+            $role->description = $data['description'];
+            $role->permissions = $data['permissions'];
+            $role->created_by = $data['created_by'];
+            $role->updated_by = $data['updated_by'];
+            $role->save();
+
+        }
     }
 }
