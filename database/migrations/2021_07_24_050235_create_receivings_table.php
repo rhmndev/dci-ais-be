@@ -23,6 +23,9 @@ class CreateReceivingsTable extends Migration
             $table->string('vendor');
             $table->string('PO_Status');
             $table->string('flag', 1)->default('0');
+
+            $table->string('reference')->nullable();
+            
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();

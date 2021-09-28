@@ -23,6 +23,7 @@ class CreateReceivingMaterialsTable extends Migration
             $table->string('material_id');
             $table->string('material_name');
             $table->string('item_po');
+            $table->string('index_po');
             $table->string('qty');
             $table->string('unit');
             $table->string('price');
@@ -37,6 +38,12 @@ class CreateReceivingMaterialsTable extends Migration
             $table->string('material')->nullable();
             $table->string('o_name')->nullable();
             $table->string('o_code')->nullable();
+
+            $table->string('reference')->nullable();
+            $table->string('gudang_id')->nullable();
+            $table->string('gudang_nm')->nullable();
+            $table->string('batch')->nullable();
+
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();

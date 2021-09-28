@@ -66,6 +66,7 @@ class ReceivingController extends Controller
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
+                    $data_tmp_d['index_po'] = $PODetail->index_po;
                     $data_tmp_d['qty'] = $PODetail->qty;
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = $PODetail->price;
@@ -176,9 +177,11 @@ class ReceivingController extends Controller
 
                 $vendor_nf = array();
                 $material_nf = array();
+                $x = 0;
 
                 foreach ($results as $result) {
 
+                    $x++;
                     $checkVendor = $Vendor->checkVendor($result->Vendor);
     
                     if (count($checkVendor) > 0) {
@@ -221,20 +224,26 @@ class ReceivingController extends Controller
                             $ReceivingMaterial->material_id = $material_id;
                             $ReceivingMaterial->material_name = $material_name;
                             $ReceivingMaterial->item_po = $result->ItemNo;
+                            $ReceivingMaterial->index_po = $x;
                             $ReceivingMaterial->qty = $result->Quantity;
                             $ReceivingMaterial->unit = $result->Meins;
                             $ReceivingMaterial->price = $result->Price;
                             $ReceivingMaterial->currency = $result->Currency;
                             $ReceivingMaterial->vendor = $result->Vendor;
                             $ReceivingMaterial->ppn = $result->Mwskz;
-                            $ReceivingMaterial->del_note = null;
-                            $ReceivingMaterial->del_date = $delivery_date;
-                            $ReceivingMaterial->del_qty = $result->Quantity;
-                            $ReceivingMaterial->prod_date = $create_date;
-                            $ReceivingMaterial->prod_lot = null;
-                            $ReceivingMaterial->material = null;
-                            $ReceivingMaterial->o_name = null;
-                            $ReceivingMaterial->o_code = null;
+                            
+                            if (!$ReceivingMaterial->exists) {
+
+                                $ReceivingMaterial->del_note = null;
+                                $ReceivingMaterial->del_date = $delivery_date;
+                                $ReceivingMaterial->del_qty = $result->Quantity;
+                                $ReceivingMaterial->prod_date = $create_date;
+                                $ReceivingMaterial->prod_lot = null;
+                                $ReceivingMaterial->material = null;
+                                $ReceivingMaterial->o_name = null;
+                                $ReceivingMaterial->o_code = null;
+
+                            }
     
                             $ReceivingMaterial->created_by = auth()->user()->username;
                             $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());

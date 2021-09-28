@@ -274,6 +274,7 @@ class SAPController extends Controller
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
+                    $data_tmp_d['index_po'] = $PODetail->index_po;
                     $data_tmp_d['qty'] = $PODetail->qty;
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = $PODetail->price;
@@ -345,9 +346,11 @@ class SAPController extends Controller
 
                 $vendor_nf = array();
                 $material_nf = array();
+                $x = 0;
 
                 foreach ($inputs as $input) {
 
+                    $x++;
                     $checkVendor = $Vendor->checkVendor($input->vendor);
     
                     if (count($checkVendor) > 0) {
@@ -399,20 +402,26 @@ class SAPController extends Controller
                                     $ReceivingMaterial->material_id = $material_id;
                                     $ReceivingMaterial->material_name = $material_name;
                                     $ReceivingMaterial->item_po = $detail->item_po;
+                                    $ReceivingMaterial->index_po = $x;
                                     $ReceivingMaterial->qty = $qty;
                                     $ReceivingMaterial->unit = $detail->unit;
                                     $ReceivingMaterial->price = $price;
                                     $ReceivingMaterial->currency = $detail->currency;
                                     $ReceivingMaterial->vendor = $input->vendor;
                                     $ReceivingMaterial->ppn = $detail->ppn;
-                                    $ReceivingMaterial->del_note = null;
-                                    $ReceivingMaterial->del_date = $delivery_date;
-                                    $ReceivingMaterial->del_qty = $qty;
-                                    $ReceivingMaterial->prod_date = $create_date;
-                                    $ReceivingMaterial->prod_lot = null;
-                                    $ReceivingMaterial->material = null;
-                                    $ReceivingMaterial->o_name = null;
-                                    $ReceivingMaterial->o_code = null;
+                            
+                                    if (!$ReceivingMaterial->exists) {
+        
+                                        $ReceivingMaterial->del_note = null;
+                                        $ReceivingMaterial->del_date = $delivery_date;
+                                        $ReceivingMaterial->del_qty = $result->Quantity;
+                                        $ReceivingMaterial->prod_date = $create_date;
+                                        $ReceivingMaterial->prod_lot = null;
+                                        $ReceivingMaterial->material = null;
+                                        $ReceivingMaterial->o_name = null;
+                                        $ReceivingMaterial->o_code = null;
+        
+                                    }
             
                                     $ReceivingMaterial->created_by = 'SAP';
                                     $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
