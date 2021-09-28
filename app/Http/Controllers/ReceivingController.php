@@ -265,20 +265,20 @@ class ReceivingController extends Controller
 
                     return response()->json([
             
-                        "result" => true,
-                        "msg_type" => 'success',
-                        "msg" => 'Sync SAP Success',
+                        "result" => false,
+                        "msg_type" => 'failed',
+                        "message" => 'Sync SAP unsuccessfully!',
                         "Not Found Vendor" => array_unique($vendor_nf),
             
-                    ], 200);
+                    ], 400);
 
                 } elseif (count($material_nf) > 0){
 
                     return response()->json([
             
                         "result" => true,
-                        "msg_type" => 'success',
-                        "msg" => 'Sync SAP Success',
+                        "msg_type" => 'Success',
+                        "message" => 'Sync SAP successfully with skiped material!',
                         "Not Found Material" => array_unique($material_nf),
             
                     ], 200);
