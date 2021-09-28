@@ -441,18 +441,18 @@ class SAPController extends Controller
                 return response()->json([
         
                     "result" => true,
-                    "msg_type" => 'Success',
-                    "msg" => 'Data stored successfully!',
+                    "msg_type" => 'failed',
+                    "msg" => 'Data stored unsuccessfully!',
                     "Not Found Vendor" => array_unique($vendor_nf),
         
-                ], 200);
+                ], 400);
 
             } elseif (count($material_nf) > 0){
 
                 return response()->json([
         
                     "result" => true,
-                    "msg_type" => 'Success',
+                    "msg_type" => 'Success with skiped material',
                     "msg" => 'Data stored successfully!',
                     "Not Found Material" => array_unique($material_nf),
         
