@@ -28,8 +28,8 @@ class SettingSeeder extends Seeder
             [
                 'variable' => 'POStatus',
                 'value' => json_decode('[
-                    {"id":0.39275581724538133,"name":"Complete"},
-                    {"id":0.13603751390670915,"name":"In Progress"}
+                    {"id":0.9795057900769246,"name":"In Progress"},
+                    {"id":0.39275581724538133,"name":"Complete"}
                 ]'),
                 'created_by' => 'seeder',
                 'changed_by' => 'seeder'
