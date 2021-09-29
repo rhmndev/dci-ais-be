@@ -337,9 +337,36 @@ class ReceivingController extends Controller
 
         try {
 
+            $data = array();
             $inputs = json_decode($json);
 
             if (count($inputs) > 0){
+
+                $client = new Client;
+                $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110&\$format=json", [
+                    'auth' => [
+                        'wcs-abap',
+                        'Wilmar12'
+                    ],
+                    'headers' => [
+                        'X-CSRF-TOKEN' => 'fetch'
+                    ]
+                ]);
+                $csrf_token = $json->getHeader('x-csrf-token')[0];
+
+                foreach ($inputs as $input) {
+
+                    $data_tmp = array();
+                    $data_tmp['_id'] = $result->_id;
+                    $data_tmp['PO_Number'] = $result->PO_Number;
+                    $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
+                    $data_tmp['create_date'] = $result->create_date;
+                    $data_tmp['delivery_date'] = $result->delivery_date;
+                    $data_tmp['release_date'] = $result->release_date;
+                    $data_tmp['data'] = array();
+                    $total_po = 0;
+
+                }
 
                 return response()->json([
             
@@ -347,6 +374,7 @@ class ReceivingController extends Controller
                     "msg_type" => 'Success',
                     "message" => 'Data success sended',
                     "data" => $inputs,
+                    "csrf_token" => $csrf_token,
         
                 ], 200);
 
