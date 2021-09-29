@@ -177,11 +177,9 @@ class ReceivingController extends Controller
 
                 $vendor_nf = array();
                 $material_nf = array();
-                $x = 0;
 
                 foreach ($results as $result) {
 
-                    $x++;
                     $checkVendor = $Vendor->checkVendor($result->Vendor);
     
                     if (count($checkVendor) > 0) {
@@ -195,6 +193,7 @@ class ReceivingController extends Controller
                         $release_date = $this->dateMaking($result->Reldate);
     
                         $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+
                         $Receiving->PO_Number = $PO_Number;
                         $Receiving->create_date = $create_date;
                         $Receiving->delivery_date = $delivery_date;
@@ -202,7 +201,8 @@ class ReceivingController extends Controller
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
                         $Receiving->flag = 0;
-                        $Receiving->reference = '';
+                        $Receiving->reference = null;
+                        $Receiving->HeaderText = null;
     
                         $Receiving->created_by = auth()->user()->username;
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -218,6 +218,7 @@ class ReceivingController extends Controller
                                 'PO_Number' => $PO_Number,
                                 'material_id' => $material_id,
                             ]);
+
                             $ReceivingMaterial->PO_Number = $PO_Number;
                             $ReceivingMaterial->create_date = $create_date;
                             $ReceivingMaterial->delivery_date = $delivery_date;
@@ -225,7 +226,7 @@ class ReceivingController extends Controller
                             $ReceivingMaterial->material_id = $material_id;
                             $ReceivingMaterial->material_name = $material_name;
                             $ReceivingMaterial->item_po = $result->ItemNo;
-                            $ReceivingMaterial->index_po = $x;
+                            $ReceivingMaterial->index_po = intval($result->ItemNo / 10);
                             $ReceivingMaterial->qty = $result->Quantity;
                             $ReceivingMaterial->unit = $result->Meins;
                             $ReceivingMaterial->price = $result->Price;
@@ -245,10 +246,10 @@ class ReceivingController extends Controller
                                 $ReceivingMaterial->o_code = null;
 
                                 $ReceivingMaterial->receive_qty = $result->Quantity;
-                                $ReceivingMaterial->reference = '';
-                                $ReceivingMaterial->gudang_id = '';
-                                $ReceivingMaterial->gudang_nm = '';
-                                $ReceivingMaterial->batch = '';
+                                $ReceivingMaterial->reference = null;
+                                $ReceivingMaterial->gudang_id = null;
+                                $ReceivingMaterial->gudang_nm = null;
+                                $ReceivingMaterial->batch = null;
 
                             }
     

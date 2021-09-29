@@ -346,11 +346,9 @@ class SAPController extends Controller
 
                 $vendor_nf = array();
                 $material_nf = array();
-                $x = 0;
 
                 foreach ($inputs as $input) {
 
-                    $x++;
                     $checkVendor = $Vendor->checkVendor($input->vendor);
     
                     if (count($checkVendor) > 0) {
@@ -361,6 +359,7 @@ class SAPController extends Controller
                         $release_date = $input->release_date;
     
                         $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+
                         $Receiving->PO_Number = $PO_Number;
                         $Receiving->create_date = $create_date;
                         $Receiving->delivery_date = $delivery_date;
@@ -368,7 +367,8 @@ class SAPController extends Controller
                         $Receiving->vendor = $input->vendor;
                         $Receiving->PO_Status = 0;
                         $Receiving->flag = 0;
-                        $Receiving->reference = '';
+                        $Receiving->reference = null;
+                        $Receiving->HeaderText = null;
     
                         $Receiving->created_by = 'SAP';
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -403,7 +403,7 @@ class SAPController extends Controller
                                     $ReceivingMaterial->material_id = $material_id;
                                     $ReceivingMaterial->material_name = $material_name;
                                     $ReceivingMaterial->item_po = $detail->item_po;
-                                    $ReceivingMaterial->index_po = $x;
+                                    $ReceivingMaterial->index_po = intval($result->ItemNo / 10);
                                     $ReceivingMaterial->qty = $qty;
                                     $ReceivingMaterial->unit = $detail->unit;
                                     $ReceivingMaterial->price = $price;
@@ -423,10 +423,10 @@ class SAPController extends Controller
                                         $ReceivingMaterial->o_code = null;
 
                                         $ReceivingMaterial->receive_qty = $result->Quantity;
-                                        $ReceivingMaterial->reference = '';
-                                        $ReceivingMaterial->gudang_id = '';
-                                        $ReceivingMaterial->gudang_nm = '';
-                                        $ReceivingMaterial->batch = '';
+                                        $ReceivingMaterial->reference = null;
+                                        $ReceivingMaterial->gudang_id = null;
+                                        $ReceivingMaterial->gudang_nm = null;
+                                        $ReceivingMaterial->batch = null;
         
                                     }
             
