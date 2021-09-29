@@ -394,7 +394,7 @@ class SAPController extends Controller
             
                                     $ReceivingMaterial = ReceivingMaterial::firstOrNew([
                                         'PO_Number' => $PO_Number,
-                                        'material_id' => $material_id,
+                                        'item_po' => $detail->item_po,
                                     ]);
                                     $ReceivingMaterial->PO_Number = $PO_Number;
                                     $ReceivingMaterial->create_date = $create_date;
@@ -403,7 +403,7 @@ class SAPController extends Controller
                                     $ReceivingMaterial->material_id = $material_id;
                                     $ReceivingMaterial->material_name = $material_name;
                                     $ReceivingMaterial->item_po = $detail->item_po;
-                                    $ReceivingMaterial->index_po = intval($result->ItemNo / 10);
+                                    $ReceivingMaterial->index_po = intval($detail->item_po / 10);
                                     $ReceivingMaterial->qty = $qty;
                                     $ReceivingMaterial->unit = $detail->unit;
                                     $ReceivingMaterial->price = $price;

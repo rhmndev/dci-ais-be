@@ -216,7 +216,7 @@ class ReceivingController extends Controller
     
                             $ReceivingMaterial = ReceivingMaterial::firstOrNew([
                                 'PO_Number' => $PO_Number,
-                                'material_id' => $material_id,
+                                'item_po' => $result->ItemNo,
                             ]);
 
                             $ReceivingMaterial->PO_Number = $PO_Number;
