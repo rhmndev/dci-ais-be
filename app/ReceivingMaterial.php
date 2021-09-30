@@ -9,7 +9,8 @@ class ReceivingMaterial extends Model
     //
     protected $fillable = [
         'PO_Number',
-        'material_id'
+        'material_id',
+        'item_po'
     ];
 
     public function getAllData($PONumber, $search, $columns, $sort, $order, $vendor)

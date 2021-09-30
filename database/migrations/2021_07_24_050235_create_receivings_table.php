@@ -25,6 +25,7 @@ class CreateReceivingsTable extends Migration
             $table->string('flag', 1)->default('0');
 
             $table->string('reference')->nullable();
+            $table->string('HeaderText')->nullable();
             
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();

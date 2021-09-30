@@ -76,11 +76,11 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string',
             'full_name' => 'required|string',
-            'department' => 'required|string',
             'phone_number' => 'required|string',
             'email' => 'required|email',
             'type' => 'required|numeric',
-            'password' => 'nullable|confirmed',
+            'password' => 'nullable|confirmed|min:6',
+            'role_id' => 'required|string',
             'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
         ]);
 

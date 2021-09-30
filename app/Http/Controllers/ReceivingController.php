@@ -177,11 +177,9 @@ class ReceivingController extends Controller
 
                 $vendor_nf = array();
                 $material_nf = array();
-                $x = 0;
 
                 foreach ($results as $result) {
 
-                    $x++;
                     $checkVendor = $Vendor->checkVendor($result->Vendor);
     
                     if (count($checkVendor) > 0) {
@@ -195,6 +193,7 @@ class ReceivingController extends Controller
                         $release_date = $this->dateMaking($result->Reldate);
     
                         $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+
                         $Receiving->PO_Number = $PO_Number;
                         $Receiving->create_date = $create_date;
                         $Receiving->delivery_date = $delivery_date;
@@ -202,7 +201,8 @@ class ReceivingController extends Controller
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
                         $Receiving->flag = 0;
-                        $Receiving->reference = '';
+                        $Receiving->reference = null;
+                        $Receiving->HeaderText = null;
     
                         $Receiving->created_by = auth()->user()->username;
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -216,8 +216,9 @@ class ReceivingController extends Controller
     
                             $ReceivingMaterial = ReceivingMaterial::firstOrNew([
                                 'PO_Number' => $PO_Number,
-                                'material_id' => $material_id,
+                                'item_po' => $result->ItemNo,
                             ]);
+
                             $ReceivingMaterial->PO_Number = $PO_Number;
                             $ReceivingMaterial->create_date = $create_date;
                             $ReceivingMaterial->delivery_date = $delivery_date;
@@ -225,7 +226,7 @@ class ReceivingController extends Controller
                             $ReceivingMaterial->material_id = $material_id;
                             $ReceivingMaterial->material_name = $material_name;
                             $ReceivingMaterial->item_po = $result->ItemNo;
-                            $ReceivingMaterial->index_po = $x;
+                            $ReceivingMaterial->index_po = intval($result->ItemNo / 10);
                             $ReceivingMaterial->qty = $result->Quantity;
                             $ReceivingMaterial->unit = $result->Meins;
                             $ReceivingMaterial->price = $result->Price;
@@ -245,10 +246,10 @@ class ReceivingController extends Controller
                                 $ReceivingMaterial->o_code = null;
 
                                 $ReceivingMaterial->receive_qty = $result->Quantity;
-                                $ReceivingMaterial->reference = '';
-                                $ReceivingMaterial->gudang_id = '';
-                                $ReceivingMaterial->gudang_nm = '';
-                                $ReceivingMaterial->batch = '';
+                                $ReceivingMaterial->reference = null;
+                                $ReceivingMaterial->gudang_id = null;
+                                $ReceivingMaterial->gudang_nm = null;
+                                $ReceivingMaterial->batch = null;
 
                             }
     
@@ -338,14 +339,76 @@ class ReceivingController extends Controller
 
             $inputs = json_decode($json);
 
+            $reference = $this->stringtoupper($request->reference);
+            $documentDate = date('Y-m-d\TH:i:s', strtotime($request->documentDate));
+            $headerText = $request->headerText != '' ? $this->stringtoupper($request->headerText) : '';
+
             if (count($inputs) > 0){
+
+                $client = new Client;
+                $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110&\$format=json", [
+                    'auth' => [
+                        'wcs-abap',
+                        'Wilmar12'
+                    ],
+                    'headers' => [
+                        'X-CSRF-TOKEN' => 'fetch'
+                    ]
+                ]);
+                $csrf_token = $json->getHeader('x-csrf-token')[0];
+
+                $Settings = new Settings;
+                $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+                $code = $code_sap[1]['name'];
+
+                $data = array(
+                    'PostingDate' => date('Y-m-d\T00:00:00'),
+                    'DocumentDate' => $documentDate,
+                    'Reference' => $reference,
+                    'HeaderText' => $headerText,
+                    'GoodReceiptSet' => array(),
+                );
+
+                foreach ($inputs as $input) {
+    
+                    $data_tmp = array();
+                    $data_tmp['Reference'] = $reference;
+                    $data_tmp['Item'] = $input->index_po;
+                    $data_tmp['PoNo'] = $input->PO_Number;
+                    $data_tmp['ItemNo'] = $input->item_po;
+                    $data_tmp['Matnr'] = $input->material_id;
+                    $data_tmp['Werks'] = $code;
+                    $data_tmp['Lgort'] = $input->gudang_id;
+                    $data_tmp['Batch1'] = $input->batch;
+                    $data_tmp['EntryQty'] = $input->receive_qty;
+                    $data_tmp['Satuan'] = $input->unit;
+
+                    array_push($data['GoodReceiptSet'], $data_tmp);
+
+                }
+
+                $postSAP = $client->post("https://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110", [
+                    'auth' => [
+                        'wcs-abap',
+                        'Wilmar12'
+                    ],
+                    'headers' => [
+                        'X-CSRF-TOKEN' => 'uTP-HLLFAWyDsph7S6wE0A==',
+                        'Content-Type' => 'application/json'
+                    ],
+                    'json' => $data
+                ]);
 
                 return response()->json([
             
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data success sended',
-                    "data" => $inputs,
+                    "data" => $data,
+                    "inputs" => $inputs,
+                    "csrf_token" => $csrf_token,
+                    "reference" => $reference,
+                    "headerText" => $headerText,
         
                 ], 200);
 
