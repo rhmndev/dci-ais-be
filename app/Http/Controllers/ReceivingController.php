@@ -337,8 +337,11 @@ class ReceivingController extends Controller
 
         try {
 
-            $data = array();
             $inputs = json_decode($json);
+
+            $reference = $this->stringtoupper($request->reference);
+            $documentDate = date('Y-m-d\TH:i:s', strtotime($request->documentDate));
+            $headerText = $request->headerText != '' ? $this->stringtoupper($request->headerText) : '';
 
             if (count($inputs) > 0){
 
@@ -354,27 +357,58 @@ class ReceivingController extends Controller
                 ]);
                 $csrf_token = $json->getHeader('x-csrf-token')[0];
 
-                foreach ($inputs as $input) {
+                $Settings = new Settings;
+                $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+                $code = $code_sap[1]['name'];
 
+                $data = array(
+                    'PostingDate' => date('Y-m-d\T00:00:00'),
+                    'DocumentDate' => $documentDate,
+                    'Reference' => $reference,
+                    'HeaderText' => $headerText,
+                    'GoodReceiptSet' => array(),
+                );
+
+                foreach ($inputs as $input) {
+    
                     $data_tmp = array();
-                    $data_tmp['_id'] = $result->_id;
-                    $data_tmp['PO_Number'] = $result->PO_Number;
-                    $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
-                    $data_tmp['create_date'] = $result->create_date;
-                    $data_tmp['delivery_date'] = $result->delivery_date;
-                    $data_tmp['release_date'] = $result->release_date;
-                    $data_tmp['data'] = array();
-                    $total_po = 0;
+                    $data_tmp['Reference'] = $reference;
+                    $data_tmp['Item'] = $input->index_po;
+                    $data_tmp['PoNo'] = $input->PO_Number;
+                    $data_tmp['ItemNo'] = $input->item_po;
+                    $data_tmp['Matnr'] = $input->material_id;
+                    $data_tmp['Werks'] = $code;
+                    $data_tmp['Lgort'] = $input->gudang_id;
+                    $data_tmp['Batch1'] = $input->batch;
+                    $data_tmp['EntryQty'] = $input->receive_qty;
+                    $data_tmp['Satuan'] = $input->unit;
+
+                    array_push($data['GoodReceiptSet'], $data_tmp);
 
                 }
+
+                $postSAP = $client->post("https://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110", [
+                    'auth' => [
+                        'wcs-abap',
+                        'Wilmar12'
+                    ],
+                    'headers' => [
+                        'X-CSRF-TOKEN' => 'uTP-HLLFAWyDsph7S6wE0A==',
+                        'Content-Type' => 'application/json'
+                    ],
+                    'json' => $data
+                ]);
 
                 return response()->json([
             
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data success sended',
-                    "data" => $inputs,
+                    "data" => $data,
+                    "inputs" => $inputs,
                     "csrf_token" => $csrf_token,
+                    "reference" => $reference,
+                    "headerText" => $headerText,
         
                 ], 200);
 
