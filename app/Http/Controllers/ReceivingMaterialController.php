@@ -163,13 +163,10 @@ class ReceivingMaterialController extends Controller
 
         try {
 
-            $Receiving = new Receiving;
-            $dataH = $Receiving->where('PO_Number', $request->PO_Number)->first();
-
             $ReceivingMaterial = new ReceivingMaterial;
             $data = $ReceivingMaterial->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
 
-            if ($data && $dataH->PO_Status == 1){
+            if ($data){
 
                 $Vendor = new Vendor;
         
@@ -220,16 +217,6 @@ class ReceivingMaterialController extends Controller
                     'message' => NULL,
                     'data' => $data,
                 ], 200);
-
-            } elseif ($data && $dataH->PO_Status == 0){
-
-                return response()->json([
-        
-                    'type' => 'failed',
-                    'message' => 'Data still In Progress.',
-                    'data' => NULL,
-
-                ], 400);
 
             } else {
     
@@ -291,7 +278,8 @@ class ReceivingMaterialController extends Controller
                         $this->IsNullOrEmptyString($input->del_qty) || 
                         $this->IsNullOrEmptyString($input->material) || 
                         $this->IsNullOrEmptyString($input->o_name) || 
-                        $this->IsNullOrEmptyString($input->o_code)
+                        $this->IsNullOrEmptyString($input->o_code) ||
+                        intval($input->del_qty) < intval($ReceivingMaterial->qty)
                     )
                     {
                         $data_empty = $data_empty + 1;
