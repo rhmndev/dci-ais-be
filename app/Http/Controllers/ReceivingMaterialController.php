@@ -212,11 +212,8 @@ class ReceivingMaterialController extends Controller
                 $data->scale_qty = $ScaleData->qty;
 
                 $data->receive_qty = intval($data->del_qty);
-
-                $data->reference = '';
-                $data->gudang_id = '';
-                $data->gudang_nm = '';
-                $data->batch = '';
+                $data->qty = intval($data->qty);
+                $data->del_qty = intval($data->del_qty);
 
                 return response()->json([
                     'type' => 'success',
