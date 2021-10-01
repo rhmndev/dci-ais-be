@@ -37,7 +37,9 @@ class SettingSeeder extends Seeder
             [
                 'variable' => 'PPN',
                 'value' => json_decode('[
+                    {"id":0.41927242141530496,"name":"V0;0%"},
                     {"id":0.8180006182929263,"name":"V1;10%"}
+                    
                 ]'),
                 'created_by' => 'seeder',
                 'changed_by' => 'seeder'
