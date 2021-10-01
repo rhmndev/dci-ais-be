@@ -345,9 +345,7 @@ class ReceivingController extends Controller
 
             if (count($inputs) > 0){
 
-                $client = new Client;
-                $getSAPToken = $this->getSAPToken();
-                // $csrf_token = $json->getHeader('x-csrf-token')[0];
+                $getHeader = $this->getSAPToken();
 
                 $Settings = new Settings;
                 $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
@@ -365,45 +363,60 @@ class ReceivingController extends Controller
     
                     $data_tmp = array();
                     $data_tmp['Reference'] = $reference;
-                    $data_tmp['Item'] = $input->index_po;
+                    $data_tmp['Item'] = strval($input->index_po);
                     $data_tmp['PoNo'] = $input->PO_Number;
                     $data_tmp['ItemNo'] = $input->item_po;
                     $data_tmp['Matnr'] = $input->material_id;
                     $data_tmp['Werks'] = $code;
                     $data_tmp['Lgort'] = $input->gudang_id;
                     $data_tmp['Batch1'] = $input->batch;
-                    $data_tmp['EntryQty'] = $input->receive_qty;
+                    $data_tmp['EntryQty'] = strval($input->receive_qty);
                     $data_tmp['Satuan'] = $input->unit;
 
                     array_push($data['GoodReceiptSet'], $data_tmp);
 
                 }
 
-                // $postSAP = $client->post("https://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110", [
-                //     'auth' => [
-                //         'wcs-abap',
-                //         'Wilmar12'
-                //     ],
-                //     'headers' => [
-                //         'X-CSRF-TOKEN' => 'uTP-HLLFAWyDsph7S6wE0A==',
-                //         'Content-Type' => 'application/json'
-                //     ],
-                //     'json' => $data
-                // ]);
+                $postSAP = $this->postSAP($data, $getHeader);
+                $postSAP = json_decode($postSAP)->d;
 
-                return response()->json([
+                if ($postSAP->Status === 'S'){
+
+                    $updateFlag = Receiving::where('PO_Number', $PO_Number)->update(['flag' => 1]);
+
+                    if ($updateFlag){
+
+                        return response()->json([
+                    
+                            "result" => true,
+                            "msg_type" => 'Success',
+                            "message" => 'Data success sended',
+                
+                        ], 200);
+
+                    } else {
+
+                        return response()->json([
+                    
+                            "result" => false,
+                            "msg_type" => 'failed',
+                            "message" => 'update data failed',
+                
+                        ], 400);
+
+                    }
+
+                } elseif($postSAP->Status === 'E') {
+
+                    return response()->json([
+                
+                        "result" => false,
+                        "msg_type" => 'failed',
+                        "message" => 'SAP: '.$postSAP->Message,
             
-                    "result" => true,
-                    "msg_type" => 'Success',
-                    "message" => 'Data success sended',
-                    "data" => $data,
-                    "inputs" => $inputs,
-                    "getSAPToken" => $getSAPToken,
-                    // "csrf_token" => $csrf_token,
-                    "reference" => $reference,
-                    "headerText" => $headerText,
-        
-                ], 200);
+                    ], 400);
+
+                }
 
             } else {
 
@@ -454,16 +467,13 @@ class ReceivingController extends Controller
             
         $url = 'http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110&\$format=json';
 
-        $headers = array(
-           'X-CSRF-TOKEN' => 'fetch',
-        );
-
         try {
 
             $ch = curl_init();
     
             curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            $header = array('x-csrf-token: Fetch', 'Connection: keep-alive');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
             curl_setopt($ch, CURLOPT_USERPWD, $account);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_HEADER, 1);
@@ -471,14 +481,85 @@ class ReceivingController extends Controller
             $response = curl_exec($ch);
             $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             $header = substr($response, 0, $header_size);
-            // $header = str_replace("\r\n",'', $header);
-            // $headers_arr = explode(": ", $header);
-            $headers_arr = explode("\r\n", $header);
             $body = substr($response, $header_size);
-    
             curl_close($ch);
 
-            return $headers_arr;
+            $data = $this->ArrHeader($header);
+
+            return [
+                'x-csrf-token' => $data['x-csrf-token'],
+                'set-cookie' => $data['set-cookie'],
+            ];
+
+        } catch (\Exception $e) {
+
+            return 'err: '.$e;
+
+        }
+    }
+
+    private function ArrHeader($res)
+    {
+        $arr = array();
+
+        $data = substr($res, 0 , strpos($res, "\r\n\r\n"));
+
+        foreach (explode("\r\n", $data) as $key => $value) {
+            if ($key === 0){
+
+                $arr['http_code'] = $value;
+
+            } else {
+                list($k, $v) = explode(': ', $value);
+
+                $arr[$k] = $v;
+            }
+        }
+
+        return $arr;
+    }
+
+    private function postSAP($data, $headervalue)
+    {
+
+        $us = 'wcs-abap';
+        $pw = 'Wilmar12';
+        $account = $us.':'.$pw;
+            
+        $url = 'http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110';
+
+        $header = array(
+            'X-CSRF-TOKEN: '.$headervalue['x-csrf-token'],
+            'Content-Type: application/json',
+            'Accept: application/json',
+        );
+        $postdata = json_encode($data);
+
+        try {
+
+            $ch = curl_init();
+    
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_COOKIE, 'sap-usercontext=sap-client=110; path=/; Domain=erpdev-dp.dharmap.com;');
+            curl_setopt($ch, CURLOPT_COOKIE, $headervalue['set-cookie']);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'X-CSRF-TOKEN: '.$headervalue['x-csrf-token'],
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ));
+            curl_setopt($ch, CURLOPT_USERPWD, $account);
+
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    
+            $response = curl_exec($ch);
+            $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $header = substr($response, 0, $header_size);
+            $body = substr($response, $header_size);
+            curl_close($ch);
+
+            return $response;
 
         } catch (\Exception $e) {
 
