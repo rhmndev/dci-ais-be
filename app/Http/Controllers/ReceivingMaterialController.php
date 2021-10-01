@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Receiving;
 use App\ReceivingMaterial;
 use App\Vendor;
 use App\Settings;
@@ -162,11 +163,13 @@ class ReceivingMaterialController extends Controller
 
         try {
 
-            $ReceivingMaterial = new ReceivingMaterial;
+            $Receiving = new Receiving;
+            $dataH = $Receiving->where('PO_Number', $request->PO_Number)->first();
 
+            $ReceivingMaterial = new ReceivingMaterial;
             $data = $ReceivingMaterial->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
 
-            if ($data){
+            if ($data && $dataH->PO_Status == 1){
 
                 $Vendor = new Vendor;
         
@@ -209,17 +212,24 @@ class ReceivingMaterialController extends Controller
                 $data->scale_qty = $ScaleData->qty;
 
                 $data->receive_qty = intval($data->del_qty);
-
-                $data->reference = '';
-                $data->gudang_id = '';
-                $data->gudang_nm = '';
-                $data->batch = '';
+                $data->qty = intval($data->qty);
+                $data->del_qty = intval($data->del_qty);
 
                 return response()->json([
                     'type' => 'success',
                     'message' => NULL,
                     'data' => $data,
                 ], 200);
+
+            } elseif ($data && $dataH->PO_Status == 0){
+
+                return response()->json([
+        
+                    'type' => 'failed',
+                    'message' => 'Data still In Progress.',
+                    'data' => NULL,
+
+                ], 400);
 
             } else {
     
@@ -254,6 +264,7 @@ class ReceivingMaterialController extends Controller
         try {
 
             $inputs = json_decode($json);
+            $data_empty = 0;
 
             if (count($inputs) > 0){
 
@@ -275,17 +286,46 @@ class ReceivingMaterialController extends Controller
 
                     $ReceivingMaterial->save();
 
+                    if (
+                        $this->IsNullOrEmptyString($input->del_note) ||
+                        $this->IsNullOrEmptyString($input->del_qty) || 
+                        $this->IsNullOrEmptyString($input->material) || 
+                        $this->IsNullOrEmptyString($input->o_name) || 
+                        $this->IsNullOrEmptyString($input->o_code)
+                    )
+                    {
+                        $data_empty = $data_empty + 1;
+                    }
+
+                }
+
+                if ($data_empty == 0){
+
+                    $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 1]);
+
+                    return response()->json([
+            
+                        "result" => true,
+                        "msg_type" => 'Success',
+                        "message" => 'Data stored successfully!',
+            
+                    ], 200);
+
+                } else {
+
+                    $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 0]);
+
+                    return response()->json([
+            
+                        "result" => true,
+                        "msg_type" => 'Success',
+                        "message" => 'Data stored successfully with empty field!',
+            
+                    ], 200);
+
                 }
 
             }
-
-            return response()->json([
-    
-                "result" => true,
-                "msg_type" => 'Success',
-                "message" => 'Data stored successfully!',
-    
-            ], 200);
 
         } catch (\Exception $e) {
 
@@ -298,5 +338,9 @@ class ReceivingMaterialController extends Controller
             ], 400);
 
         }
+    }
+
+    private function IsNullOrEmptyString($str){
+        return (!isset($str) || trim($str) === '');
     }
 }

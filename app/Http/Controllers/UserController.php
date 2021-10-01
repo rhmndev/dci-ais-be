@@ -64,6 +64,8 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
+        $user->vendor_id = $user->vendor_code;
+
         return response()->json([
             'type' => 'success',
             'data' =>  $user
@@ -76,11 +78,12 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string',
             'full_name' => 'required|string',
-            'phone_number' => 'required|string',
+            'phone_number' => 'required|string|min:9',
             'email' => 'required|email',
             'type' => 'required|numeric',
-            'password' => 'nullable|confirmed|min:6',
+            'password' => $request->typePost == 1 ? 'string|confirmed|min:6' : 'required|string|confirmed|min:6',
             'role_id' => 'required|string',
+            'vendor_id' => $request->type == 1 ? 'required|string' : '',
             'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
         ]);
 
@@ -90,15 +93,26 @@ class UserController extends Controller
         
             $User->username = $request->username;
             $User->full_name = $request->full_name;
-            $User->department = $request->department;
             $User->phone_number = $request->phone_number;
             
-            if ( $request->npk != '' ){
+            if ( $this->IsNullOrEmptyString($request->department) ){
+
+                $User->department = $request->department;
+
+            } else {
+
+                $User->department = null;
+
+            }
+            
+            if ( $this->IsNullOrEmptyString($request->npk) ){
 
                 $User->npk = $request->npk;
 
             } else {
-                $User->npk = '';
+
+                $User->npk = null;
+                
             }
             
             $User->email = $request->email;
@@ -110,6 +124,7 @@ class UserController extends Controller
 
             }
 
+            $photo_url = null;
             
             if ($request->photo != null && $request->hasFile('photo')) {
         
@@ -130,6 +145,8 @@ class UserController extends Controller
                 Storage::disk('public')->put('/images/users'.'/'.$fileName, $img, 'public');
 
                 $User->photo = $fileName;
+
+                $photo_url = asset('storage/images/users/'.$fileName);
 
             }
             
@@ -156,6 +173,7 @@ class UserController extends Controller
             return response()->json([
                 'type' => 'success',
                 'message' => 'Data saved successfully!',
+                'photo' => $photo_url,
                 'data' => NULL,
             ], 200);
 
@@ -289,5 +307,9 @@ class UserController extends Controller
             'type' => 'success',
             'message' => 'Data deleted successfully'
         ], 200);
+    }
+
+    private function IsNullOrEmptyString($str){
+        return (!isset($str) || trim($str) === '');
     }
 }
