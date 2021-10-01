@@ -173,7 +173,7 @@ class VendorController extends Controller
                     $code = $this->stringtoupper($result->Vendor);
                     $name = $this->stringtoupper($result->Name);
                     $address = $this->stringtoupper($result->Street);
-                    $phone = strval($result->Telephone);
+                    $phone = $this->phoneNumber($result->Telephone);
 
                     $Vendor = Vendor::firstOrNew(['code' => $code]);
                     $Vendor->code = $code;
@@ -333,5 +333,30 @@ class VendorController extends Controller
         $string = strtolower($string);
         $string = strtoupper($string);
         return $string;
+    }
+
+    private function phoneNumber($number)
+    {
+
+        if (substr($number, 0, 1) == 0){
+
+            $number = '+62'.substr($number, 1);
+
+        } else {
+
+            $number = '+'.$number;
+
+        }
+
+        if ( strpos($number, '-') ){
+            $number = str_replace('-', '', $number);
+        }
+
+        if ( strpos($number, ' ') ){
+            $number = str_replace(' ', '', $number);
+        }
+
+        return $number;
+
     }
 }
