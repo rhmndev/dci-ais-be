@@ -118,7 +118,7 @@ class UserController extends Controller
             $User->email = $request->email;
             $User->type = intval($request->type);
     
-            if (!empty($request->password) && $request->password != null) {
+            if ( $this->IsNullOrEmptyString($request->password) ) {
 
                 $User->password = Hash::make($request->password);
 
