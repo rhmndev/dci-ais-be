@@ -133,7 +133,7 @@ class UserController extends Controller
                 }
 
                 $image      = $request->file('photo');
-                $fileName   = $User->username.'-'.$User->npk.'.' . $image->getClientOriginalExtension();
+                $fileName   = $User->username.'.' . $image->getClientOriginalExtension();
     
                 $img = Image::make($image->getRealPath());
                 $img->resize(120, 120, function ($constraint) {
