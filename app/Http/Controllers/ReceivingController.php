@@ -382,7 +382,7 @@ class ReceivingController extends Controller
 
                 if ($postSAP->Status === 'S'){
 
-                    $updateFlag = Receiving::where('PO_Number', $PO_Number)->update(['flag' => 1]);
+                    $updateFlag = Receiving::where('PO_Number', $input->PO_Number)->update(['flag' => 1]);
 
                     if ($updateFlag){
 

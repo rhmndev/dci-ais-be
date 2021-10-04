@@ -118,13 +118,13 @@ class UserController extends Controller
             $User->email = $request->email;
             $User->type = intval($request->type);
     
-            if ( $this->IsNullOrEmptyString($request->password) ) {
+            if ( $request->password != '' ) {
 
                 $User->password = Hash::make($request->password);
 
             }
 
-            $photo_url = null;
+            $photo_url = asset('storage/images/users/'.$request->photo);
             
             if ($request->photo != null && $request->hasFile('photo')) {
         
@@ -133,7 +133,7 @@ class UserController extends Controller
                 }
 
                 $image      = $request->file('photo');
-                $fileName   = $User->username.'-'.$User->npk.'.' . $image->getClientOriginalExtension();
+                $fileName   = $User->username.'.' . $image->getClientOriginalExtension();
     
                 $img = Image::make($image->getRealPath());
                 $img->resize(120, 120, function ($constraint) {
@@ -232,7 +232,7 @@ class UserController extends Controller
                         $User->username = $Excel['username'];
                         $User->full_name = $Excel['full_name'];
                         $User->department = $Excel['department'];
-                        $User->phone_number = $Excel['phone_number'];
+                        $User->phone_number = $this->phoneNumber($Excel['phone_number']);
             
                         if ( $Excel['npk'] != '' ){
             
@@ -311,5 +311,30 @@ class UserController extends Controller
 
     private function IsNullOrEmptyString($str){
         return (!isset($str) || trim($str) === '');
+    }
+
+    private function phoneNumber($number)
+    {
+
+        if (substr($number, 0, 1) == 0){
+
+            $number = '+62'.substr($number, 1);
+
+        } else {
+
+            $number = '+'.$number;
+
+        }
+
+        if ( strpos($number, '-') ){
+            $number = str_replace('-', '', $number);
+        }
+
+        if ( strpos($number, ' ') ){
+            $number = str_replace(' ', '', $number);
+        }
+
+        return $number;
+
     }
 }
