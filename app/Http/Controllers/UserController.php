@@ -118,13 +118,13 @@ class UserController extends Controller
             $User->email = $request->email;
             $User->type = intval($request->type);
     
-            if ( $this->IsNullOrEmptyString($request->password) ) {
+            if ( $request->password != '' ) {
 
                 $User->password = Hash::make($request->password);
 
             }
 
-            $photo_url = null;
+            $photo_url = asset('storage/images/users/'.$request->photo);
             
             if ($request->photo != null && $request->hasFile('photo')) {
         
