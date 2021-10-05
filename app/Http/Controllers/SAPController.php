@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Vendor;
 use App\Material;
-use App\Receiving;
-use App\ReceivingMaterial;
+use App\ReceivingVendor;
+use App\ReceivingDetails;
 use App\Settings;
 use Carbon\Carbon;
 
@@ -242,14 +242,14 @@ class SAPController extends Controller
         try {
     
             $data = array();
-            $Receiving = new Receiving;
-            $ReceivingMaterial = new ReceivingMaterial;
+            $ReceivingVendor = new ReceivingVendor;
+            $ReceivingVendorDetails = new ReceivingDetails;
             $Settings = new Settings;
 
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($search, $columns, $request->sort, $order, 0, $vendor);
-            $results = $Receiving->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0, $vendor);
+            $resultAlls = $ReceivingVendor->getAllData($search, $columns, $request->sort, $order, 0, $vendor);
+            $results = $ReceivingVendor->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -262,7 +262,7 @@ class SAPController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingMaterial->getPODetails($result->PO_Number, $result->MPerpage, $vendor);
+                $PODetails = $ReceivingVendorDetails->getPODetails($result->PO_Number, $result->MPerpage, $vendor);
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
@@ -358,23 +358,22 @@ class SAPController extends Controller
                         $delivery_date = $input->delivery_date;
                         $release_date = $input->release_date;
     
-                        $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+                        $ReceivingVendor = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
 
-                        $Receiving->PO_Number = $PO_Number;
-                        $Receiving->create_date = $create_date;
-                        $Receiving->delivery_date = $delivery_date;
-                        $Receiving->release_date = $release_date;
-                        $Receiving->vendor = $input->vendor;
-                        $Receiving->PO_Status = 0;
-                        $Receiving->flag = 0;
-                        $Receiving->reference = null;
-                        $Receiving->HeaderText = null;
+                        $ReceivingVendor->PO_Number = $PO_Number;
+                        $ReceivingVendor->create_date = $create_date;
+                        $ReceivingVendor->delivery_date = $delivery_date;
+                        $ReceivingVendor->release_date = $release_date;
+                        $ReceivingVendor->vendor = $input->vendor;
+                        $ReceivingVendor->PO_Status = 0;
+                        $ReceivingVendor->reference = null;
+                        $ReceivingVendor->HeaderText = null;
     
-                        $Receiving->created_by = 'SAP';
-                        $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                        $Receiving->updated_by = 'SAP';
-                        $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                        $Receiving->save();
+                        $ReceivingVendor->created_by = 'SAP';
+                        $ReceivingVendor->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $ReceivingVendor->updated_by = 'SAP';
+                        $ReceivingVendor->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $ReceivingVendor->save();
     
                         $details = $input->data;
     
@@ -392,49 +391,49 @@ class SAPController extends Controller
     
                                 if (count($checkMaterial) > 0) {
             
-                                    $ReceivingMaterial = ReceivingMaterial::firstOrNew([
+                                    $ReceivingVendorDetails = ReceivingDetails::firstOrNew([
                                         'PO_Number' => $PO_Number,
                                         'item_po' => $detail->item_po,
                                     ]);
-                                    $ReceivingMaterial->PO_Number = $PO_Number;
-                                    $ReceivingMaterial->create_date = $create_date;
-                                    $ReceivingMaterial->delivery_date = $delivery_date;
-                                    $ReceivingMaterial->release_date = $release_date;
-                                    $ReceivingMaterial->material_id = $material_id;
-                                    $ReceivingMaterial->material_name = $material_name;
-                                    $ReceivingMaterial->item_po = $detail->item_po;
-                                    $ReceivingMaterial->index_po = intval($detail->item_po / 10);
-                                    $ReceivingMaterial->qty = $qty;
-                                    $ReceivingMaterial->unit = $detail->unit;
-                                    $ReceivingMaterial->price = $price;
-                                    $ReceivingMaterial->currency = $detail->currency;
-                                    $ReceivingMaterial->vendor = $input->vendor;
-                                    $ReceivingMaterial->ppn = $detail->ppn;
+                                    $ReceivingVendorDetails->PO_Number = $PO_Number;
+                                    $ReceivingVendorDetails->create_date = $create_date;
+                                    $ReceivingVendorDetails->delivery_date = $delivery_date;
+                                    $ReceivingVendorDetails->release_date = $release_date;
+                                    $ReceivingVendorDetails->material_id = $material_id;
+                                    $ReceivingVendorDetails->material_name = $material_name;
+                                    $ReceivingVendorDetails->item_po = $detail->item_po;
+                                    $ReceivingVendorDetails->index_po = intval($detail->item_po / 10);
+                                    $ReceivingVendorDetails->qty = $qty;
+                                    $ReceivingVendorDetails->unit = $detail->unit;
+                                    $ReceivingVendorDetails->price = $price;
+                                    $ReceivingVendorDetails->currency = $detail->currency;
+                                    $ReceivingVendorDetails->vendor = $input->vendor;
+                                    $ReceivingVendorDetails->ppn = $detail->ppn;
                             
-                                    if (!$ReceivingMaterial->exists) {
+                                    if (!$ReceivingVendorDetails->exists) {
         
-                                        $ReceivingMaterial->del_note = null;
-                                        $ReceivingMaterial->del_date = $delivery_date;
-                                        $ReceivingMaterial->del_qty = $result->Quantity;
-                                        $ReceivingMaterial->prod_date = $create_date;
-                                        $ReceivingMaterial->prod_lot = null;
-                                        $ReceivingMaterial->material = null;
-                                        $ReceivingMaterial->o_name = null;
-                                        $ReceivingMaterial->o_code = null;
+                                        $ReceivingVendorDetails->del_note = null;
+                                        $ReceivingVendorDetails->del_date = $delivery_date;
+                                        $ReceivingVendorDetails->del_qty = $result->Quantity;
+                                        $ReceivingVendorDetails->prod_date = $create_date;
+                                        $ReceivingVendorDetails->prod_lot = null;
+                                        $ReceivingVendorDetails->material = null;
+                                        $ReceivingVendorDetails->o_name = null;
+                                        $ReceivingVendorDetails->o_code = null;
 
-                                        $ReceivingMaterial->receive_qty = $result->Quantity;
-                                        $ReceivingMaterial->reference = null;
-                                        $ReceivingMaterial->gudang_id = null;
-                                        $ReceivingMaterial->gudang_nm = null;
-                                        $ReceivingMaterial->batch = null;
+                                        $ReceivingVendorDetails->receive_qty = $result->Quantity;
+                                        $ReceivingVendorDetails->reference = null;
+                                        $ReceivingVendorDetails->gudang_id = null;
+                                        $ReceivingVendorDetails->gudang_nm = null;
+                                        $ReceivingVendorDetails->batch = null;
         
                                     }
             
-                                    $ReceivingMaterial->created_by = 'SAP';
-                                    $ReceivingMaterial->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                                    $ReceivingMaterial->updated_by = 'SAP';
-                                    $ReceivingMaterial->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                                    $ReceivingMaterial->save();
+                                    $ReceivingVendorDetails->created_by = 'SAP';
+                                    $ReceivingVendorDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                    $ReceivingVendorDetails->updated_by = 'SAP';
+                                    $ReceivingVendorDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                    $ReceivingVendorDetails->save();
                                     
                                 } else {
                                     array_push($material_nf, $material_id);
