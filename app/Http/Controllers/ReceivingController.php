@@ -23,26 +23,31 @@ class ReceivingController extends Controller
             'page' => 'required|numeric',
             'sort' => 'required|string',
             'order' => 'string',
+            'flag' => 'required|numeric|max:1',
+            
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
+        $flag = ($request->flag != 0) ? 1 : 0;
         $vendor = auth()->user()->vendor_code;
 
         try {
     
             $data = array();
             $Receiving = new Receiving;
+            $ReceivingDetails = new ReceivingDetails;
             $ReceivingVDetails = new ReceivingVDetails;
             $Settings = new Settings;
 
             $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage')[0]['name'];
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $vendor);
-            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
+            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag, $vendor);
+            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag, $vendor);
 
             foreach ($results as $result) {
+                
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
@@ -53,7 +58,16 @@ class ReceivingController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingVDetails->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
+                if ( $flag == 0 ){
+
+                    $PODetails = $ReceivingVDetails->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
+        
+                } elseif ( $flag == 1 ) {
+
+                    $PODetails = $ReceivingDetails->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
+        
+                }
+
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
