@@ -9,7 +9,7 @@ class Receiving extends Model
     //
     protected $fillable = ['PO_Number'];
 
-    public function getAllData($keyword, $columns, $sort, $order, $flag, $vendor)
+    public function getAllData($keyword, $columns, $sort, $order, $vendor)
     {
 
         $query = Receiving::query();
@@ -35,8 +35,6 @@ class Receiving extends Model
             $query = $query->where('vendor', $vendor);
         }
 
-        $query = $query->where('flag', $flag);
-
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
         $data = $query->get();
@@ -44,7 +42,7 @@ class Receiving extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $flag, $vendor)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $vendor)
     {
 
         $query = Receiving::query();
@@ -70,8 +68,6 @@ class Receiving extends Model
         if ($vendor != '') {
             $query = $query->where('vendor', $vendor);
         }
-
-        $query = $query->where('flag', $flag);
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 

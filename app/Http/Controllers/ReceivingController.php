@@ -22,12 +22,10 @@ class ReceivingController extends Controller
             'page' => 'required|numeric',
             'sort' => 'required|string',
             'order' => 'string',
-            'flag' => 'required|numeric',
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
-        $flag = ($request->flag != 0) ? 1 : 0;
         $vendor = auth()->user()->vendor_code;
 
         try {
@@ -200,7 +198,6 @@ class ReceivingController extends Controller
                         $Receiving->release_date = $release_date;
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
-                        $Receiving->flag = 0;
                         $Receiving->reference = null;
                         $Receiving->HeaderText = null;
     
