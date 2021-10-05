@@ -22,6 +22,7 @@ class CreateReceivingsTable extends Migration
             $table->string('release_date');
             $table->string('vendor');
             $table->string('PO_Status');
+            $table->string('flag');
 
             $table->string('reference')->nullable();
             $table->string('HeaderText')->nullable();

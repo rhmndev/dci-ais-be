@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Vendor;
 use App\Material;
-use App\ReceivingVendor;
+use App\Receiving;
 use App\ReceivingDetails;
 use App\Settings;
 use Carbon\Carbon;
@@ -242,14 +242,14 @@ class SAPController extends Controller
         try {
     
             $data = array();
-            $ReceivingVendor = new ReceivingVendor;
+            $Receiving = new Receiving;
             $ReceivingVendorDetails = new ReceivingDetails;
             $Settings = new Settings;
 
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $ReceivingVendor->getAllData($search, $columns, $request->sort, $order, 0, $vendor);
-            $results = $ReceivingVendor->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0, $vendor);
+            $resultAlls = $Receiving->getAllData($search, $columns, $request->sort, $order, 0, $vendor);
+            $results = $Receiving->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -358,22 +358,23 @@ class SAPController extends Controller
                         $delivery_date = $input->delivery_date;
                         $release_date = $input->release_date;
     
-                        $ReceivingVendor = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+                        $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
 
-                        $ReceivingVendor->PO_Number = $PO_Number;
-                        $ReceivingVendor->create_date = $create_date;
-                        $ReceivingVendor->delivery_date = $delivery_date;
-                        $ReceivingVendor->release_date = $release_date;
-                        $ReceivingVendor->vendor = $input->vendor;
-                        $ReceivingVendor->PO_Status = 0;
-                        $ReceivingVendor->reference = null;
-                        $ReceivingVendor->HeaderText = null;
+                        $Receiving->PO_Number = $PO_Number;
+                        $Receiving->create_date = $create_date;
+                        $Receiving->delivery_date = $delivery_date;
+                        $Receiving->release_date = $release_date;
+                        $Receiving->vendor = $input->vendor;
+                        $Receiving->PO_Status = 0;
+                        $Receiving->flag = 0;
+                        $Receiving->reference = null;
+                        $Receiving->HeaderText = null;
     
-                        $ReceivingVendor->created_by = 'SAP';
-                        $ReceivingVendor->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                        $ReceivingVendor->updated_by = 'SAP';
-                        $ReceivingVendor->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                        $ReceivingVendor->save();
+                        $Receiving->created_by = 'SAP';
+                        $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Receiving->updated_by = 'SAP';
+                        $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Receiving->save();
     
                         $details = $input->data;
     

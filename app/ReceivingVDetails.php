@@ -4,7 +4,7 @@ namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class ReceivingVendorDetails extends Model
+class ReceivingVDetails extends Model
 {
     //
     protected $fillable = [
@@ -16,7 +16,7 @@ class ReceivingVendorDetails extends Model
     public function getAllData($PONumber, $search, $columns, $sort, $order, $vendor)
     {
 
-        $query = ReceivingVendorDetails::query();
+        $query = ReceivingVDetails::query();
         
         if(!empty($search)){
 
@@ -51,7 +51,7 @@ class ReceivingVendorDetails extends Model
     public function getData($PONumber, $search, $columns, $perpage, $page, $sort, $order, $vendor)
     {
 
-        $query = ReceivingVendorDetails::query();
+        $query = ReceivingVDetails::query();
         $skip = $perpage * ($page - 1);
         
         if(!empty($search)){
@@ -87,7 +87,7 @@ class ReceivingVendorDetails extends Model
 
     public function scanData($PONumber, $materialId, $itemNo, $vendor)
     {
-        $query = ReceivingVendorDetails::query();
+        $query = ReceivingVDetails::query();
 
         if ($vendor != '') {
             $query = $query->where('vendor', $vendor);
@@ -105,7 +105,7 @@ class ReceivingVendorDetails extends Model
     public function getPODetails($PONumber, $perpage, $vendor)
     {
 
-        $query = ReceivingVendorDetails::query();
+        $query = ReceivingVDetails::query();
         $skip = $perpage * 0;
 
         $query = $query->where('PO_Number', $PONumber);

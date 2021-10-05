@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateReceivingVendorDetailsTable extends Migration
+class CreateReceivingVDetailsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class CreateReceivingVendorDetailsTable extends Migration
      */
     public function up()
     {
-        Schema::dropIfExists('receiving_vendor_details');
-        Schema::create('receiving_vendor_details', function (Blueprint $table) {
+        Schema::dropIfExists('receiving_v_details');
+        Schema::create('receiving_v_details', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('PO_Number');
             $table->string('create_date');
@@ -58,6 +58,6 @@ class CreateReceivingVendorDetailsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('receiving_vendor_details');
+        Schema::dropIfExists('receiving_v_details');
     }
 }

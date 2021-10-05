@@ -58,18 +58,25 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/news/{id}', 'NewsController@destroy');
         #endregion
 
-        #region Transaction Receive Vendor
-        Route::get('/receiveVendor', 'ReceivingVendorController@index');
-        Route::get('/receiveVendorsync', 'ReceivingVendorController@SyncSAP');
-        Route::post('/postGR', 'ReceivingVendorController@postGR');
+        #region Transaction Receive
+        Route::get('/receive', 'ReceivingController@index');
+        Route::get('/receivesync', 'ReceivingController@SyncSAP');
+        Route::post('/postGR', 'ReceivingController@postGR');
         #endregion
 
         #region Transaction Receive Vendor Details
-        Route::get('/receiveVendorDetail', 'ReceivingVendorDetailsController@index');
-        Route::get('/receiveVendorDetail/{id}', 'ReceivingVendorDetailsController@show');
-        Route::get('/scanData', 'ReceivingVendorDetailsController@scanData');
+        Route::get('/receiveVDetail', 'ReceivingVDetailsController@index');
+        Route::get('/receiveVDetail/{id}', 'ReceivingVDetailsController@show');
+        Route::get('/scanData', 'ReceivingVDetailsController@scanData');
         
-        Route::post('/receiveVendorDetail', 'ReceivingVendorDetailsController@update');
+        Route::post('/receiveVDetail', 'ReceivingVDetailsController@update');
+        #endregion
+
+        #region Transaction Receive Details
+        Route::get('/receiveDetail', 'ReceivingDetails@index');
+        Route::get('/receiveDetail/{id}', 'ReceivingDetails@show');
+        
+        Route::post('/receiveDetail', 'ReceivingDetails@update');
         #endregion
 
         #region Template

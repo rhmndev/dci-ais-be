@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\ReceivingVendor;
-use App\ReceivingVendorDetails;
+use App\Receiving;
+use App\ReceivingVDetails;
 use App\Vendor;
 use App\Settings;
 use App\Scale;
 use Carbon\Carbon;
 
-class ReceivingVendorDetailsController extends Controller
+class ReceivingVDetailsController extends Controller
 {
     //
     public function index(Request $request)
@@ -31,16 +31,16 @@ class ReceivingVendorDetailsController extends Controller
         try {
     
             $data = array();
-            $ReceivingVendorDetails = new ReceivingVendorDetails;
+            $ReceivingVDetails = new ReceivingVDetails;
             $Settings = new Settings;
 
             $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage');
 
             $perpage = $request->perpage != null ? $request->perpage : $Material_Perpage[0];
 
-            $resultAlls = $ReceivingVendorDetails->getAllData($request->PO_Number, $search, $request->columns, $request->sort, $order, $vendor);
+            $resultAlls = $ReceivingVDetails->getAllData($request->PO_Number, $search, $request->columns, $request->sort, $order, $vendor);
 
-            $results = $ReceivingVendorDetails->getData($request->PO_Number, $search, $request->columns, $perpage, $request->page, $request->sort, $order, $vendor);
+            $results = $ReceivingVDetails->getData($request->PO_Number, $search, $request->columns, $perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -101,25 +101,25 @@ class ReceivingVendorDetailsController extends Controller
     {
         $vendor = auth()->user()->vendor_code;
 
-        $ReceivingVendorDetails = ReceivingVendorDetails::where('_id', $id);
+        $ReceivingVDetails = ReceivingVDetails::where('_id', $id);
         if ($vendor != ''){
-            $ReceivingVendorDetails = $ReceivingVendorDetails->where('vendor', $vendor);
+            $ReceivingVDetails = $ReceivingVDetails->where('vendor', $vendor);
         }
-        $ReceivingVendorDetails = $ReceivingVendorDetails->first();
+        $ReceivingVDetails = $ReceivingVDetails->first();
 
-        if ($ReceivingVendorDetails){
+        if ($ReceivingVDetails){
 
             $Vendor = new Vendor;
     
-            $vendor_data = $Vendor->checkVendor($ReceivingVendorDetails->vendor);
+            $vendor_data = $Vendor->checkVendor($ReceivingVDetails->vendor);
             if (count($vendor_data) > 0){
     
                 $vendor_data = $vendor_data[0];
-                $ReceivingVendorDetails->vendor_name = $vendor_data->name;
+                $ReceivingVDetails->vendor_name = $vendor_data->name;
     
             } else {
     
-                $ReceivingVendorDetails->vendor_name = '';
+                $ReceivingVDetails->vendor_name = '';
     
             }
     
@@ -128,14 +128,14 @@ class ReceivingVendorDetailsController extends Controller
             
             foreach ($SettingPPNs as $SettingPPN) {
                 $ppn = explode(';', $SettingPPN['name']);
-                if ($ppn[0] === $ReceivingVendorDetails->ppn){
-                    $ReceivingVendorDetails->ppn_p = $ppn[1];
+                if ($ppn[0] === $ReceivingVDetails->ppn){
+                    $ReceivingVDetails->ppn_p = $ppn[1];
                 }
             };
 
             return response()->json([
                 'type' => 'success',
-                'data' => $ReceivingVendorDetails,
+                'data' => $ReceivingVDetails,
             ], 200);
 
         } else {
@@ -163,8 +163,8 @@ class ReceivingVendorDetailsController extends Controller
 
         try {
 
-            $ReceivingVendorDetails = new ReceivingVendorDetails;
-            $data = $ReceivingVendorDetails->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
+            $ReceivingVDetails = new ReceivingVDetails;
+            $data = $ReceivingVDetails->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
 
             if ($data){
 
@@ -257,21 +257,21 @@ class ReceivingVendorDetailsController extends Controller
 
                 foreach ($inputs as $input) {
             
-                    $ReceivingVendorDetails = ReceivingVendorDetails::where('_id', $input->_id)->first();
+                    $ReceivingVDetails = ReceivingVDetails::where('_id', $input->_id)->first();
 
-                    $ReceivingVendorDetails->del_note = $input->del_note;
-                    $ReceivingVendorDetails->del_date = $input->del_date;
-                    $ReceivingVendorDetails->del_qty = $input->del_qty;
-                    $ReceivingVendorDetails->prod_date = $input->prod_date;
-                    $ReceivingVendorDetails->prod_lot = $input->prod_lot;
-                    $ReceivingVendorDetails->material = $input->material;
-                    $ReceivingVendorDetails->o_name = $input->o_name;
-                    $ReceivingVendorDetails->o_code = $input->o_code;
+                    $ReceivingVDetails->del_note = $input->del_note;
+                    $ReceivingVDetails->del_date = $input->del_date;
+                    $ReceivingVDetails->del_qty = $input->del_qty;
+                    $ReceivingVDetails->prod_date = $input->prod_date;
+                    $ReceivingVDetails->prod_lot = $input->prod_lot;
+                    $ReceivingVDetails->material = $input->material;
+                    $ReceivingVDetails->o_name = $input->o_name;
+                    $ReceivingVDetails->o_code = $input->o_code;
 
-                    $ReceivingVendorDetails->updated_by = auth()->user()->username;
-                    $ReceivingVendorDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $ReceivingVDetails->updated_by = auth()->user()->username;
+                    $ReceivingVDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
-                    $ReceivingVendorDetails->save();
+                    $ReceivingVDetails->save();
 
                     if (
                         $this->IsNullOrEmptyString($input->del_note) ||
@@ -279,7 +279,7 @@ class ReceivingVendorDetailsController extends Controller
                         $this->IsNullOrEmptyString($input->material) || 
                         $this->IsNullOrEmptyString($input->o_name) || 
                         $this->IsNullOrEmptyString($input->o_code) ||
-                        intval($input->del_qty) < intval($ReceivingVendorDetails->qty)
+                        intval($input->del_qty) < intval($ReceivingVDetails->qty)
                     )
                     {
                         $data_empty = $data_empty + 1;
@@ -289,7 +289,7 @@ class ReceivingVendorDetailsController extends Controller
 
                 if ($data_empty == 0){
 
-                    $updatePOStatus = ReceivingVendor::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 1]);
+                    $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 1]);
 
                     return response()->json([
             
@@ -301,7 +301,7 @@ class ReceivingVendorDetailsController extends Controller
 
                 } else {
 
-                    $updatePOStatus = ReceivingVendor::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 0]);
+                    $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 0]);
 
                     return response()->json([
             

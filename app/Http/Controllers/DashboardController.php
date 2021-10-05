@@ -7,7 +7,7 @@ use App\News;
 use App\User;
 use App\Vendor;
 use App\Material;
-use App\ReceivingVendor;
+use App\Receiving;
 
 class DashboardController extends Controller
 {
@@ -82,7 +82,7 @@ class DashboardController extends Controller
         #endregion
 
         #region Receivings
-        $resReceiving = ReceivingVendor::orderBy('updated_at', 'desc')->get();
+        $resReceiving = Receiving::orderBy('updated_at', 'desc')->get();
 
         $data['total_receiving'] = count($resReceiving);
         $data['last_update_name_receiving'] = '-';
