@@ -21,6 +21,7 @@ class CreateGoodReceivingDetailsTable extends Migration
             $table->string('material_id');
             $table->string('material_nm');
             $table->string('PR_Number');
+            $table->string('index');
             $table->string('receiving_qty');
             $table->string('receiving_unit');
             $table->string('order_qty');

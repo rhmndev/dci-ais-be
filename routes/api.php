@@ -119,3 +119,6 @@ Route::post('/dataMaterialSAP', 'SAPController@storeMaterial');
 
 Route::get('/dataPOSAP', 'SAPController@getPO');
 Route::post('/dataPOSAP', 'SAPController@storePO');
+
+Route::get('/dataGRSAP', 'SAPController@getGR');
+Route::post('/dataGRSAP', 'SAPController@storeGR');

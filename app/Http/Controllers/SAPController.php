@@ -7,6 +7,9 @@ use App\Vendor;
 use App\Material;
 use App\Receiving;
 use App\ReceivingDetails;
+use App\ReceivingVDetails;
+use App\GoodReceiving;
+use App\GoodReceivingDetail;
 use App\Settings;
 use Carbon\Carbon;
 
@@ -232,23 +235,25 @@ class SAPController extends Controller
             'order'     => 'required|string',
             'MPerpage'  => 'required|numeric',
             'vendor'    => 'nullable|numeric',
+            'flag'      => 'required|numeric|max:1',
         ]);
 
         $search = ($request->search != null) ? $request->search : '';
         $vendor = ($request->vendor != null) ? $request->vendor : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
+        $flag = ($request->flag != 0) ? 1 : 0;
         $columns = array('PO_Number');
 
         try {
     
             $data = array();
             $Receiving = new Receiving;
-            $ReceivingVendorDetails = new ReceivingDetails;
+            $ReceivingDetails = new ReceivingDetails;
+            $ReceivingVDetails = new ReceivingVDetails;
             $Settings = new Settings;
 
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($search, $columns, $request->sort, $order, 0, $vendor);
             $results = $Receiving->getData($search, $columns, $request->perpage, $request->page, $request->sort, $order, 0, $vendor);
 
             foreach ($results as $result) {
@@ -262,7 +267,15 @@ class SAPController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $PODetails = $ReceivingVendorDetails->getPODetails($result->PO_Number, $result->MPerpage, $vendor);
+                if ( $flag == 0 ){
+
+                    $PODetails = $ReceivingVDetails->getPODetails($result->PO_Number, $result->MPerpage, $result->vendor);
+        
+                } elseif ( $flag == 1 ) {
+
+                    $PODetails = $ReceivingDetails->getPODetails($result->PO_Number, $result->MPerpage, $result->vendor);
+        
+                }
                 foreach ($PODetails as $PODetail) {
 
                     $data_tmp_d = array();
@@ -457,6 +470,297 @@ class SAPController extends Controller
                 return response()->json([
         
                     "result" => true,
+                    "msg_type" => 'failed',
+                    "message" => 'Data stored unsuccessfully!',
+                    "Not Found Vendor" => array_unique($vendor_nf),
+        
+                ], 400);
+
+            } elseif (count($material_nf) > 0){
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data stored successfully with skiped material!',
+                    "Not Found Material" => array_unique($material_nf),
+        
+                ], 200);
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data stored successfully!',
+        
+                ], 200);
+
+            }
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+    
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: '.$e,
+    
+            ], 400);
+
+        }
+    }
+
+    public function getGR(Request $request)
+    {
+        
+        $request->validate([
+            'code'      => 'nullable|string',
+            'perpage'   => 'required|numeric',
+            'page'      => 'required|numeric',
+            'sort'      => 'required|string',
+            'order'     => 'nullable|string',
+            'vendor'    => 'nullable|string',
+        ]);
+
+        $code = ($request->code != null) ? $request->code : '';
+        $vendor = ($request->vendor != null) ? $request->vendor : '';
+        $order = ($request->order != null) ? $request->order : 'ascend';
+        $columns = array('GR_Number');
+
+        try {
+    
+            $data = array();
+            $GoodReceiving = new GoodReceiving;
+            $GoodReceivingDetail = new GoodReceivingDetail;
+            $Settings = new Settings;
+
+            $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+            $code = $code_sap[1]['name'];
+            
+            $results = $GoodReceiving->getData($code, $columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
+
+            foreach ($results as $result) {
+
+                $data_tmp = array();
+                $data_tmp['_id'] = $result->_id;
+                $data_tmp['GR_Number'] = $result->GR_Number;
+                $data_tmp['PO_Number'] = $result->PO_Number;
+                $data_tmp['SJ_Number'] = $result->SJ_Number;
+                $data_tmp['create_date'] = $result->create_date;
+                $data_tmp['delivery_date'] = $result->delivery_date;
+                $data_tmp['vendor_id'] = $result->vendor_id;
+                $data_tmp['vendor_nm'] = $result->vendor_nm;
+                $data_tmp['warehouse_id'] = $result->warehouse_id;
+                $data_tmp['warehouse_nm'] = $result->warehouse_nm;
+                $data_tmp['description'] = $result->description;
+                $data_tmp['data'] = array();
+                $total_po = 0;
+
+                $GRDetails = $GoodReceivingDetail->getDetails($result->GR_Number, $vendor);
+                foreach ($GRDetails as $GRDetail) {
+
+                    $data_tmp_d = array();
+                    $data_tmp_d['_id'] = $GRDetail->_id;
+                    $data_tmp_d['GR_Number'] = $GRDetail->GR_Number;
+                    $data_tmp_d['PO_Number'] = $GRDetail->PO_Number;
+                    $data_tmp_d['material_id'] = $GRDetail->material_id;
+                    $data_tmp_d['material_name'] = $GRDetail->material_name;
+                    $data_tmp_d['PR_Number'] = $GRDetail->PR_Number;
+                    $data_tmp_d['index'] = $GRDetail->index;
+
+                    $data_tmp_d['receiving_qty'] = $GRDetail->receiving_qty;
+                    $data_tmp_d['receiving_unit'] = $GRDetail->receiving_unit;
+
+                    $data_tmp_d['order_qty'] = $GRDetail->order_qty;
+                    $data_tmp_d['order_unit'] = $GRDetail->order_unit;
+
+                    $data_tmp_d['residual_qty'] = $GRDetail->residual_qty;
+                    $data_tmp_d['residual_unit'] = $GRDetail->residual_unit;
+
+                    $data_tmp_d['stock'] = $GRDetail->stock;
+                    $data_tmp_d['description'] = $GRDetail->description;
+
+                    array_push($data_tmp['data'], $data_tmp_d);
+
+                }
+    
+                array_push($data, $data_tmp);
+            }
+
+            return response()->json([
+                
+                'type' => 'success',
+                'message' => '',
+                'data' => $data,
+                
+            ], 200);
+
+        } catch (\Exception $e) {
+    
+            return response()->json([
+    
+                'type' => 'failed',
+                'message' => 'Err: '.$e.'.',
+                'data' => NULL,
+    
+            ], 400);
+
+        }
+    }
+
+    public function storeGR(Request $request)
+    {
+        $data = array();
+
+        $json = $request->getContent();
+            
+        try {
+
+            $inputs = json_decode($json);
+
+            if (count($inputs) > 0){
+
+                $Material = new Material;
+                $Vendor = new Vendor;
+                $Settings = new Settings;
+
+                $vendor_nf = array();
+                $material_nf = array();
+
+                foreach ($inputs as $input) {
+
+                    $checkVendor = $Vendor->checkVendor($input->vendor);
+    
+                    if (count($checkVendor) > 0) {
+
+                        $GR_Number = $this->stringtoupper($input->GR_Number);
+                        $PO_Number = $this->stringtoupper($input->PO_Number);
+                        $SJ_Number = $this->stringtoupper($input->SJ_Number);
+                        $create_date = $input->create_date;
+                        $delivery_date = $input->delivery_date;
+
+                        $vendor_id = $this->stringtoupper($input->vendor);
+                        $vendor_nm = $this->stringtoupper($checkVendor[0]->name);
+                        $warehouse_id = $this->stringtoupper($input->warehouse);
+
+                        $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
+                        foreach ($SettingGudangDatas as $SettingGudangData) {
+                            $gd = explode(';', $SettingGudangData['name']);
+                            if ($input->warehouse === $gd[0]){
+
+                                $warehouse_nm = $this->stringtoupper($gd[1]);
+
+                            }
+                        };
+    
+                        $GoodReceiving = GoodReceiving::firstOrNew(['GR_Number' => $GR_Number]);
+
+                        $GoodReceiving->GR_Number = $GR_Number;
+                        $GoodReceiving->PO_Number = $PO_Number;
+                        $GoodReceiving->SJ_Number = $SJ_Number;
+                        $GoodReceiving->create_date = $create_date;
+                        $GoodReceiving->delivery_date = $delivery_date;
+
+                        $GoodReceiving->vendor_id = $vendor_id;
+                        $GoodReceiving->vendor_nm = $vendor_nm;
+                        $GoodReceiving->warehouse_id = $warehouse_id;
+                        $GoodReceiving->warehouse_nm = $warehouse_nm;
+
+                        $GoodReceiving->description = $input->description;
+    
+                        $GoodReceiving->created_by = 'SAP';
+                        $GoodReceiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $GoodReceiving->updated_by = 'SAP';
+                        $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $GoodReceiving->save();
+    
+                        $details = $input->data;
+    
+                        if (count($details) > 0){
+
+                            $xx = 0;
+    
+                            foreach ($details as $detail) {
+
+                                $xx++;
+    
+                                $material_id = $this->stringtoupper($detail->material_id);
+                                $material_nm = $this->stringtoupper($detail->material_nm);
+
+                                $PR_Number = $this->stringtoupper($detail->PR_Number);
+    
+                                $receiving_qty = $this->checkNumber($detail->receiving_qty);
+                                $order_qty = $this->checkNumber($detail->order_qty);
+                                $residual_qty = $this->checkNumber($detail->residual_qty);
+    
+
+                                $checkMaterial = $Material->checkMaterial($material_id);
+                                if (count($checkMaterial) > 0) {
+            
+                                    $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
+                                        'GR_Number' => $GR_Number,
+                                        'index' => $xx,
+                                    ]);
+
+                                    $GoodReceivingDetail->GR_Number = $GR_Number;
+                                    $GoodReceivingDetail->PO_Number = $PO_Number;
+                                    $GoodReceivingDetail->material_id = $material_id;
+                                    $GoodReceivingDetail->material_nm = $material_nm;
+
+                                    $GoodReceivingDetail->PR_Number = $PR_Number;
+                                    $GoodReceivingDetail->index = $xx;
+
+                                    $GoodReceivingDetail->receiving_qty = $receiving_qty;
+                                    $GoodReceivingDetail->receiving_unit = $detail->receiving_unit;
+
+                                    $GoodReceivingDetail->order_qty = $order_qty;
+                                    $GoodReceivingDetail->order_unit = $detail->order_unit;
+
+                                    $GoodReceivingDetail->residual_qty = $residual_qty;
+                                    $GoodReceivingDetail->residual_unit = $detail->residual_unit;
+
+                                    $GoodReceivingDetail->stock = $detail->stock;
+                                    $GoodReceivingDetail->description = $detail->description;
+            
+                                    $GoodReceivingDetail->created_by = 'SAP';
+                                    $GoodReceivingDetail->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                    $GoodReceivingDetail->updated_by = 'SAP';
+                                    $GoodReceivingDetail->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                    $GoodReceivingDetail->save();
+                                    
+                                } else {
+                                    array_push($material_nf, $material_id);
+                                }
+    
+                            }
+    
+                        }
+
+                    } else {
+                        array_push($vendor_nf, $input->vendor);
+                    }
+
+                }
+
+            } else {
+
+                return response()->json([
+        
+                    "result" => false,
+                    "msg_type" => 'failed',
+                    "message" => 'Data Not found!',
+        
+                ], 400);
+
+            }
+
+            if (count($vendor_nf) > 0){
+
+                return response()->json([
+        
+                    "result" => false,
                     "msg_type" => 'failed',
                     "message" => 'Data stored unsuccessfully!',
                     "Not Found Vendor" => array_unique($vendor_nf),
