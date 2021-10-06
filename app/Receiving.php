@@ -35,17 +35,19 @@ class Receiving extends Model
             $query = $query->where('vendor', $vendor);
         }
 
-        $query = $query->where('flag', $flag);
-
         if ( $flag == 0 ){
 
+            $query = $query->where('flag', 0);
+
+            $query = $query->orWhere('flag', 1);
+
             $query = $query->where('PO_Status', 0);
-            $query = $query->orWhere('PO_Status', 1);
 
         } elseif ( $flag == 1 ) {
 
-            $query = $query->where('PO_Status', 0);
-            $query = $query->orWhere('PO_Status', 1);
+            $query = $query->where('flag', 1);
+
+            $query = $query->whereBetween('PO_Status', [0, 1]);
 
         }
 
@@ -89,7 +91,7 @@ class Receiving extends Model
 
             $query = $query->orWhere('flag', 1);
 
-            $query = $query->whereBetween('PO_Status', [0, 1]);
+            $query = $query->where('PO_Status', 0);
 
         } elseif ( $flag == 1 ) {
 
