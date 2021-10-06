@@ -389,24 +389,17 @@ class ReceivingController extends Controller
                             $material_id = $this->stringtoupper($input->material_id);
                             $material_name = $this->stringtoupper($input->material_name);
         
-                            $updateFlag = Receiving::where('PO_Number', $PO_Number)->update(['flag' => 1]);
+                            // $updateFlag = Receiving::where('PO_Number', $PO_Number)->update(['flag' => 1]);
             
-                            // $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
+                            $Receiving = Receiving::where('PO_Number', $PO_Number)->first();
             
-                            // $Receiving->PO_Number = $PO_Number;
-                            // $Receiving->create_date = $input->create_date;
-                            // $Receiving->delivery_date = $input->delivery_date;
-                            // $Receiving->release_date = $input->release_date;
-                            // $Receiving->vendor = $input->vendor;
-                            // $Receiving->PO_Status = 1;
-                            // $Receiving->reference = $reference;
-                            // $Receiving->HeaderText = $headerText;
-            
-                            // $Receiving->created_by = auth()->user()->username;
-                            // $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                            // $Receiving->updated_by = auth()->user()->username;
-                            // $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                            // $Receiving->save();
+                            $Receiving->flag = 1;
+                            $Receiving->reference = $reference;
+                            $Receiving->HeaderText = $headerText;
+                            
+                            $Receiving->updated_by = auth()->user()->username;
+                            $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $Receiving->save();
             
                             $checkMaterial = $Material->checkMaterial($material_id);
         
@@ -458,7 +451,7 @@ class ReceivingController extends Controller
                         }
                         #endregion
 
-                        if ( $updateFlag && $ReceivingDetails ){
+                        if ( $Receiving && $ReceivingDetails ){
 
                             return response()->json([
                         
