@@ -18,12 +18,12 @@ class ReceivingController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'columns' => 'required',
-            'perpage' => 'required|numeric',
-            'page' => 'required|numeric',
-            'sort' => 'required|string',
-            'order' => 'string',
-            'flag' => 'required|numeric|max:1',
+            'columns'   => 'required',
+            'perpage'   => 'required|numeric',
+            'page'      => 'required|numeric',
+            'sort'      => 'required|string',
+            'order'     => 'string',
+            'flag'      => 'required|numeric|max:1',
             
         ]);
 
