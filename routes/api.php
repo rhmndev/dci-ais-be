@@ -64,12 +64,19 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/postGR', 'ReceivingController@postGR');
         #endregion
 
-        #region Transaction Receive Details
-        Route::get('/receivedetail', 'ReceivingMaterialController@index');
-        Route::get('/receivedetail/{id}', 'ReceivingMaterialController@show');
-        Route::get('/scanData', 'ReceivingMaterialController@scanData');
+        #region Transaction Receive Vendor Details
+        Route::get('/receiveVDetail', 'ReceivingVDetailsController@index');
+        Route::get('/receiveVDetail/{id}', 'ReceivingVDetailsController@show');
+        Route::get('/scanData', 'ReceivingVDetailsController@scanData');
         
-        Route::post('/receivedetail', 'ReceivingMaterialController@update');
+        Route::post('/receiveVDetail', 'ReceivingVDetailsController@update');
+        #endregion
+
+        #region Transaction Receive Details
+        Route::get('/receiveDetail', 'ReceivingDetails@index');
+        Route::get('/receiveDetail/{id}', 'ReceivingDetails@show');
+        
+        Route::post('/receiveDetail', 'ReceivingDetails@update');
         #endregion
 
         #region Template
@@ -112,3 +119,6 @@ Route::post('/dataMaterialSAP', 'SAPController@storeMaterial');
 
 Route::get('/dataPOSAP', 'SAPController@getPO');
 Route::post('/dataPOSAP', 'SAPController@storePO');
+
+Route::get('/dataGRSAP', 'SAPController@getGR');
+Route::post('/dataGRSAP', 'SAPController@storeGR');

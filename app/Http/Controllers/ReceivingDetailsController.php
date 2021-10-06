@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Receiving;
-use App\ReceivingMaterial;
+use App\ReceivingDetails;
 use App\Vendor;
 use App\Settings;
 use App\Scale;
 use Carbon\Carbon;
 
-class ReceivingMaterialController extends Controller
+class ReceivingDetailsController extends Controller
 {
     //
     public function index(Request $request)
@@ -31,16 +31,16 @@ class ReceivingMaterialController extends Controller
         try {
     
             $data = array();
-            $ReceivingMaterial = new ReceivingMaterial;
+            $ReceivingDetails = new ReceivingDetails;
             $Settings = new Settings;
 
             $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage');
 
             $perpage = $request->perpage != null ? $request->perpage : $Material_Perpage[0];
 
-            $resultAlls = $ReceivingMaterial->getAllData($request->PO_Number, $search, $request->columns, $request->sort, $order, $vendor);
+            $resultAlls = $ReceivingDetails->getAllData($request->PO_Number, $search, $request->columns, $request->sort, $order, $vendor);
 
-            $results = $ReceivingMaterial->getData($request->PO_Number, $search, $request->columns, $perpage, $request->page, $request->sort, $order, $vendor);
+            $results = $ReceivingDetails->getData($request->PO_Number, $search, $request->columns, $perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
                 $data_tmp = array();
@@ -101,25 +101,25 @@ class ReceivingMaterialController extends Controller
     {
         $vendor = auth()->user()->vendor_code;
 
-        $ReceivingMaterial = ReceivingMaterial::where('_id', $id);
+        $ReceivingDetails = ReceivingDetails::where('_id', $id);
         if ($vendor != ''){
-            $ReceivingMaterial = $ReceivingMaterial->where('vendor', $vendor);
+            $ReceivingDetails = $ReceivingDetails->where('vendor', $vendor);
         }
-        $ReceivingMaterial = $ReceivingMaterial->first();
+        $ReceivingDetails = $ReceivingDetails->first();
 
-        if ($ReceivingMaterial){
+        if ($ReceivingDetails){
 
             $Vendor = new Vendor;
     
-            $vendor_data = $Vendor->checkVendor($ReceivingMaterial->vendor);
+            $vendor_data = $Vendor->checkVendor($ReceivingDetails->vendor);
             if (count($vendor_data) > 0){
     
                 $vendor_data = $vendor_data[0];
-                $ReceivingMaterial->vendor_name = $vendor_data->name;
+                $ReceivingDetails->vendor_name = $vendor_data->name;
     
             } else {
     
-                $ReceivingMaterial->vendor_name = '';
+                $ReceivingDetails->vendor_name = '';
     
             }
     
@@ -128,14 +128,14 @@ class ReceivingMaterialController extends Controller
             
             foreach ($SettingPPNs as $SettingPPN) {
                 $ppn = explode(';', $SettingPPN['name']);
-                if ($ppn[0] === $ReceivingMaterial->ppn){
-                    $ReceivingMaterial->ppn_p = $ppn[1];
+                if ($ppn[0] === $ReceivingDetails->ppn){
+                    $ReceivingDetails->ppn_p = $ppn[1];
                 }
             };
 
             return response()->json([
                 'type' => 'success',
-                'data' => $ReceivingMaterial,
+                'data' => $ReceivingDetails,
             ], 200);
 
         } else {
@@ -163,8 +163,8 @@ class ReceivingMaterialController extends Controller
 
         try {
 
-            $ReceivingMaterial = new ReceivingMaterial;
-            $data = $ReceivingMaterial->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
+            $ReceivingDetails = new ReceivingDetails;
+            $data = $ReceivingDetails->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
 
             if ($data){
 
@@ -257,21 +257,21 @@ class ReceivingMaterialController extends Controller
 
                 foreach ($inputs as $input) {
             
-                    $ReceivingMaterial = ReceivingMaterial::where('_id', $input->_id)->first();
+                    $ReceivingDetails = ReceivingDetails::where('_id', $input->_id)->first();
 
-                    $ReceivingMaterial->del_note = $input->del_note;
-                    $ReceivingMaterial->del_date = $input->del_date;
-                    $ReceivingMaterial->del_qty = $input->del_qty;
-                    $ReceivingMaterial->prod_date = $input->prod_date;
-                    $ReceivingMaterial->prod_lot = $input->prod_lot;
-                    $ReceivingMaterial->material = $input->material;
-                    $ReceivingMaterial->o_name = $input->o_name;
-                    $ReceivingMaterial->o_code = $input->o_code;
+                    $ReceivingDetails->del_note = $input->del_note;
+                    $ReceivingDetails->del_date = $input->del_date;
+                    $ReceivingDetails->del_qty = $input->del_qty;
+                    $ReceivingDetails->prod_date = $input->prod_date;
+                    $ReceivingDetails->prod_lot = $input->prod_lot;
+                    $ReceivingDetails->material = $input->material;
+                    $ReceivingDetails->o_name = $input->o_name;
+                    $ReceivingDetails->o_code = $input->o_code;
 
-                    $ReceivingMaterial->updated_by = auth()->user()->username;
-                    $ReceivingMaterial->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                    $ReceivingDetails->updated_by = auth()->user()->username;
+                    $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
-                    $ReceivingMaterial->save();
+                    $ReceivingDetails->save();
 
                     if (
                         $this->IsNullOrEmptyString($input->del_note) ||
@@ -279,7 +279,7 @@ class ReceivingMaterialController extends Controller
                         $this->IsNullOrEmptyString($input->material) || 
                         $this->IsNullOrEmptyString($input->o_name) || 
                         $this->IsNullOrEmptyString($input->o_code) ||
-                        intval($input->del_qty) < intval($ReceivingMaterial->qty)
+                        intval($input->del_qty) < intval($ReceivingDetails->qty)
                     )
                     {
                         $data_empty = $data_empty + 1;
@@ -328,7 +328,8 @@ class ReceivingMaterialController extends Controller
         }
     }
 
-    private function IsNullOrEmptyString($str){
+    private function IsNullOrEmptyString($str)
+    {
         return (!isset($str) || trim($str) === '');
     }
 }

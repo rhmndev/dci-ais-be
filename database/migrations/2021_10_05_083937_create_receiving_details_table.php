@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateReceivingMaterialsTable extends Migration
+class CreateReceivingDetailsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class CreateReceivingMaterialsTable extends Migration
      */
     public function up()
     {
-        Schema::dropIfExists('receiving_materials');
-        Schema::create('receiving_materials', function (Blueprint $table) {
+        Schema::dropIfExists('receiving_details');
+        Schema::create('receiving_details', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('PO_Number');
             $table->string('create_date');
@@ -58,6 +58,6 @@ class CreateReceivingMaterialsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('receiving_materials');
+        Schema::dropIfExists('receiving_details');
     }
 }
