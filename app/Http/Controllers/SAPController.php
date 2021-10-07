@@ -273,6 +273,7 @@ class SAPController extends Controller
                     $data_tmp_d['create_date'] = $result->create_date;
                     $data_tmp_d['delivery_date'] = $result->delivery_date;
                     $data_tmp_d['release_date'] = $result->release_date;
+                    $data_tmp_d['PR_Number'] = $PODetail->PR_Number;
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
