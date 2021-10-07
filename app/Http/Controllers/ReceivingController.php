@@ -7,7 +7,8 @@ use App\Vendor;
 use App\Material;
 use App\Receiving;
 use App\ReceivingDetails;
-use App\ReceivingVDetails;
+use App\GoodReceiving;
+use App\GoodReceivingDetail;
 use App\Settings;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
@@ -23,13 +24,10 @@ class ReceivingController extends Controller
             'page'      => 'required|numeric',
             'sort'      => 'required|string',
             'order'     => 'string',
-            'flag'      => 'required|numeric|max:1',
-            
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
-        $flag = ($request->flag != 0) ? 1 : 0;
         $vendor = auth()->user()->vendor_code;
 
         try {
@@ -37,14 +35,13 @@ class ReceivingController extends Controller
             $data = array();
             $Receiving = new Receiving;
             $ReceivingDetails = new ReceivingDetails;
-            $ReceivingVDetails = new ReceivingVDetails;
             $Settings = new Settings;
 
             $Material_Perpage = $Settings->scopeGetValue($Settings, 'Material_Perpage')[0]['name'];
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
 
-            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $flag, $vendor);
-            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $flag, $vendor);
+            $resultAlls = $Receiving->getAllData($keyword, $request->columns, $request->sort, $order, $vendor);
+            $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
                 
@@ -58,15 +55,7 @@ class ReceivingController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                if ( $flag == 0 ){
-
-                    $PODetails = $ReceivingVDetails->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
-        
-                } elseif ( $flag == 1 ) {
-
-                    $PODetails = $ReceivingDetails->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
-        
-                }
+                $PODetails = $ReceivingDetails->getPODetails($result->PO_Number, $Material_Perpage, $result->vendor);
 
                 foreach ($PODetails as $PODetail) {
 
@@ -85,19 +74,20 @@ class ReceivingController extends Controller
                     $data_tmp_d['price'] = $PODetail->price;
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
+                    $data_tmp_d['ppn'] = $PODetail->ppn;
                     $data_tmp_d['QRCode'] = $result->_id.';'.$PODetail->_id;
             
                     $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                     foreach ($SettingPPNs as $SettingPPN) {
                         $ppn = explode(';', $SettingPPN['name']);
                         if ($ppn[0] === $PODetail->ppn){
-                            $data_tmp_d['ppn'] = $ppn[1];
+                            $data_tmp_d['ppnp'] = $ppn[1];
                         }
                     };
 
                     $data_tmp_d['del_note'] = $PODetail->del_note;
                     $data_tmp_d['del_date'] = $PODetail->del_date;
-                    $data_tmp_d['del_qty'] = $PODetail->qty;
+                    $data_tmp_d['del_qty'] = $PODetail->del_qty;
                     $data_tmp_d['prod_date'] = $PODetail->prod_date;
                     $data_tmp_d['prod_lot'] = $PODetail->prod_lot;
                     $data_tmp_d['material'] = $PODetail->material;
@@ -107,7 +97,7 @@ class ReceivingController extends Controller
                     $total = $PODetail->qty * $PODetail->price;
                     $data_tmp_d['sub_total'] = $total;
 
-                    $total = ((str_replace("%", "", $data_tmp_d['ppn']) / 100) * $total) + $total;
+                    $total = ((str_replace("%", "", $data_tmp_d['ppnp']) / 100) * $total) + $total;
 
                     $data_tmp_d['total'] = $total;
 
@@ -183,6 +173,8 @@ class ReceivingController extends Controller
                         $PO_Number = $this->stringtoupper($result->PoNo);
                         $material_id = $this->stringtoupper($result->Matnr);
                         $material_name = $this->stringtoupper($result->Maktx);
+
+                        $PR_Number = $this->stringtoupper($result->Purchase_req);
     
                         $create_date = $this->dateMaking($result->Crdate);
                         $delivery_date = $this->dateMaking($result->Deldate);
@@ -196,9 +188,6 @@ class ReceivingController extends Controller
                         $Receiving->release_date = $release_date;
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
-                        $Receiving->flag = 0;
-                        $Receiving->reference = null;
-                        $Receiving->HeaderText = null;
     
                         $Receiving->created_by = auth()->user()->username;
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -210,50 +199,53 @@ class ReceivingController extends Controller
     
                         if (count($checkMaterial) > 0) {
     
-                            $ReceivingVDetails = ReceivingVDetails::firstOrNew([
+                            $ReceivingDetails = ReceivingDetails::firstOrNew([
                                 'PO_Number' => $PO_Number,
                                 'item_po' => $result->ItemNo,
                             ]);
 
-                            $ReceivingVDetails->PO_Number = $PO_Number;
-                            $ReceivingVDetails->create_date = $create_date;
-                            $ReceivingVDetails->delivery_date = $delivery_date;
-                            $ReceivingVDetails->release_date = $release_date;
-                            $ReceivingVDetails->material_id = $material_id;
-                            $ReceivingVDetails->material_name = $material_name;
-                            $ReceivingVDetails->item_po = $result->ItemNo;
-                            $ReceivingVDetails->index_po = intval($result->ItemNo / 10);
-                            $ReceivingVDetails->qty = $result->Quantity;
-                            $ReceivingVDetails->unit = $result->Meins;
-                            $ReceivingVDetails->price = $result->Price;
-                            $ReceivingVDetails->currency = $result->Currency;
-                            $ReceivingVDetails->vendor = $result->Vendor;
-                            $ReceivingVDetails->ppn = $result->Mwskz;
+                            $ReceivingDetails->PO_Number = $PO_Number;
+                            $ReceivingDetails->create_date = $create_date;
+                            $ReceivingDetails->delivery_date = $delivery_date;
+                            $ReceivingDetails->release_date = $release_date;
+                            $ReceivingDetails->PR_Number = $PR_Number;
+                            $ReceivingDetails->material_id = $material_id;
+                            $ReceivingDetails->material_name = $material_name;
+                            $ReceivingDetails->item_po = $result->ItemNo;
+                            $ReceivingDetails->index_po = intval($result->ItemNo / 10);
+                            $ReceivingDetails->qty = $result->Quantity;
+                            $ReceivingDetails->unit = $result->Meins;
+                            $ReceivingDetails->price = $result->Price;
+                            $ReceivingDetails->currency = $result->Currency;
+                            $ReceivingDetails->vendor = $result->Vendor;
+                            $ReceivingDetails->ppn = $result->Mwskz;
                             
-                            if (!$ReceivingVDetails->exists) {
+                            if (!$ReceivingDetails->exists) {
 
-                                $ReceivingVDetails->del_note = null;
-                                $ReceivingVDetails->del_date = $delivery_date;
-                                $ReceivingVDetails->del_qty = $result->Quantity;
-                                $ReceivingVDetails->prod_date = $create_date;
-                                $ReceivingVDetails->prod_lot = null;
-                                $ReceivingVDetails->material = null;
-                                $ReceivingVDetails->o_name = null;
-                                $ReceivingVDetails->o_code = null;
+                                $ReceivingDetails->del_note = null;
+                                $ReceivingDetails->del_date = $delivery_date;
+                                $ReceivingDetails->del_qty = $result->Quantity;
+                                $ReceivingDetails->prod_date = $create_date;
+                                $ReceivingDetails->prod_lot = null;
+                                $ReceivingDetails->material = null;
+                                $ReceivingDetails->o_name = null;
+                                $ReceivingDetails->o_code = null;
 
-                                $ReceivingVDetails->receive_qty = $result->Quantity;
-                                $ReceivingVDetails->reference = null;
-                                $ReceivingVDetails->gudang_id = null;
-                                $ReceivingVDetails->gudang_nm = null;
-                                $ReceivingVDetails->batch = null;
+                                $ReceivingDetails->receive_qty = $result->Quantity;
+                                $ReceivingDetails->reference = null;
+                                $ReceivingDetails->gudang_id = null;
+                                $ReceivingDetails->gudang_nm = null;
+                                $ReceivingDetails->batch = null;
+
+                                $ReceivingDetails->flag = 0;
 
                             }
     
-                            $ReceivingVDetails->created_by = auth()->user()->username;
-                            $ReceivingVDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                            $ReceivingVDetails->updated_by = auth()->user()->username;
-                            $ReceivingVDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                            $ReceivingVDetails->save();
+                            $ReceivingDetails->created_by = auth()->user()->username;
+                            $ReceivingDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $ReceivingDetails->updated_by = auth()->user()->username;
+                            $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $ReceivingDetails->save();
                             
                         } else {
                             array_push($material_nf, $material_id);
@@ -341,8 +333,11 @@ class ReceivingController extends Controller
 
             if (count($inputs) > 0){
 
+                $dataGR = array();
+
                 $getHeader = $this->getSAPToken();
 
+                $Vendor = new Vendor;
                 $Settings = new Settings;
                 $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
                 $code = $code_sap[1]['name'];
@@ -369,6 +364,7 @@ class ReceivingController extends Controller
                     $data_tmp['EntryQty'] = strval($input->receive_qty);
                     $data_tmp['Satuan'] = $input->unit;
 
+                    array_push($dataGR, $input->PO_Number);
                     array_push($data['GoodReceiptSet'], $data_tmp);
 
                 }
@@ -389,69 +385,99 @@ class ReceivingController extends Controller
                             $material_id = $this->stringtoupper($input->material_id);
                             $material_name = $this->stringtoupper($input->material_name);
         
-                            // $updateFlag = Receiving::where('PO_Number', $PO_Number)->update(['flag' => 1]);
+                            $GR_Number = $this->genGR($dataGR).'-'.strtotime($data['PostingDate']);
+                            $Receiving = new Receiving;
+                            $ReceivingData = $Receiving->getFirst($PO_Number);
             
-                            $Receiving = Receiving::where('PO_Number', $PO_Number)->first();
+                            $GoodReceiving = GoodReceiving::firstOrNew([
+                                'GR_Number' => $GR_Number,
+                                'PO_Number' => join(", ", $dataGR)
+                            ]);
             
-                            $Receiving->flag = 1;
-                            $Receiving->reference = $reference;
-                            $Receiving->HeaderText = $headerText;
+                            $GoodReceiving->GR_Number = $GR_Number;
+                            $GoodReceiving->PO_Number = join(", ", $dataGR);
+                            $GoodReceiving->SJ_Number = $reference;
+        
+                            $GoodReceiving->create_date = $input->create_date;
+                            $GoodReceiving->delivery_date = $input->delivery_date;
+                            $GoodReceiving->release_date = $input->release_date;
+        
+                            $GoodReceiving->PO_Status = $ReceivingData->PO_Status;
                             
-                            $Receiving->updated_by = auth()->user()->username;
-                            $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                            $Receiving->save();
+                            $GoodReceiving->vendor_id = $input->vendor;
+                            $GoodReceiving->vendor_nm = $Vendor->checkVendor($input->vendor)[0]->name;
+                            $GoodReceiving->warehouse_id = $input->gudang_id;
+                            $GoodReceiving->warehouse_nm = $input->gudang_nm;
+                            $GoodReceiving->description = null;
+                            
+                            $GoodReceiving->created_by = auth()->user()->username;
+                            $GoodReceiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $GoodReceiving->updated_by = auth()->user()->username;
+                            $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $GoodReceiving->save();
             
                             $checkMaterial = $Material->checkMaterial($material_id);
         
                             if (count($checkMaterial) > 0) {
         
-                                $ReceivingDetails = ReceivingDetails::firstOrNew([
+                                $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
+                                    'GR_Number' => $GR_Number,
                                     'PO_Number' => $PO_Number,
                                     'item_po' => $input->item_po,
                                 ]);
         
-                                $ReceivingDetails->PO_Number = $PO_Number;
-                                $ReceivingDetails->create_date = $input->create_date;
-                                $ReceivingDetails->delivery_date = $input->delivery_date;
-                                $ReceivingDetails->release_date = $input->release_date;
-                                $ReceivingDetails->material_id = $material_id;
-                                $ReceivingDetails->material_name = $material_name;
-                                $ReceivingDetails->item_po = $input->item_po;
-                                $ReceivingDetails->index_po = $input->index_po;
-                                $ReceivingDetails->qty = $input->qty;
-                                $ReceivingDetails->unit = $input->unit;
-                                $ReceivingDetails->price = $input->price;
-                                $ReceivingDetails->currency = $input->currency;
-                                $ReceivingDetails->vendor = $input->vendor;
-                                $ReceivingDetails->ppn = $input->ppn;
+                                $GoodReceivingDetail->GR_Number = $GR_Number;
         
-                                $ReceivingDetails->del_note = $input->del_note;
-                                $ReceivingDetails->del_date = $input->del_date;
-                                $ReceivingDetails->del_qty = $input->del_qty;
-                                $ReceivingDetails->prod_date = $input->prod_date;
-                                $ReceivingDetails->prod_lot = $input->prod_lot;
-                                $ReceivingDetails->material = $input->material;
-                                $ReceivingDetails->o_name = $input->o_name;
-                                $ReceivingDetails->o_code = $input->o_code;
+                                $GoodReceivingDetail->PO_Number = $PO_Number;
+                                $GoodReceivingDetail->create_date = $input->create_date;
+                                $GoodReceivingDetail->delivery_date = $input->delivery_date;
+                                $GoodReceivingDetail->release_date = $input->release_date;
         
-                                $ReceivingDetails->receive_qty = $input->receive_qty;
-                                $ReceivingDetails->reference = $reference;
-                                $ReceivingDetails->gudang_id = $input->gudang_id;
-                                $ReceivingDetails->gudang_nm = $input->gudang_nm;
-                                $ReceivingDetails->batch = $input->batch;
+                                $GoodReceivingDetail->material_id = $material_id;
+                                $GoodReceivingDetail->material_name = $material_name;
+                                $GoodReceivingDetail->item_po = $input->item_po;
+                                $GoodReceivingDetail->index_po = $input->index_po;
+                                $GoodReceivingDetail->qty = $input->qty;
+                                $GoodReceivingDetail->unit = $input->unit;
+                                $GoodReceivingDetail->price = $input->price;
+                                $GoodReceivingDetail->currency = $input->currency;
+                                $GoodReceivingDetail->vendor = $input->vendor;
+                                $GoodReceivingDetail->ppn = $input->ppn;
         
-                                $ReceivingDetails->created_by = auth()->user()->username;
-                                $ReceivingDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                                $ReceivingDetails->updated_by = auth()->user()->username;
-                                $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                                $ReceivingDetails->save();
+                                $GoodReceivingDetail->del_note = $input->del_note;
+                                $GoodReceivingDetail->del_date = $input->del_date;
+                                $GoodReceivingDetail->del_qty = $input->del_qty;
+                                $GoodReceivingDetail->prod_date = $input->prod_date;
+                                $GoodReceivingDetail->prod_lot = $input->prod_lot;
+                                $GoodReceivingDetail->material = $input->material;
+                                $GoodReceivingDetail->o_name = $input->o_name;
+                                $GoodReceivingDetail->o_code = $input->o_code;
+        
+                                $GoodReceivingDetail->receive_qty = $input->receive_qty;
+                                $GoodReceivingDetail->reference = $reference;
+                                $GoodReceivingDetail->gudang_id = $input->gudang_id;
+                                $GoodReceivingDetail->gudang_nm = $input->gudang_nm;
+                                $GoodReceivingDetail->batch = $input->batch;
+        
+                                $GoodReceivingDetail->PR_Number = $input->PR_Number;
+                                $GoodReceivingDetail->residual_qty = $input->scale_qty;
+                                $GoodReceivingDetail->stock = null;
+                                $GoodReceivingDetail->description = null;
+        
+                                $GoodReceivingDetail->created_by = auth()->user()->username;
+                                $GoodReceivingDetail->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                $GoodReceivingDetail->updated_by = auth()->user()->username;
+                                $GoodReceivingDetail->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                $GoodReceivingDetail->save();
                                 
                             }
+        
+                            $updateFlag = ReceivingDetails::where('PO_Number', $PO_Number)->where('material_id', $material_id)->update(['flag' => 1]);
         
                         }
                         #endregion
 
-                        if ( $Receiving && $ReceivingDetails ){
+                        if ( $GoodReceiving && $GoodReceivingDetail && $updateFlag ){
 
                             return response()->json([
                         
@@ -645,5 +671,12 @@ class ReceivingController extends Controller
             return 'err: '.$e;
 
         }
+    }
+
+    private function genGR($arr)
+    {
+        $data = array_unique($arr);
+        $data = join("_", $data);
+        return $data;
     }
 }

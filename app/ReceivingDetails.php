@@ -113,6 +113,8 @@ class ReceivingDetails extends Model
         if ($vendor != '') {
             $query = $query->where('vendor', $vendor);
         }
+
+        $query = $query->where('flag', 0);
         
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 

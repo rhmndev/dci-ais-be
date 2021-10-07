@@ -16,20 +16,43 @@ class CreateGoodReceivingDetailsTable extends Migration
         Schema::dropIfExists('good_receiving_details');
         Schema::create('good_receiving_details', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('GR_Number');
             $table->string('PO_Number');
+            $table->string('create_date');
+            $table->string('delivery_date');
+            $table->string('release_date');
+
             $table->string('material_id');
-            $table->string('material_nm');
-            $table->string('PR_Number');
-            $table->string('index');
-            $table->string('receiving_qty');
-            $table->string('receiving_unit');
-            $table->string('order_qty');
-            $table->string('order_unit');
-            $table->string('residual_qty');
-            $table->string('residual_unit');
-            $table->string('stock');
-            $table->string('description');
+            $table->string('material_name');
+            $table->string('item_po');
+            $table->string('index_po');
+            $table->string('qty');
+            $table->string('unit');
+            $table->string('price');
+            $table->string('currency');
+            $table->string('vendor');
+            $table->string('ppn');
+
+            $table->string('del_note')->nullable();
+            $table->string('del_date')->nullable();
+            $table->string('del_qty')->nullable();
+            $table->string('prod_date')->nullable();
+            $table->string('prod_lot')->nullable();
+            $table->string('material')->nullable();
+            $table->string('o_name')->nullable();
+            $table->string('o_code')->nullable();
+
+            $table->string('receive_qty')->nullable();
+            $table->string('reference')->nullable();
+            $table->string('gudang_id')->nullable();
+            $table->string('gudang_nm')->nullable();
+            $table->string('batch')->nullable();
+
+            $table->string('GR_Number');
+            $table->string('PR_Number')->nullable();
+            $table->string('residual_qty')->nullable();
+            $table->string('stock')->nullable();
+            $table->string('description')->nullable();
+
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();

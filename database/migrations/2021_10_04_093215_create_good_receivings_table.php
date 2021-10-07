@@ -19,8 +19,12 @@ class CreateGoodReceivingsTable extends Migration
             $table->string('GR_Number');
             $table->string('PO_Number');
             $table->string('SJ_Number');
+
             $table->string('create_date');
             $table->string('delivery_date');
+            $table->string('release_date');
+            
+            $table->string('PO_Status');
             $table->string('vendor_id');
             $table->string('vendor_nm');
             $table->string('warehouse_id');
