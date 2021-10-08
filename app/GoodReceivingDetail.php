@@ -18,7 +18,7 @@ class GoodReceivingDetail extends Model
 
         $query = GoodReceivingDetail::query();
 
-        $query = $query->where('SJ_Number', $SJ_Number);
+        $query = $query->where('reference', $SJ_Number);
 
         if ($vendor != '') {
             $query = $query->where('vendor', $vendor);
