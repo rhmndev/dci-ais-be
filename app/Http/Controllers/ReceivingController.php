@@ -407,6 +407,7 @@ class ReceivingController extends Controller
                             $GoodReceiving->release_date = $input->release_date;
         
                             $GoodReceiving->PO_Status = $ReceivingData->PO_Status;
+                            $GoodReceiving->GR_Date = date('Y-m-d');
                             
                             $GoodReceiving->vendor_id = $input->vendor;
                             $GoodReceiving->vendor_nm = $Vendor->checkVendor($input->vendor)[0]->name;
