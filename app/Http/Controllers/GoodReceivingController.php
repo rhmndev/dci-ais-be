@@ -44,7 +44,7 @@ class GoodReceivingController extends Controller
                 
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
-                $data_tmp['GR_Number'] = '-';
+                $data_tmp['GR_Number'] = $result->GR_Number;
                 $data_tmp['PO_Number'] = $result->PO_Number;
                 $data_tmp['SJ_Number'] = $result->SJ_Number;
                 $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];

@@ -30,6 +30,7 @@ class CreateGoodReceivingsTable extends Migration
             $table->string('warehouse_id');
             $table->string('warehouse_nm');
             $table->string('description');
+            $table->string('headerText');
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();
