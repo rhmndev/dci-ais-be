@@ -557,8 +557,10 @@ class ReceivingController extends Controller
 
     private function stringtoupper($string)
     {
-        $string = strtolower($string);
-        $string = strtoupper($string);
+        if ($string != ''){
+            $string = strtolower($string);
+            $string = strtoupper($string);
+        }
         return $string;
     }
 
