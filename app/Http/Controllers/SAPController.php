@@ -385,7 +385,7 @@ class SAPController extends Controller
                                 $material_id = $this->stringtoupper($detail->material_id);
                                 $material_name = $this->stringtoupper($detail->material_name);
     
-                                $PR_Number = $this->stringtoupper($detail->Purchase_req);
+                                $PR_Number = $this->stringtoupper($detail->PurchaseReq);
     
                                 $qty = $this->checkNumber($detail->qty);
                                 $price = $this->checkNumber($detail->price);
