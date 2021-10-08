@@ -174,7 +174,7 @@ class ReceivingController extends Controller
                         $material_id = $this->stringtoupper($result->Matnr);
                         $material_name = $this->stringtoupper($result->Maktx);
 
-                        // $PR_Number = $this->stringtoupper($result->Purchase_req);
+                        $PR_Number = $this->stringtoupper($result->Purchase_req);
     
                         $create_date = $this->dateMaking($result->Crdate);
                         $delivery_date = $this->dateMaking($result->Deldate);
@@ -208,8 +208,7 @@ class ReceivingController extends Controller
                             $ReceivingDetails->create_date = $create_date;
                             $ReceivingDetails->delivery_date = $delivery_date;
                             $ReceivingDetails->release_date = $release_date;
-                            // $ReceivingDetails->PR_Number = $PR_Number;
-                            $ReceivingDetails->PR_Number = '12312313';
+                            $ReceivingDetails->PR_Number = $PR_Number;
                             $ReceivingDetails->material_id = $material_id;
                             $ReceivingDetails->material_name = $material_name;
                             $ReceivingDetails->item_po = $result->ItemNo;
@@ -372,123 +371,152 @@ class ReceivingController extends Controller
 
                 }
 
-                
+                $postSAP = $this->postSAP($data, $getHeader);
+                $postSAP = json_decode($postSAP);
 
-                #region Insert to Receiving
-                $Material = new Material;
+                if ( isset($postSAP->d) ){
 
-                $GR_Number = $this->genGR($dataGR).'-'.strtotime($data['PostingDate']);
-                $PO_Number_joins = $this->genPO($dataPO);
+                    if ( $postSAP->d->Status === 'S' ){
 
-                foreach ($inputs as $input) {
-
-                    $PO_Number = $this->stringtoupper($input->PO_Number);
-                    $material_id = $this->stringtoupper($input->material_id);
-                    $material_name = $this->stringtoupper($input->material_name);
-
-                    $Receiving = new Receiving;
-                    $ReceivingData = $Receiving->getFirst($PO_Number);
-    
-                    $GoodReceiving = GoodReceiving::firstOrNew([
-                        'GR_Number' => $GR_Number,
-                        'PO_Number' => join(", ", $PO_Number_joins)
-                    ]);
-    
-                    $GoodReceiving->GR_Number = $GR_Number;
-                    $GoodReceiving->PO_Number = join(", ", $PO_Number_joins);
-                    $GoodReceiving->SJ_Number = $reference;
-
-                    $GoodReceiving->create_date = $input->create_date;
-                    $GoodReceiving->delivery_date = $input->delivery_date;
-                    $GoodReceiving->release_date = $input->release_date;
-
-                    $GoodReceiving->PO_Status = $ReceivingData->PO_Status;
-                    
-                    $GoodReceiving->vendor_id = $input->vendor;
-                    $GoodReceiving->vendor_nm = $Vendor->checkVendor($input->vendor)[0]->name;
-                    $GoodReceiving->warehouse_id = $input->gudang_id;
-                    $GoodReceiving->warehouse_nm = $input->gudang_nm;
-                    $GoodReceiving->description = null;
-                    
-                    $GoodReceiving->created_by = auth()->user()->username;
-                    $GoodReceiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                    $GoodReceiving->updated_by = auth()->user()->username;
-                    $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                    $GoodReceiving->save();
-    
-                    $checkMaterial = $Material->checkMaterial($material_id);
-
-                    if (count($checkMaterial) > 0) {
-
-                        $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
-                            'GR_Number' => $GR_Number,
-                            'PO_Number' => $PO_Number,
-                            'item_po' => $input->item_po,
-                        ]);
-
-                        $GoodReceivingDetail->GR_Number = $GR_Number;
-
-                        $GoodReceivingDetail->PO_Number = $PO_Number;
-                        $GoodReceivingDetail->create_date = $input->create_date;
-                        $GoodReceivingDetail->delivery_date = $input->delivery_date;
-                        $GoodReceivingDetail->release_date = $input->release_date;
-
-                        $GoodReceivingDetail->material_id = $material_id;
-                        $GoodReceivingDetail->material_name = $material_name;
-                        $GoodReceivingDetail->item_po = $input->item_po;
-                        $GoodReceivingDetail->index_po = $input->index_po;
-                        $GoodReceivingDetail->qty = $input->qty;
-                        $GoodReceivingDetail->unit = $input->unit;
-                        $GoodReceivingDetail->price = $input->price;
-                        $GoodReceivingDetail->currency = $input->currency;
-                        $GoodReceivingDetail->vendor = $input->vendor;
-                        $GoodReceivingDetail->ppn = $input->ppn;
-
-                        $GoodReceivingDetail->del_note = $input->del_note;
-                        $GoodReceivingDetail->del_date = $input->del_date;
-                        $GoodReceivingDetail->del_qty = $input->del_qty;
-                        $GoodReceivingDetail->prod_date = $input->prod_date;
-                        $GoodReceivingDetail->prod_lot = $input->prod_lot;
-                        $GoodReceivingDetail->material = $input->material;
-                        $GoodReceivingDetail->o_name = $input->o_name;
-                        $GoodReceivingDetail->o_code = $input->o_code;
-
-                        $GoodReceivingDetail->receive_qty = $input->receive_qty;
-                        $GoodReceivingDetail->reference = $reference;
-                        $GoodReceivingDetail->gudang_id = $input->gudang_id;
-                        $GoodReceivingDetail->gudang_nm = $input->gudang_nm;
-                        $GoodReceivingDetail->batch = $input->batch;
-
-                        $GoodReceivingDetail->PR_Number = $input->PR_Number;
-                        $GoodReceivingDetail->residual_qty = $input->scale_qty;
-                        $GoodReceivingDetail->stock = null;
-                        $GoodReceivingDetail->description = null;
-
-                        $GoodReceivingDetail->created_by = auth()->user()->username;
-                        $GoodReceivingDetail->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                        $GoodReceivingDetail->updated_by = auth()->user()->username;
-                        $GoodReceivingDetail->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-                        $GoodReceivingDetail->save();
-                        
-                    }
-
-                    $updateFlag = ReceivingDetails::where('PO_Number', $PO_Number)
-                    ->where('material_id', $material_id)
-                    ->where('index_po', $input->index_po)
-                    ->update(['flag' => 1]);
-
-                }
-                #endregion
-
-                if ( $GoodReceiving && $GoodReceivingDetail && $updateFlag ){
-
-                    return response()->json([
-                
-                        "result" => true,
-                        "msg_type" => 'Success',
-                        "message" => 'Data success sended',
+                        #region Insert to Receiving
+                        $Material = new Material;
+        
+                        $GR_Number = $this->genGR($dataGR).'-'.strtotime($data['PostingDate']);
+                        $PO_Number_joins = $this->genPO($dataPO);
+        
+                        foreach ($inputs as $input) {
+        
+                            $PO_Number = $this->stringtoupper($input->PO_Number);
+                            $material_id = $this->stringtoupper($input->material_id);
+                            $material_name = $this->stringtoupper($input->material_name);
+        
+                            $Receiving = new Receiving;
+                            $ReceivingData = $Receiving->getFirst($PO_Number);
             
-                    ], 200);
+                            $GoodReceiving = GoodReceiving::firstOrNew([
+                                'GR_Number' => $GR_Number,
+                                'PO_Number' => join(", ", $PO_Number_joins)
+                            ]);
+            
+                            $GoodReceiving->GR_Number = $GR_Number;
+                            $GoodReceiving->PO_Number = join(", ", $PO_Number_joins);
+                            $GoodReceiving->SJ_Number = $reference;
+        
+                            $GoodReceiving->create_date = $input->create_date;
+                            $GoodReceiving->delivery_date = $input->delivery_date;
+                            $GoodReceiving->release_date = $input->release_date;
+        
+                            $GoodReceiving->PO_Status = $ReceivingData->PO_Status;
+                            
+                            $GoodReceiving->vendor_id = $input->vendor;
+                            $GoodReceiving->vendor_nm = $Vendor->checkVendor($input->vendor)[0]->name;
+                            $GoodReceiving->warehouse_id = $input->gudang_id;
+                            $GoodReceiving->warehouse_nm = $input->gudang_nm;
+                            $GoodReceiving->description = null;
+                            
+                            $GoodReceiving->created_by = auth()->user()->username;
+                            $GoodReceiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $GoodReceiving->updated_by = auth()->user()->username;
+                            $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                            $GoodReceiving->save();
+            
+                            $checkMaterial = $Material->checkMaterial($material_id);
+        
+                            if (count($checkMaterial) > 0) {
+        
+                                $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
+                                    'GR_Number' => $GR_Number,
+                                    'PO_Number' => $PO_Number,
+                                    'item_po' => $input->item_po,
+                                ]);
+        
+                                $GoodReceivingDetail->GR_Number = $GR_Number;
+        
+                                $GoodReceivingDetail->PO_Number = $PO_Number;
+                                $GoodReceivingDetail->create_date = $input->create_date;
+                                $GoodReceivingDetail->delivery_date = $input->delivery_date;
+                                $GoodReceivingDetail->release_date = $input->release_date;
+        
+                                $GoodReceivingDetail->material_id = $material_id;
+                                $GoodReceivingDetail->material_name = $material_name;
+                                $GoodReceivingDetail->item_po = $input->item_po;
+                                $GoodReceivingDetail->index_po = $input->index_po;
+                                $GoodReceivingDetail->qty = $input->qty;
+                                $GoodReceivingDetail->unit = $input->unit;
+                                $GoodReceivingDetail->price = $input->price;
+                                $GoodReceivingDetail->currency = $input->currency;
+                                $GoodReceivingDetail->vendor = $input->vendor;
+                                $GoodReceivingDetail->ppn = $input->ppn;
+        
+                                $GoodReceivingDetail->del_note = $input->del_note;
+                                $GoodReceivingDetail->del_date = $input->del_date;
+                                $GoodReceivingDetail->del_qty = $input->del_qty;
+                                $GoodReceivingDetail->prod_date = $input->prod_date;
+                                $GoodReceivingDetail->prod_lot = $input->prod_lot;
+                                $GoodReceivingDetail->material = $input->material;
+                                $GoodReceivingDetail->o_name = $input->o_name;
+                                $GoodReceivingDetail->o_code = $input->o_code;
+        
+                                $GoodReceivingDetail->receive_qty = $input->receive_qty;
+                                $GoodReceivingDetail->reference = $reference;
+                                $GoodReceivingDetail->gudang_id = $input->gudang_id;
+                                $GoodReceivingDetail->gudang_nm = $input->gudang_nm;
+                                $GoodReceivingDetail->batch = $input->batch;
+        
+                                $GoodReceivingDetail->PR_Number = $input->PR_Number;
+                                $GoodReceivingDetail->residual_qty = $input->scale_qty;
+                                $GoodReceivingDetail->stock = null;
+                                $GoodReceivingDetail->description = null;
+        
+                                $GoodReceivingDetail->created_by = auth()->user()->username;
+                                $GoodReceivingDetail->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                $GoodReceivingDetail->updated_by = auth()->user()->username;
+                                $GoodReceivingDetail->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                                $GoodReceivingDetail->save();
+                                
+                            }
+        
+                            $updateFlag = ReceivingDetails::where('PO_Number', $PO_Number)
+                            ->where('material_id', $material_id)
+                            ->where('index_po', $input->index_po)
+                            ->update(['flag' => 1]);
+        
+                        }
+                        #endregion
+
+                        if ( $GoodReceiving && $GoodReceivingDetail && $updateFlag ){
+
+                            return response()->json([
+                        
+                                "result" => true,
+                                "msg_type" => 'Success',
+                                "message" => 'Data success sended',
+                    
+                            ], 200);
+
+                        } else {
+
+                            return response()->json([
+                        
+                                "result" => false,
+                                "msg_type" => 'failed',
+                                "message" => 'Update data failed',
+                    
+                            ], 400);
+
+                        }
+
+                    } elseif( $postSAP->d->Status === 'E' ) {
+
+                        return response()->json([
+                    
+                            "result" => false,
+                            "msg_type" => 'failed',
+                            "message" => 'SAP: '.$postSAP->d->Message,
+                
+                        ], 400);
+
+                    }
 
                 } else {
 
@@ -496,64 +524,11 @@ class ReceivingController extends Controller
                 
                         "result" => false,
                         "msg_type" => 'failed',
-                        "message" => 'Update data failed',
+                        "message" => 'SAP: '.$postSAP->error->message->value,
             
                     ], 400);
 
                 }
-
-                // $postSAP = $this->postSAP($data, $getHeader);
-                // $postSAP = json_decode($postSAP);
-
-                // if ( isset($postSAP->d) ){
-
-                //     if ( $postSAP->d->Status === 'S' ){
-
-                //         if ( $GoodReceiving && $GoodReceivingDetail && $updateFlag ){
-
-                //             return response()->json([
-                        
-                //                 "result" => true,
-                //                 "msg_type" => 'Success',
-                //                 "message" => 'Data success sended',
-                    
-                //             ], 200);
-
-                //         } else {
-
-                //             return response()->json([
-                        
-                //                 "result" => false,
-                //                 "msg_type" => 'failed',
-                //                 "message" => 'Update data failed',
-                    
-                //             ], 400);
-
-                //         }
-
-                //     } elseif( $postSAP->d->Status === 'E' ) {
-
-                //         return response()->json([
-                    
-                //             "result" => false,
-                //             "msg_type" => 'failed',
-                //             "message" => 'SAP: '.$postSAP->d->Message,
-                
-                //         ], 400);
-
-                //     }
-
-                // } else {
-
-                //     return response()->json([
-                
-                //         "result" => false,
-                //         "msg_type" => 'failed',
-                //         "message" => 'SAP: '.$postSAP->error->message->value,
-            
-                //     ], 400);
-
-                // }
 
             } else {
 
