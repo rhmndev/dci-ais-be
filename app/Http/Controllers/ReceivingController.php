@@ -386,7 +386,7 @@ class ReceivingController extends Controller
                         #region Insert to Receiving
                         $Material = new Material;
         
-                        $GR_Number = $this->genGR($dataGR).'-'.strtotime($data['PostingDate']);
+                        // $GR_Number = $this->genGR($dataGR).'-'.strtotime($data['PostingDate']);
                         $PO_Number_joins = $this->genPO($dataPO);
         
                         foreach ($inputs as $input) {
@@ -399,11 +399,11 @@ class ReceivingController extends Controller
                             $ReceivingData = $Receiving->getFirst($PO_Number);
             
                             $GoodReceiving = GoodReceiving::firstOrNew([
-                                'GR_Number' => $GR_Number,
+                                'SJ_Number' => $reference,
                                 'PO_Number' => join(", ", $PO_Number_joins)
                             ]);
             
-                            $GoodReceiving->GR_Number = $GR_Number;
+                            $GoodReceiving->GR_Number = '-';
                             $GoodReceiving->PO_Number = join(", ", $PO_Number_joins);
                             $GoodReceiving->SJ_Number = $reference;
         
@@ -412,7 +412,7 @@ class ReceivingController extends Controller
                             $GoodReceiving->release_date = $input->release_date;
         
                             $GoodReceiving->PO_Status = $ReceivingData->PO_Status;
-                            $GoodReceiving->GR_Date = date('Y-m-d');
+                            $GoodReceiving->GR_Date = '-';
                             
                             $GoodReceiving->vendor_id = $input->vendor;
                             $GoodReceiving->vendor_nm = $Vendor->checkVendor($input->vendor)[0]->name;
@@ -432,12 +432,12 @@ class ReceivingController extends Controller
                             if (count($checkMaterial) > 0) {
         
                                 $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
-                                    'GR_Number' => $GR_Number,
+                                    'reference' => $reference,
                                     'PO_Number' => $PO_Number,
                                     'item_po' => $input->item_po,
                                 ]);
         
-                                $GoodReceivingDetail->GR_Number = $GR_Number;
+                                $GoodReceivingDetail->GR_Number = '-';
         
                                 $GoodReceivingDetail->PO_Number = $PO_Number;
                                 $GoodReceivingDetail->create_date = $input->create_date;

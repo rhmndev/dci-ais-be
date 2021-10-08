@@ -8,7 +8,8 @@ class GoodReceiving extends Model
 {
     //
     protected $fillable = [
-        'GR_Number'
+        'SJ_Number',
+        'PO_Number',
     ];
 
     public function getAllData($keyword, $columns, $sort, $order, $vendor)
