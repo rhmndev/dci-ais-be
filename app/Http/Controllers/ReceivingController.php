@@ -174,7 +174,7 @@ class ReceivingController extends Controller
                         $material_id = $this->stringtoupper($result->Matnr);
                         $material_name = $this->stringtoupper($result->Maktx);
 
-                        $PR_Number = $this->stringtoupper($result->Purchase_req);
+                        $PR_Number = $this->stringtoupper($result->PurchaseReq);
     
                         $create_date = $this->dateMaking($result->Crdate);
                         $delivery_date = $this->dateMaking($result->Deldate);
@@ -557,8 +557,10 @@ class ReceivingController extends Controller
 
     private function stringtoupper($string)
     {
-        $string = strtolower($string);
-        $string = strtoupper($string);
+        if ($string != ''){
+            $string = strtolower($string);
+            $string = strtoupper($string);
+        }
         return $string;
     }
 
