@@ -113,7 +113,7 @@ class GoodReceivingController extends Controller
                 array_push($data, $data_tmp);
             }
 
-            $data = array_unique($data);
+            // $data = array_unique($data);
 
             return response()->json([
                 'type' => 'success',
