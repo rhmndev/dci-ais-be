@@ -209,7 +209,6 @@ class ReceivingController extends Controller
                             $ReceivingDetails->delivery_date = $delivery_date;
                             $ReceivingDetails->release_date = $release_date;
                             $ReceivingDetails->PR_Number = $PR_Number;
-                            $ReceivingDetails->PR_Number = '12312313';
                             $ReceivingDetails->material_id = $material_id;
                             $ReceivingDetails->material_name = $material_name;
                             $ReceivingDetails->item_po = $result->ItemNo;
