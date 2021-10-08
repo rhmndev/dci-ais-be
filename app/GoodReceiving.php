@@ -75,8 +75,6 @@ class GoodReceiving extends Model
 
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
-        $data = GoodReceiving::All();
-
         return $data;
     }
 }
