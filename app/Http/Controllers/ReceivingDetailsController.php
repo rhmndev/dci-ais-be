@@ -192,17 +192,17 @@ class ReceivingDetailsController extends Controller
                     }
                 };
 
-                $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
-                $gudangData = array();
-                foreach ($SettingGudangDatas as $SettingGudangData) {
-                    $gd = explode(';', $SettingGudangData['name']);
-                    $temp = array(
-                        'id' => $gd[0],
-                        'name' => $gd[1],
-                    );
-                    array_push($gudangData, $temp);
-                };
-                $data->gudangData = $gudangData;
+                // $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
+                // $gudangData = array();
+                // foreach ($SettingGudangDatas as $SettingGudangData) {
+                //     $gd = explode(';', $SettingGudangData['name']);
+                //     $temp = array(
+                //         'id' => $gd[0],
+                //         'name' => $gd[1],
+                //     );
+                //     array_push($gudangData, $temp);
+                // };
+                // $data->gudangData = $gudangData;
 
                 $Scale = new Scale;
                 $ScaleData = $Scale->getData(1);

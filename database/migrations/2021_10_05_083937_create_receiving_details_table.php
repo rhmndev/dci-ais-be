@@ -20,6 +20,7 @@ class CreateReceivingDetailsTable extends Migration
             $table->string('create_date');
             $table->string('delivery_date');
             $table->string('release_date');
+
             $table->string('PR_Number');
             $table->string('material_id');
             $table->string('material_name');
@@ -31,6 +32,10 @@ class CreateReceivingDetailsTable extends Migration
             $table->string('currency');
             $table->string('vendor');
             $table->string('ppn');
+            
+            $table->string('gudang_id');
+            $table->string('gudang_nm');
+            
             $table->string('del_note')->nullable();
             $table->string('del_date')->nullable();
             $table->string('del_qty')->nullable();

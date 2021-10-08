@@ -346,6 +346,7 @@ class SAPController extends Controller
 
                 $Material = new Material;
                 $Vendor = new Vendor;
+                $Settings = new Settings;
 
                 $vendor_nf = array();
                 $material_nf = array();
@@ -386,6 +387,7 @@ class SAPController extends Controller
                                 $material_name = $this->stringtoupper($detail->material_name);
     
                                 $PR_Number = $this->stringtoupper($detail->PurchaseReq);
+                                $gudang_id = $this->stringtoupper($detail->Warehouse);
     
                                 $qty = $this->checkNumber($detail->qty);
                                 $price = $this->checkNumber($detail->price);
@@ -413,6 +415,16 @@ class SAPController extends Controller
                                     $ReceivingDetails->currency = $detail->currency;
                                     $ReceivingDetails->vendor = $input->vendor;
                                     $ReceivingDetails->ppn = $detail->ppn;
+
+                                    $ReceivingDetails->gudang_id = $gudang_id;
+        
+                                    $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
+                                    foreach ($SettingGudangDatas as $SettingGudangData) {
+                                        $gd = explode(';', $SettingGudangData['name']);
+                                        if ($gd[0] === $gudang_id){
+                                            $ReceivingDetails->gudang_nm = $gd[1];
+                                        }
+                                    };
                             
                                     if (!$ReceivingDetails->exists) {
         
@@ -424,12 +436,6 @@ class SAPController extends Controller
                                         $ReceivingDetails->material = null;
                                         $ReceivingDetails->o_name = null;
                                         $ReceivingDetails->o_code = null;
-
-                                        $ReceivingDetails->receive_qty = $qty;
-                                        $ReceivingDetails->reference = null;
-                                        $ReceivingDetails->gudang_id = null;
-                                        $ReceivingDetails->gudang_nm = null;
-                                        $ReceivingDetails->batch = null;
 
                                         $ReceivingDetails->flag = 0;
         

@@ -175,6 +175,7 @@ class ReceivingController extends Controller
                         $material_name = $this->stringtoupper($result->Maktx);
 
                         $PR_Number = $this->stringtoupper($result->PurchaseReq);
+                        $gudang_id = $this->stringtoupper($result->Warehouse);
     
                         $create_date = $this->dateMaking($result->Crdate);
                         $delivery_date = $this->dateMaking($result->Deldate);
@@ -219,6 +220,16 @@ class ReceivingController extends Controller
                             $ReceivingDetails->currency = $result->Currency;
                             $ReceivingDetails->vendor = $result->Vendor;
                             $ReceivingDetails->ppn = $result->Mwskz;
+
+                            $ReceivingDetails->gudang_id = $gudang_id;
+
+                            $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
+                            foreach ($SettingGudangDatas as $SettingGudangData) {
+                                $gd = explode(';', $SettingGudangData['name']);
+                                if ($gd[0] === $gudang_id){
+                                    $ReceivingDetails->gudang_nm = $gd[1];
+                                }
+                            };
                             
                             if (!$ReceivingDetails->exists) {
 
@@ -230,12 +241,6 @@ class ReceivingController extends Controller
                                 $ReceivingDetails->material = null;
                                 $ReceivingDetails->o_name = null;
                                 $ReceivingDetails->o_code = null;
-
-                                $ReceivingDetails->receive_qty = $result->Quantity;
-                                $ReceivingDetails->reference = null;
-                                $ReceivingDetails->gudang_id = null;
-                                $ReceivingDetails->gudang_nm = null;
-                                $ReceivingDetails->batch = null;
 
                                 $ReceivingDetails->flag = 0;
 
@@ -414,6 +419,7 @@ class ReceivingController extends Controller
                             $GoodReceiving->warehouse_id = $input->gudang_id;
                             $GoodReceiving->warehouse_nm = $input->gudang_nm;
                             $GoodReceiving->description = null;
+                            $GoodReceiving->headerText = $headerText;
                             
                             $GoodReceiving->created_by = auth()->user()->username;
                             $GoodReceiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
