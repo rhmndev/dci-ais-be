@@ -620,8 +620,7 @@ class SAPController extends Controller
 
             if (count($inputs) > 0){
 
-                $GR_nf = array();
-                $GRD_nf = array();
+                $Ref_nf = array();
 
                 foreach ($inputs as $input) {
 
@@ -646,17 +645,33 @@ class SAPController extends Controller
 
                         }
 
+                    } else {
+                        array_push($Ref_nf, $input->Ref);
                     }
 
                 }
 
-                return response()->json([
-        
-                    "result" => true,
-                    "msg_type" => 'Success',
-                    "message" => 'Data Update successfully!',
-        
-                ], 200);
+                if (count($Ref_nf) > 0){
+
+                    return response()->json([
+            
+                        "result" => false,
+                        "msg_type" => 'failed',
+                        "message" => 'Ref: '.join(',', $Ref_nf).' Not found!',
+            
+                    ], 400);
+
+                } else {
+
+                    return response()->json([
+            
+                        "result" => true,
+                        "msg_type" => 'Success',
+                        "message" => 'Data Update successfully!',
+            
+                    ], 200);
+
+                }
 
             } else {
 
