@@ -8,16 +8,17 @@ class GoodReceivingDetail extends Model
 {
     //
     protected $fillable = [
-        'GR_Number',
-        'index'
+        'reference',
+        'PO_Number',
+        'item_po'
     ];
 
-    public function getDetails($GR_Number, $vendor)
+    public function getDetails($SJ_Number, $vendor)
     {
 
         $query = GoodReceivingDetail::query();
 
-        $query = $query->where('GR_Number', $GR_Number);
+        $query = $query->where('SJ_Number', $SJ_Number);
 
         if ($vendor != '') {
             $query = $query->where('vendor', $vendor);

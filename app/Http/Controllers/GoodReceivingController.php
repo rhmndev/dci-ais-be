@@ -55,7 +55,7 @@ class GoodReceivingController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $GRDetails = $GoodReceivingDetail->getDetails($result->GR_Number, $result->vendor);
+                $GRDetails = $GoodReceivingDetail->getDetails($result->SJ_Number, $result->vendor);
 
                 foreach ($GRDetails as $GRDetail) {
 
@@ -156,7 +156,7 @@ class GoodReceivingController extends Controller
 
                 $total_po = 0;
 
-                $GRDetails = $GoodReceivingDetail->getDetails($GoodReceiving->GR_Number, $GoodReceiving->vendor);
+                $GRDetails = $GoodReceivingDetail->getDetails($GoodReceiving->SJ_Number, $GoodReceiving->vendor);
 
                 foreach ($GRDetails as $GRDetail) {
 
@@ -237,95 +237,6 @@ class GoodReceivingController extends Controller
                 ], 400);
 
             }
-    
-            $GoodReceiving = new GoodReceiving;
-            $GoodReceivingDetail = new GoodReceivingDetail;
-
-            $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
-
-            $resultAlls = $GoodReceiving->getAllData($keyword, $request->columns, $request->sort, $order, $vendor);
-            $results = $GoodReceiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
-
-            foreach ($results as $result) {
-                
-                $data_tmp = array();
-                $data_tmp['_id'] = $result->_id;
-                $data_tmp['GR_Number'] = '-';
-                $data_tmp['PO_Number'] = $result->PO_Number;
-                $data_tmp['SJ_Number'] = $result->SJ_Number;
-                $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
-                $data_tmp['GR_Date'] = date('Y-m-d');
-                $data_tmp['create_date'] = $result->create_date;
-                $data_tmp['delivery_date'] = $result->delivery_date;
-                $data_tmp['release_date'] = $result->release_date;
-                $data_tmp['data'] = array();
-                $total_po = 0;
-
-                $GRDetails = $GoodReceivingDetail->getDetails($result->GR_Number, $result->vendor);
-
-                foreach ($GRDetails as $GRDetail) {
-
-                    $data_tmp_d = array();
-                    $data_tmp_d['_id'] = $GRDetail->_id;
-                    $data_tmp_d['PO_Number'] = $GRDetail->PO_Number;
-                    $data_tmp_d['create_date'] = $result->create_date;
-                    $data_tmp_d['delivery_date'] = $result->delivery_date;
-                    $data_tmp_d['release_date'] = $result->release_date;
-                    $data_tmp_d['material_id'] = $GRDetail->material_id;
-                    $data_tmp_d['material_name'] = $GRDetail->material_name;
-                    $data_tmp_d['item_po'] = $GRDetail->item_po;
-                    $data_tmp_d['index_po'] = $GRDetail->index_po;
-                    $data_tmp_d['qty'] = $GRDetail->qty;
-                    $data_tmp_d['unit'] = $GRDetail->unit;
-                    $data_tmp_d['price'] = $GRDetail->price;
-                    $data_tmp_d['currency'] = $GRDetail->currency;
-                    $data_tmp_d['vendor'] = $GRDetail->vendor;
-                    $data_tmp_d['ppn'] = $GRDetail->ppn;
-                    $data_tmp_d['QRCode'] = $result->_id.';'.$GRDetail->_id;
-            
-                    $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
-                    foreach ($SettingPPNs as $SettingPPN) {
-                        $ppn = explode(';', $SettingPPN['name']);
-                        if ($ppn[0] === $GRDetail->ppn){
-                            $data_tmp_d['ppnp'] = $ppn[1];
-                        }
-                    };
-
-                    $data_tmp_d['del_note'] = $GRDetail->del_note;
-                    $data_tmp_d['del_date'] = $GRDetail->del_date;
-                    $data_tmp_d['del_qty'] = $GRDetail->del_qty;
-                    $data_tmp_d['prod_date'] = $GRDetail->prod_date;
-                    $data_tmp_d['prod_lot'] = $GRDetail->prod_lot;
-                    $data_tmp_d['material'] = $GRDetail->material;
-                    $data_tmp_d['o_name'] = $GRDetail->o_name;
-                    $data_tmp_d['o_code'] = $GRDetail->o_code;
-
-                    $total = $GRDetail->qty * $GRDetail->price;
-                    $data_tmp_d['sub_total'] = $total;
-
-                    $total = ((str_replace("%", "", $data_tmp_d['ppnp']) / 100) * $total) + $total;
-
-                    $data_tmp_d['total'] = $total;
-
-    
-                    $total_po = $total_po + $total;
-
-                    array_push($data_tmp['data'], $data_tmp_d);
-
-                }
-                
-                $data_tmp['total'] = $total_po;
-    
-                array_push($data, $data_tmp);
-            }
-
-            $data = array_unique($data);
-
-            return response()->json([
-                'type' => 'success',
-                'data' => $data,
-                'total' => count($resultAlls)
-            ], 200);
 
         } catch (\Exception $e) {
     
