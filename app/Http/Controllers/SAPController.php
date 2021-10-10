@@ -624,13 +624,13 @@ class SAPController extends Controller
 
                 foreach ($inputs as $input) {
 
-                    $reference = $this->stringtoupper($input->Ref);
-                    $GR_Number = $this->stringtoupper($input->Matdoc);
+                    $reference = $this->stringtoupper($input->ref);
+                    $GR_Number = $this->stringtoupper($input->matdoc);
 
                     $GoodReceiving = GoodReceiving::where('SJ_Number', $reference)->first();
                     if ($GoodReceiving){
                         $GoodReceiving->GR_Number = $GR_Number;
-                        $GoodReceiving->GR_Date = date('Y-m-d', strtotime($input->Grdate));
+                        $GoodReceiving->GR_Date = date('Y-m-d', strtotime($input->grdate));
                         $GoodReceiving->updated_by = 'SAP';
                         $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $GoodReceiving->save();
@@ -646,7 +646,7 @@ class SAPController extends Controller
                         }
 
                     } else {
-                        array_push($Ref_nf, $input->Ref);
+                        array_push($Ref_nf, $input->ref);
                     }
 
                 }
