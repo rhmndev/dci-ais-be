@@ -8,6 +8,7 @@ use App\Material;
 use App\GoodReceiving;
 use App\GoodReceivingDetail;
 use App\Settings;
+use App\Scale;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 
@@ -102,6 +103,12 @@ class GoodReceivingController extends Controller
                     $data_tmp_d['material'] = $GRDetail->material;
                     $data_tmp_d['o_name'] = $GRDetail->o_name;
                     $data_tmp_d['o_code'] = $GRDetail->o_code;
+
+                    $Scale = new Scale;
+                    $ScaleData = $Scale->getData(1);
+                    $data_tmp_d['scale_qty'] = $ScaleData->qty;
+
+                    $data_tmp_d['receive_qty'] = $GRDetail->receive_qty;
 
                     $data_tmp_d['gudang_id'] = $GRDetail->gudang_id;
                     $data_tmp_d['gudang_nm'] = $GRDetail->gudang_nm;
