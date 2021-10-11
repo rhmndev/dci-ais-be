@@ -33,6 +33,7 @@ class GoodReceivingController extends Controller
             $data = array();
             $GoodReceiving = new GoodReceiving;
             $GoodReceivingDetail = new GoodReceivingDetail;
+            $Vendor = new Vendor;
             $Settings = new Settings;
 
             $POStatus = $Settings->scopeGetValue($Settings, 'POStatus');
@@ -59,6 +60,13 @@ class GoodReceivingController extends Controller
 
                 foreach ($GRDetails as $GRDetail) {
 
+                    $getVendor = $Vendor->checkVendor($GRDetail->vendor);
+                    if (count($getVendor) > 0){
+                        $vendor_nm = $getVendor[0]->name;
+                    } else {
+                        $vendor_nm = '-';
+                    }
+
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $GRDetail->_id;
                     $data_tmp_d['PO_Number'] = $GRDetail->PO_Number;
@@ -74,6 +82,7 @@ class GoodReceivingController extends Controller
                     $data_tmp_d['price'] = $GRDetail->price;
                     $data_tmp_d['currency'] = $GRDetail->currency;
                     $data_tmp_d['vendor'] = $GRDetail->vendor;
+                    $data_tmp_d['vendor_name'] = $vendor_nm;
                     $data_tmp_d['ppn'] = $GRDetail->ppn;
                     $data_tmp_d['QRCode'] = $result->_id.';'.$GRDetail->_id;
             
@@ -81,7 +90,7 @@ class GoodReceivingController extends Controller
                     foreach ($SettingPPNs as $SettingPPN) {
                         $ppn = explode(';', $SettingPPN['name']);
                         if ($ppn[0] === $GRDetail->ppn){
-                            $data_tmp_d['ppnp'] = $ppn[1];
+                            $data_tmp_d['ppn_p'] = $ppn[1];
                         }
                     };
 
@@ -94,10 +103,14 @@ class GoodReceivingController extends Controller
                     $data_tmp_d['o_name'] = $GRDetail->o_name;
                     $data_tmp_d['o_code'] = $GRDetail->o_code;
 
+                    $data_tmp_d['gudang_id'] = $GRDetail->gudang_id;
+                    $data_tmp_d['gudang_nm'] = $GRDetail->gudang_nm;
+                    $data_tmp_d['batch'] = $GRDetail->batch;
+
                     $total = $GRDetail->qty * $GRDetail->price;
                     $data_tmp_d['sub_total'] = $total;
 
-                    $total = ((str_replace("%", "", $data_tmp_d['ppnp']) / 100) * $total) + $total;
+                    $total = ((str_replace("%", "", $data_tmp_d['ppn_p']) / 100) * $total) + $total;
 
                     $data_tmp_d['total'] = $total;
 
@@ -181,7 +194,7 @@ class GoodReceivingController extends Controller
                     foreach ($SettingPPNs as $SettingPPN) {
                         $ppn = explode(';', $SettingPPN['name']);
                         if ($ppn[0] === $GRDetail->ppn){
-                            $data_tmp['ppnp'] = $ppn[1];
+                            $data_tmp['ppn_p'] = $ppn[1];
                         }
                     };
 
