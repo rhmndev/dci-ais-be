@@ -38,6 +38,7 @@ class VendorController extends Controller
             return response()->json([
                 'type' => 'success',
                 'data' => $results,
+                'dataAll' => $resultAlls,
                 'total' => count($resultAlls),
             ], 200);
 
