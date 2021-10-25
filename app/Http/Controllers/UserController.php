@@ -95,7 +95,7 @@ class UserController extends Controller
             $User->full_name = $request->full_name;
             $User->phone_number = $request->phone_number;
             
-            if ( $this->IsNullOrEmptyString($request->department) ){
+            if ( $request->department != '' ){
 
                 $User->department = $request->department;
 
@@ -105,7 +105,7 @@ class UserController extends Controller
 
             }
             
-            if ( $this->IsNullOrEmptyString($request->npk) ){
+            if ( $request->npk != '' ){
 
                 $User->npk = $request->npk;
 
@@ -232,17 +232,8 @@ class UserController extends Controller
                         $User->username = $Excel['username'];
                         $User->full_name = $Excel['full_name'];
                         $User->department = $Excel['department'];
+                        $User->npk = $Excel['npk'];
                         $User->phone_number = $this->phoneNumber($Excel['phone_number']);
-            
-                        if ( $Excel['npk'] != '' ){
-            
-                            $User->npk = $Excel['npk'];
-            
-                        } else {
-
-                            $User->npk = '';
-
-                        }
 
                         $User->email = $Excel['email'];
                         $User->password = Hash::make('dci12345');
@@ -309,10 +300,10 @@ class UserController extends Controller
         ], 200);
     }
 
-    private function IsNullOrEmptyString($str)
-    {
-        return (!isset($str) || trim($str) === '');
-    }
+    // private function IsNullOrEmptyString($str)
+    // {
+    //     return (!isset($str) || trim($str) === '');
+    // }
 
     private function phoneNumber($number)
     {
