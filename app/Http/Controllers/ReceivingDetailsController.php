@@ -9,6 +9,7 @@ use App\Vendor;
 use App\Settings;
 use App\Scale;
 use Carbon\Carbon;
+use Validator;
 
 class ReceivingDetailsController extends Controller
 {
@@ -246,84 +247,101 @@ class ReceivingDetailsController extends Controller
     public function update(Request $request)
     {
 
-        $json = $request->getContent();
+        $validator = Validator::make($request->all(), [
+            '*.del_date' => 'required|date',
+            '*.del_qty' => 'required|string',
+            '*.prod_date' => 'required|date',
+        ]);
 
-        try {
-
-            $inputs = json_decode($json);
-            $data_empty = 0;
-
-            if (count($inputs) > 0){
-
-                foreach ($inputs as $input) {
-            
-                    $ReceivingDetails = ReceivingDetails::where('_id', $input->_id)->first();
-
-                    $ReceivingDetails->del_note = $input->del_note;
-                    $ReceivingDetails->del_date = $input->del_date;
-                    $ReceivingDetails->del_qty = $input->del_qty;
-                    $ReceivingDetails->prod_date = $input->prod_date;
-                    $ReceivingDetails->prod_lot = $input->prod_lot;
-                    $ReceivingDetails->material = $input->material;
-                    $ReceivingDetails->o_name = $input->o_name;
-                    $ReceivingDetails->o_code = $input->o_code;
-
-                    $ReceivingDetails->updated_by = auth()->user()->username;
-                    $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                    $ReceivingDetails->save();
-
-                    if (
-                        $this->IsNullOrEmptyString($input->del_note) ||
-                        $this->IsNullOrEmptyString($input->del_qty) || 
-                        $this->IsNullOrEmptyString($input->material) || 
-                        $this->IsNullOrEmptyString($input->o_name) || 
-                        $this->IsNullOrEmptyString($input->o_code) ||
-                        intval($input->del_qty) < intval($ReceivingDetails->qty)
-                    )
-                    {
-                        $data_empty = $data_empty + 1;
-                    }
-
-                }
-
-                if ($data_empty == 0){
-
-                    $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 1]);
-
-                    return response()->json([
-            
-                        "result" => true,
-                        "msg_type" => 'Success',
-                        "message" => 'Data stored successfully!',
-            
-                    ], 200);
-
-                } else {
-
-                    $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 0]);
-
-                    return response()->json([
-            
-                        "result" => true,
-                        "msg_type" => 'Success',
-                        "message" => 'Data stored successfully with empty field!',
-            
-                    ], 200);
-
-                }
-
-            }
-
-        } catch (\Exception $e) {
+        if ($validator->fails()) {
 
             return response()->json([
-    
-                "result" => false,
-                "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
+                'message' => 'The given data was invalid.',
+                'errors' => $validator->errors()
             ], 400);
+
+        } else {
+
+            $json = $request->getContent();
+    
+            try {
+    
+                $inputs = json_decode($json);
+                $data_empty = 0;
+    
+                if (count($inputs) > 0){
+    
+                    foreach ($inputs as $input) {
+                
+                        $ReceivingDetails = ReceivingDetails::where('_id', $input->_id)->first();
+    
+                        $ReceivingDetails->del_note = $input->del_note;
+                        $ReceivingDetails->del_date = $input->del_date;
+                        $ReceivingDetails->del_qty = $input->del_qty;
+                        $ReceivingDetails->prod_date = $input->prod_date;
+                        $ReceivingDetails->prod_lot = $input->prod_lot;
+                        $ReceivingDetails->material = $input->material;
+                        $ReceivingDetails->o_name = $input->o_name;
+                        $ReceivingDetails->o_code = $input->o_code;
+    
+                        $ReceivingDetails->updated_by = auth()->user()->username;
+                        $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+    
+                        $ReceivingDetails->save();
+    
+                        if (
+                            $this->IsNullOrEmptyString($input->del_note) ||
+                            $this->IsNullOrEmptyString($input->del_qty) || 
+                            $this->IsNullOrEmptyString($input->material) || 
+                            $this->IsNullOrEmptyString($input->o_name) || 
+                            $this->IsNullOrEmptyString($input->o_code) ||
+                            intval($input->del_qty) < intval($ReceivingDetails->qty)
+                        )
+                        {
+                            $data_empty = $data_empty + 1;
+                        }
+    
+                    }
+    
+                    if ($data_empty == 0){
+    
+                        $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 1]);
+    
+                        return response()->json([
+                
+                            "result" => true,
+                            "msg_type" => 'Success',
+                            "message" => 'Data stored successfully!',
+                
+                        ], 200);
+    
+                    } else {
+    
+                        $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 0]);
+    
+                        return response()->json([
+                
+                            "result" => true,
+                            "msg_type" => 'Success',
+                            "message" => 'Data stored successfully with empty field!',
+                
+                        ], 200);
+    
+                    }
+    
+                }
+    
+            } catch (\Exception $e) {
+    
+                return response()->json([
+        
+                    "result" => false,
+                    "msg_type" => 'error',
+                    "message" => 'err: '.$e,
+        
+                ], 400);
+    
+            }
 
         }
     }
