@@ -197,13 +197,13 @@ class GoodReceivingController extends Controller
                     $data_tmp['vendor'] = $GRDetail->vendor;
                     $data_tmp['ppn'] = $GRDetail->ppn;
             
-                    $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
-                    foreach ($SettingPPNs as $SettingPPN) {
-                        $ppn = explode(';', $SettingPPN['name']);
-                        if ($ppn[0] === $GRDetail->ppn){
-                            $data_tmp['ppn_p'] = $ppn[1];
-                        }
-                    };
+                    // $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
+                    // foreach ($SettingPPNs as $SettingPPN) {
+                    //     $ppn = explode(';', $SettingPPN['name']);
+                    //     if ($ppn[0] === $GRDetail->ppn){
+                    //         $data_tmp['ppn_p'] = $ppn[1];
+                    //     }
+                    // };
 
                     $data_tmp['del_note'] = $GRDetail->del_note;
                     $data_tmp['del_date'] = $GRDetail->del_date;
@@ -228,12 +228,6 @@ class GoodReceivingController extends Controller
 
                     $total = $GRDetail->qty * $GRDetail->price;
                     $data_tmp['sub_total'] = $total;
-
-                    // $total = ((str_replace("%", "", $data_tmp['ppn_p']) / 100) * $total) + $total;
-
-                    // $data_tmp['total'] = $total;
-
-                    // $total_po = $total_po + $total;
 
                     array_push($data, $data_tmp);
 
