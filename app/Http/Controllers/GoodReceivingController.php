@@ -51,9 +51,9 @@ class GoodReceivingController extends Controller
                 $data_tmp['SJ_Number'] = $result->SJ_Number;
                 $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
                 $data_tmp['GR_Date'] = $result->GR_Date;
-                $data_tmp['create_date'] = $result->create_date;
-                $data_tmp['delivery_date'] = $result->delivery_date;
-                $data_tmp['release_date'] = $result->release_date;
+                $data_tmp['create_date'] = date('d-m-Y',strtotime($result->create_date));
+                $data_tmp['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
+                $data_tmp['release_date'] = date('d-m-Y',strtotime($result->release_date));
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
@@ -71,9 +71,9 @@ class GoodReceivingController extends Controller
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $GRDetail->_id;
                     $data_tmp_d['PO_Number'] = $GRDetail->PO_Number;
-                    $data_tmp_d['create_date'] = $result->create_date;
-                    $data_tmp_d['delivery_date'] = $result->delivery_date;
-                    $data_tmp_d['release_date'] = $result->release_date;
+                    $data_tmp_d['create_date'] = date('d-m-Y',strtotime($result->create_date));
+                    $data_tmp_d['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
+                    $data_tmp_d['release_date'] = date('d-m-Y',strtotime($result->release_date));
                     $data_tmp_d['material_id'] = $GRDetail->material_id;
                     $data_tmp_d['material_name'] = $GRDetail->material_name;
                     $data_tmp_d['item_po'] = $GRDetail->item_po;
@@ -96,9 +96,9 @@ class GoodReceivingController extends Controller
                     };
 
                     $data_tmp_d['del_note'] = $GRDetail->del_note;
-                    $data_tmp_d['del_date'] = $GRDetail->del_date;
+                    $data_tmp_d['del_date'] = date('d-m-Y',strtotime($GRDetail->del_date));
                     $data_tmp_d['del_qty'] = $GRDetail->del_qty;
-                    $data_tmp_d['prod_date'] = $GRDetail->prod_date;
+                    $data_tmp_d['prod_date'] = date('d-m-Y',strtotime($GRDetail->prod_date));
                     $data_tmp_d['prod_lot'] = $GRDetail->prod_lot;
                     $data_tmp_d['material'] = $GRDetail->material;
                     $data_tmp_d['o_name'] = $GRDetail->o_name;
@@ -183,9 +183,9 @@ class GoodReceivingController extends Controller
                     $data_tmp = array();
                     $data_tmp['_id'] = $GRDetail->_id;
                     $data_tmp['PO_Number'] = $GRDetail->PO_Number;
-                    $data_tmp['create_date'] = $GRDetail->create_date;
-                    $data_tmp['delivery_date'] = $GRDetail->delivery_date;
-                    $data_tmp['release_date'] = $GRDetail->release_date;
+                    $data_tmp['create_date'] = date('d-m-Y',strtotime($GRDetail->create_date));
+                    $data_tmp['delivery_date'] = date('d-m-Y',strtotime($GRDetail->delivery_date));
+                    $data_tmp['release_date'] = date('d-m-Y',strtotime($GRDetail->release_date));
                     $data_tmp['material_id'] = $GRDetail->material_id;
                     $data_tmp['material_name'] = $GRDetail->material_name;
                     $data_tmp['item_po'] = $GRDetail->item_po;
@@ -206,9 +206,9 @@ class GoodReceivingController extends Controller
                     // };
 
                     $data_tmp['del_note'] = $GRDetail->del_note;
-                    $data_tmp['del_date'] = $GRDetail->del_date;
+                    $data_tmp['del_date'] = date('d-m-Y',strtotime($GRDetail->del_date));
                     $data_tmp['del_qty'] = $GRDetail->del_qty;
-                    $data_tmp['prod_date'] = $GRDetail->prod_date;
+                    $data_tmp['prod_date'] = date('d-m-Y',strtotime($GRDetail->prod_date));
                     $data_tmp['prod_lot'] = $GRDetail->prod_lot;
                     $data_tmp['material'] = $GRDetail->material;
                     $data_tmp['o_name'] = $GRDetail->o_name;

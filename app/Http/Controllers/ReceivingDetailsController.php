@@ -47,9 +47,9 @@ class ReceivingDetailsController extends Controller
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
-                $data_tmp['create_date'] = $result->create_date;
-                $data_tmp['delivery_date'] = $result->delivery_date;
-                $data_tmp['release_date'] = $result->release_date;
+                $data_tmp['create_date'] = date('d-m-Y',strtotime($result->create_date));
+                $data_tmp['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
+                $data_tmp['release_date'] = date('d-m-Y',strtotime($result->release_date));
                 $data_tmp['material_id'] = $result->material_id;
                 $data_tmp['material_name'] = $result->material_name;
                 $data_tmp['item_po'] = $result->item_po;
@@ -68,9 +68,9 @@ class ReceivingDetailsController extends Controller
                     }
                 };
                 $data_tmp['del_note'] = $result->del_note;
-                $data_tmp['del_date'] = $result->del_date;
+                $data_tmp['del_date'] = date('d-m-Y',strtotime($result->del_date));
                 $data_tmp['del_qty'] = $result->del_qty;
-                $data_tmp['prod_date'] = $result->prod_date;
+                $data_tmp['prod_date'] = date('d-m-Y',strtotime($result->prod_date));
                 $data_tmp['prod_lot'] = $result->prod_lot;
                 $data_tmp['material'] = $result->material;
                 $data_tmp['o_name'] = $result->o_name;
@@ -276,9 +276,9 @@ class ReceivingDetailsController extends Controller
                         $ReceivingDetails = ReceivingDetails::where('_id', $input->_id)->first();
     
                         $ReceivingDetails->del_note = $input->del_note;
-                        $ReceivingDetails->del_date = $input->del_date;
+                        $ReceivingDetails->del_date = date('Y-m-d',strtotime($input->del_date));
                         $ReceivingDetails->del_qty = $input->del_qty;
-                        $ReceivingDetails->prod_date = $input->prod_date;
+                        $ReceivingDetails->prod_date = date('Y-m-d',strtotime($input->prod_date));
                         $ReceivingDetails->prod_lot = $input->prod_lot;
                         $ReceivingDetails->material = $input->material;
                         $ReceivingDetails->o_name = $input->o_name;
