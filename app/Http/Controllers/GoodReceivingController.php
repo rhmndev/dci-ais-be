@@ -229,11 +229,11 @@ class GoodReceivingController extends Controller
                     $total = $GRDetail->qty * $GRDetail->price;
                     $data_tmp['sub_total'] = $total;
 
-                    $total = ((str_replace("%", "", $data_tmp['ppnp']) / 100) * $total) + $total;
+                    // $total = ((str_replace("%", "", $data_tmp['ppn_p']) / 100) * $total) + $total;
 
-                    $data_tmp['total'] = $total;
+                    // $data_tmp['total'] = $total;
 
-                    $total_po = $total_po + $total;
+                    // $total_po = $total_po + $total;
 
                     array_push($data, $data_tmp);
 
