@@ -49,9 +49,9 @@ class ReceivingController extends Controller
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
                 $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
-                $data_tmp['create_date'] = $result->create_date;
-                $data_tmp['delivery_date'] = $result->delivery_date;
-                $data_tmp['release_date'] = $result->release_date;
+                $data_tmp['create_date'] = date('d-m-Y',strtotime($result->create_date));
+                $data_tmp['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
+                $data_tmp['release_date'] = date('d-m-Y',strtotime($result->release_date));
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
@@ -62,9 +62,9 @@ class ReceivingController extends Controller
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $PODetail->_id;
                     $data_tmp_d['PO_Number'] = $PODetail->PO_Number;
-                    $data_tmp_d['create_date'] = $result->create_date;
-                    $data_tmp_d['delivery_date'] = $result->delivery_date;
-                    $data_tmp_d['release_date'] = $result->release_date;
+                    $data_tmp_d['create_date'] = date('d-m-Y',strtotime($result->create_date));
+                    $data_tmp_d['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
+                    $data_tmp_d['release_date'] = date('d-m-Y',strtotime($result->release_date));
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
@@ -86,9 +86,9 @@ class ReceivingController extends Controller
                     };
 
                     $data_tmp_d['del_note'] = $PODetail->del_note;
-                    $data_tmp_d['del_date'] = $PODetail->del_date;
+                    $data_tmp_d['del_date'] = date('d-m-Y',strtotime($PODetail->del_date));
                     $data_tmp_d['del_qty'] = $PODetail->del_qty;
-                    $data_tmp_d['prod_date'] = $PODetail->prod_date;
+                    $data_tmp_d['prod_date'] = date('d-m-Y',strtotime($PODetail->prod_date));
                     $data_tmp_d['prod_lot'] = $PODetail->prod_lot;
                     $data_tmp_d['material'] = $PODetail->material;
                     $data_tmp_d['o_name'] = $PODetail->o_name;
