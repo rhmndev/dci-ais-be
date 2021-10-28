@@ -482,16 +482,29 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->save();
                                 
                             }
+
+                            $sisa = $input->qty - $input->receive_qty;
+
+                            if ($input->qty > $input->receive_qty){
         
-                            $updateFlag = ReceivingDetails::where('PO_Number', $PO_Number)
-                            ->where('material_id', $material_id)
-                            ->where('index_po', $input->index_po)
-                            ->update(['flag' => 1]);
+                                $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
+                                ->where('material_id', $material_id)
+                                ->where('index_po', $input->index_po)
+                                ->update(['qty' => $sisa]);
+
+                            } else {
+        
+                                $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
+                                ->where('material_id', $material_id)
+                                ->where('index_po', $input->index_po)
+                                ->update(['flag' => 1]);
+
+                            }
         
                         }
                         #endregion
 
-                        if ( $GoodReceiving && $GoodReceivingDetail && $updateFlag ){
+                        if ( $GoodReceiving && $GoodReceivingDetail && $updateData ){
 
                             return response()->json([
                         
