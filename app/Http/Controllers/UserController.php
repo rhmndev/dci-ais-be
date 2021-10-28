@@ -229,7 +229,7 @@ class UserController extends Controller
         
                         //store your file into database
                         $User = User::firstOrNew(['username' => $Excel['username']]);
-                        $User->username = $Excel['username'];
+                        $User->username = strval($Excel['username']);
                         $User->full_name = $Excel['full_name'];
                         $User->department = $Excel['department'];
                         $User->npk = $Excel['npk'];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Receiving;
 use App\ReceivingDetails;
 use App\Vendor;
@@ -205,9 +206,8 @@ class ReceivingDetailsController extends Controller
                 // };
                 // $data->gudangData = $gudangData;
 
-                $Scale = new Scale;
-                $ScaleData = $Scale->getData(1);
-                $data->scale_qty = $ScaleData->qty;
+                $Scale = DB::connection('mysql')->table('vtb_t_measure')->first();
+                $data->scale_qty = $Scale->measure;
 
                 $data->receive_qty = intval($data->del_qty);
                 $data->qty = intval($data->qty);
