@@ -207,7 +207,7 @@ class ReceivingDetailsController extends Controller
                 // $data->gudangData = $gudangData;
 
                 $Scale = DB::connection('mysql')->table('vtb_t_measure')->first();
-                $data->scale_qty = $ScaleData->qty;
+                $data->scale_qty = $Scale->measure;
 
                 $data->receive_qty = intval($data->del_qty);
                 $data->qty = intval($data->qty);
@@ -217,7 +217,6 @@ class ReceivingDetailsController extends Controller
                     'type' => 'success',
                     'message' => NULL,
                     'data' => $data,
-                    // 'Scale' => $Scale
                 ], 200);
 
             } else {
