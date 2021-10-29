@@ -17,40 +17,36 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $skip = $request->perpage * ($request->page - 1);
-        $users = User::where(function($where) use ($request){
-            
+        $users = User::where(function ($where) use ($request) {
+
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
                     if ($index == 0) {
-                        $where->where($column, 'like', '%'.$request->keyword.'%');
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
                     } else {
-                        $where->orWhere($column, 'like', '%'.$request->keyword.'%');
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
                     }
                 }
-                    
             }
-
         })
-        ->when(!empty($request->sort), function($query) use ($request){
-            $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
-        })
-        ->take((int)$request->perpage)
-        ->skip((int)$skip)
-        ->get();
+            ->when(!empty($request->sort), function ($query) use ($request) {
+                $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
+            })
+            ->take((int)$request->perpage)
+            ->skip((int)$skip)
+            ->get();
 
-        $total = User::where(function($where) use ($request){
-            
+        $total = User::where(function ($where) use ($request) {
+
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
                     if ($index == 0) {
-                        $where->where($column, 'like', '%'.$request->keyword.'%');
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
                     } else {
-                        $where->orWhere($column, 'like', '%'.$request->keyword.'%');
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
                     }
                 }
-            
             }
-
         })->count();
 
         return response()->json([
@@ -74,7 +70,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        
+
         $request->validate([
             'username' => 'required|string',
             'full_name' => 'required|string',
@@ -90,76 +86,68 @@ class UserController extends Controller
         try {
 
             $User = User::firstOrNew(['username' => $request->username]);
-        
+
             $User->username = $request->username;
             $User->full_name = $request->full_name;
             $User->phone_number = $request->phone_number;
-            
-            if ( $request->department != '' ){
+
+            if ($request->department != '') {
 
                 $User->department = $request->department;
-
             } else {
 
                 $User->department = null;
-
             }
-            
-            if ( $request->npk != '' ){
+
+            if ($request->npk != '') {
 
                 $User->npk = $request->npk;
-
             } else {
 
                 $User->npk = null;
-                
             }
-            
+
             $User->email = $request->email;
             $User->type = intval($request->type);
-    
-            if ( $request->password != '' ) {
+
+            if ($request->password != '') {
 
                 $User->password = Hash::make($request->password);
-
             }
 
-            $photo_url = asset('storage/images/users/'.$request->photo);
-            
+            $photo_url = asset('storage/images/users/' . $request->photo);
+
             if ($request->photo != null && $request->hasFile('photo')) {
-        
-                if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
-                    Storage::disk('public')->delete('/images/users/'.$User->photo);
+
+                if (Storage::disk('public')->exists('/images/users/' . $User->photo)) {
+                    Storage::disk('public')->delete('/images/users/' . $User->photo);
                 }
 
                 $image      = $request->file('photo');
-                $fileName   = $User->username.'.' . $image->getClientOriginalExtension();
-    
+                $fileName   = $User->username . '.' . $image->getClientOriginalExtension();
+
                 $img = Image::make($image->getRealPath());
                 $img->resize(120, 120, function ($constraint) {
-                    $constraint->aspectRatio();                 
+                    $constraint->aspectRatio();
                 });
-    
+
                 $img->stream(); // <-- Key point
-                
-                Storage::disk('public')->put('/images/users'.'/'.$fileName, $img, 'public');
+
+                Storage::disk('public')->put('/images/users' . '/' . $fileName, $img, 'public');
 
                 $User->photo = $fileName;
 
-                $photo_url = asset('storage/images/users/'.$fileName);
-
+                $photo_url = asset('storage/images/users/' . $fileName);
             }
-            
-            if ( $request->type == 1 ){
+
+            if ($request->type == 1) {
 
                 $User->vendor_code = $request->vendor_id;
                 $User->vendor_name = $request->vendor_name;
-
             } else {
 
                 $User->vendor_code = null;
                 $User->vendor_name = null;
-
             }
 
             $User->role_id = $request->role_id;
@@ -176,34 +164,32 @@ class UserController extends Controller
                 'photo' => $photo_url,
                 'data' => NULL,
             ], 200);
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
     public function import(Request $request)
     {
         $data = array();
-        
+
         $request->validate([
             'role_id' => 'required|string|exists:roles,_id',
             'role_name' => 'required|string|exists:roles,name',
             'file' => 'required|mimes:xlsx,xls',
         ]);
-            
+
         try {
 
             if ($files = $request->file('file')) {
-                
+
                 //store file into document folder
                 $Excels = Excel::toArray(new UsersImport, $files);
                 $Excels = $Excels[0];
@@ -211,24 +197,22 @@ class UserController extends Controller
 
                 foreach ($Excels as $Excel) {
 
-                    if ($Excel['username'] != null){
+                    if ($Excel['username'] != null) {
 
                         $vendor_code = null;
                         $vendor_name = null;
 
-                        if ($Excel['type'] == 1){
-                            
+                        if ($Excel['type'] == 1) {
+
                             $vendor_code = $Excel['vendor_code'];
                             $Vendor = Vendor::where('code', $vendor_code)->first();
 
-                            if ($Vendor){
+                            if ($Vendor) {
 
                                 $vendor_name = $Vendor->name;
-                                
                             }
-                            
                         }
-        
+
                         //store your file into database
                         $User = User::firstOrNew(['username' => $Excel['username']]);
                         $User->username = strval($Excel['username']);
@@ -243,58 +227,52 @@ class UserController extends Controller
 
                         $User->role_id = $request->role_id;
                         $User->role_name = $request->role_name;
-            
-                        if ( $Excel['type'] == 1 ){
+
+                        if ($Excel['type'] == 1) {
 
                             $User->vendor_code = $vendor_code;
                             $User->vendor_name = $vendor_name;
-
                         } else {
 
                             $User->vendor_code = null;
                             $User->vendor_name = null;
-
                         }
-    
+
                         $User->created_by = auth()->user()->username;
                         $User->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $User->updated_by = auth()->user()->username;
                         $User->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $User->save();
-
                     }
                 }
-    
+
                 return response()->json([
-        
+
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data stored successfully!',
                     // "message" => $Excels,
-        
+
                 ], 200);
             }
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
+                "message" => 'err: ' . $e,
+
             ], 400);
-
         }
-
     }
 
     public function destroy($id)
     {
         $User = User::find($id);
-        
-        if (Storage::disk('public')->exists('/images/users/'.$User->photo)) {
-            Storage::disk('public')->delete('/images/users/'.$User->photo);
+
+        if (Storage::disk('public')->exists('/images/users/' . $User->photo)) {
+            Storage::disk('public')->delete('/images/users/' . $User->photo);
         }
 
         $User->delete();
@@ -313,25 +291,22 @@ class UserController extends Controller
     private function phoneNumber($number)
     {
 
-        if (substr($number, 0, 1) == 0){
+        if (substr($number, 0, 1) == 0) {
 
-            $number = '+62'.substr($number, 1);
-
+            $number = '+62' . substr($number, 1);
         } else {
 
-            $number = '+'.$number;
-
+            $number = '+' . $number;
         }
 
-        if ( strpos($number, '-') ){
+        if (strpos($number, '-')) {
             $number = str_replace('-', '', $number);
         }
 
-        if ( strpos($number, ' ') ){
+        if (strpos($number, ' ')) {
             $number = str_replace(' ', '', $number);
         }
 
         return $number;
-
     }
 }
