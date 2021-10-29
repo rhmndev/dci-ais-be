@@ -108,8 +108,12 @@ class ReceivingController extends Controller
 
                 }
                 $data_tmp['total'] = $total_po;
+
+                if ($data_tmp['total'] > 0){
     
-                array_push($data, $data_tmp);
+                    array_push($data, $data_tmp);
+
+                }
             }
 
             return response()->json([
@@ -490,7 +494,7 @@ class ReceivingController extends Controller
                                 $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
                                 ->where('material_id', $material_id)
                                 ->where('index_po', $input->index_po)
-                                ->update(['qty' => $sisa]);
+                                ->update(['qty' => $sisa, 'del_qty' => $sisa]);
 
                             } else {
         
