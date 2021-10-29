@@ -195,6 +195,8 @@ class UserController extends Controller
         $data = array();
         
         $request->validate([
+            'role_id' => 'required|string|exists:roles,_id',
+            'role_name' => 'required|string|exists:roles,name',
             'file' => 'required|mimes:xlsx,xls',
         ]);
             
@@ -238,6 +240,9 @@ class UserController extends Controller
                         $User->email = $Excel['email'];
                         $User->password = Hash::make('dci12345');
                         $User->type = $Excel['type'];
+
+                        $User->role_id = $request->role_id;
+                        $User->role_name = $request->role_name;
             
                         if ( $Excel['type'] == 1 ){
 
