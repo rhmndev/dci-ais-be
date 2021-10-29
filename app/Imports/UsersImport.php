@@ -15,7 +15,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas, Wi
 
     public function model(array $row)
     {
-        return new Delivery([
+        return new User([
             'username'  => $row[0],
             'full_name' => $row[1],
             'department' => $row[2],
