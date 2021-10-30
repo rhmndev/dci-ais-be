@@ -249,7 +249,7 @@ class ReceivingDetailsController extends Controller
 
         $validator = Validator::make($request->all(), [
             '*.del_date' => 'required|date',
-            '*.del_qty' => 'required|string',
+            '*.del_qty' => 'required',
             '*.prod_date' => 'required|date',
         ]);
 
