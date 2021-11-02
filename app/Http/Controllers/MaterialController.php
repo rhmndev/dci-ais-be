@@ -229,63 +229,37 @@ class MaterialController extends Controller
                 $Excels = Excel::toArray(new MaterialsImport, $files);
                 $Excels = $Excels[0];
                 // $Excels = json_decode(json_encode($Excels[0]), true);
-    
-                //store your file into database
-                $Material = new Material();
 
                 foreach ($Excels as $Excel) {
 
-                    $QueryGetDataByFilter = Material::query();
+                    if ($Excel['code'] != null){
 
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $Excel['code']);
+                        //store your file into database
+                        $Material = Material::firstOrNew(['code' => $Excel['code']]);
+                        $Material->code = $this->stringtoupper(strval($Excel['code']));
+                        $Material->description = $this->stringtoupper($Excel['description']);
+                        $Material->type = $this->stringtoupper($Excel['type']);
+                        $Material->unit = $this->stringtoupper($Excel['unit_uom']);
+                        $Material->photo = null;
 
-                    if (count($QueryGetDataByFilter->get()) == 0){
+                        $Material->created_by = auth()->user()->username;
+                        $Material->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Material->updated_by = auth()->user()->username;
+                        $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Material->save();
 
-                        $data_tmp = array();
-                        
-                        $data_tmp['code'] = $this->stringtoupper($Excel['code']);
-                        $data_tmp['description'] = $this->stringtoupper($Excel['description']);
-                        $data_tmp['type'] = $this->stringtoupper($Excel['type']);
-                        $data_tmp['unit'] = $this->stringtoupper($Excel['unit_uom']);
-                        $data_tmp['photo'] = null;
-
-                        $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        // Converting to Array
-                        array_push($data, $data_tmp);
-                        
                     }
 
                 }
-
-                if (count($data) > 0){
-
-                    $Material->insert($data);
     
-                    return response()->json([
-            
-                        "result" => true,
-                        "msg_type" => 'Success',
-                        "message" => 'Data stored successfully!',
-                        // "message" => $data,
-            
-                    ], 200);
-
-                } else {
-
-                    return response()->json([
-            
-                        "result" => false,
-                        "msg_type" => 'error',
-                        "message" => 'Data already uploaded',
-            
-                    ], 200);
-
-                }
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data stored successfully!',
+                    // "message" => $data,
+        
+                ], 200);
             }
 
         } catch (\Exception $e) {

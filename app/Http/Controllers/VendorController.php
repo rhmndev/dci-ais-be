@@ -249,58 +249,35 @@ class VendorController extends Controller
 
                 foreach ($Excels as $Excel) {
 
-                    $QueryGetDataByFilter = Vendor::query();
+                    if ($Excel['code'] != null){
 
-                    $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $this->stringtoupper($Excel['code']));
+                        //store your file into database
+                        $Vendor = Vendor::firstOrNew(['code' => $Excel['code']]);
+                        $Vendor->code = $this->stringtoupper(strval($Excel['code']));
+                        $Vendor->name = $this->stringtoupper($Excel['name']);
+                        $Vendor->address = $this->stringtoupper($Excel['address']);
+                        $Vendor->phone = $Excel['phone'];
+                        $Vendor->email = $Excel['email'];
+                        $Vendor->contact = $Excel['contact'];
 
-                    if (count($QueryGetDataByFilter->get()) == 0){
+                        $Vendor->created_by = auth()->user()->username;
+                        $Vendor->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Vendor->updated_by = auth()->user()->username;
+                        $Vendor->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Vendor->save();
 
-                        $data_tmp = array();
-                        
-                        $data_tmp['code'] = $this->stringtoupper($Excel['code']);
-                        $data_tmp['name'] = $this->stringtoupper($Excel['name']);
-                        $data_tmp['address'] = $this->stringtoupper($Excel['address']);
-                        $data_tmp['phone'] = $Excel['phone'];
-                        $data_tmp['email'] = $Excel['email'];
-                        $data_tmp['contact'] = $Excel['contact'];
-
-                        $data_tmp['created_by'] = auth()->user()->username;
-                        $data_tmp['created_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        $data_tmp['updated_by'] = auth()->user()->username;
-                        $data_tmp['updated_at'] = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-
-                        // Converting to Array
-                        array_push($data, $data_tmp);
-                        
                     }
 
                 }
-
-                if (count($data) > 0){
-
-                    $Vendor->insert($data);
     
-                    return response()->json([
-            
-                        "result" => true,
-                        "msg_type" => 'Success',
-                        "message" => 'Data stored successfully!',
-                        // "message" => $Excels,
-            
-                    ], 200);
-
-                } else {
-
-                    return response()->json([
-            
-                        "result" => false,
-                        "msg_type" => 'error',
-                        "message" => 'Data already uploaded',
-            
-                    ], 200);
-
-                }
+                return response()->json([
+        
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data stored successfully!',
+                    // "message" => $Excels,
+        
+                ], 200);
             }
 
         } catch (\Exception $e) {
