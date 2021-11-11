@@ -10,42 +10,38 @@ class PermissionController extends Controller
     public function index(Request $request)
     {
         $skip = $request->perpage * ($request->page - 1);
-        $permissions = Permission::where(function($where) use ($request){
-            
-                        if (!empty($request->keyword)) {
-                            foreach ($request->columns as $index => $column) {
-                                if ($index == 0) {
-                                    $where->where($column, 'like', '%'.$request->keyword.'%');
-                                } else {
-                                    $where->orWhere($column, 'like', '%'.$request->keyword.'%');
-                                }
-                            }
-                                
-                        }
+        $permissions = Permission::where(function ($where) use ($request) {
 
-                    })
-                    ->when(!empty($request->sort), function($query) use ($request){
-                        $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
-                    })
-                    ->take((int)$request->perpage)
-                    ->skip((int)$skip)
-                    ->get();
-
-        $total = Permission::where(function($where) use ($request){
-            
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
                     if ($index == 0) {
-                        $where->where($column, 'like', '%'.$request->keyword.'%');
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
                     } else {
-                        $where->orWhere($column, 'like', '%'.$request->keyword.'%');
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
                     }
                 }
-                    
             }
-
         })
-        ->count();
+            ->when(!empty($request->sort), function ($query) use ($request) {
+                $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
+            })
+            ->take((int)$request->perpage)
+            ->skip((int)$skip)
+            ->get();
+
+        $total = Permission::where(function ($where) use ($request) {
+
+            if (!empty($request->keyword)) {
+                foreach ($request->columns as $index => $column) {
+                    if ($index == 0) {
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
+                    } else {
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
+                    }
+                }
+            }
+        })
+            ->count();
 
         return response()->json([
             'type' => 'success',
@@ -125,16 +121,16 @@ class PermissionController extends Controller
 
     public function list(Request $request)
     {
-        $permissions = Permission::when($request->keyword, function($query) use ($request) {
-                        if (!empty($request->keyword)) {
-                            $query->where('name', 'like', '%'.$request->keyword.'%');
-                        }
-                    })->take(10)
-                    ->get();
+        $permissions = Permission::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)
+            ->get();
 
         return response()->json([
-        'type' => 'success',
-        'data' => $permissions
+            'type' => 'success',
+            'data' => $permissions
         ], 200);
     }
 
@@ -143,15 +139,15 @@ class PermissionController extends Controller
         $permissions = Permission::whereNull('parent_id')->get();
 
         return response()->json([
-        'type' => 'success',
-        'data' => $permissions
+            'type' => 'success',
+            'data' => $permissions
         ], 200);
     }
 
     public function get()
     {
         $permissions = Permission::all();
-        
+
         return response()->json([
             'type' => 'success',
             'data' => $permissions
