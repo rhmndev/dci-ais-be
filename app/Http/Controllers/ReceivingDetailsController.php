@@ -31,7 +31,7 @@ class ReceivingDetailsController extends Controller
         $vendor = auth()->user()->vendor_code;
 
         try {
-    
+
             $data = array();
             $ReceivingDetails = new ReceivingDetails;
             $Settings = new Settings;
@@ -48,9 +48,9 @@ class ReceivingDetailsController extends Controller
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
-                $data_tmp['create_date'] = date('d-m-Y',strtotime($result->create_date));
-                $data_tmp['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
-                $data_tmp['release_date'] = date('d-m-Y',strtotime($result->release_date));
+                $data_tmp['create_date'] = date('d-m-Y', strtotime($result->create_date));
+                $data_tmp['delivery_date'] = date('d-m-Y', strtotime($result->delivery_date));
+                $data_tmp['release_date'] = date('d-m-Y', strtotime($result->release_date));
                 $data_tmp['material_id'] = $result->material_id;
                 $data_tmp['material_name'] = $result->material_name;
                 $data_tmp['item_po'] = $result->item_po;
@@ -64,14 +64,14 @@ class ReceivingDetailsController extends Controller
                 $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                 foreach ($SettingPPNs as $SettingPPN) {
                     $ppn = explode(';', $SettingPPN['name']);
-                    if ($ppn[0] === $result->ppn){
+                    if ($ppn[0] === $result->ppn) {
                         $data_tmp['ppn_p'] = $ppn[1];
                     }
                 };
                 $data_tmp['del_note'] = $result->del_note;
-                $data_tmp['del_date'] = date('d-m-Y',strtotime($result->del_date));
+                $data_tmp['del_date'] = date('d-m-Y', strtotime($result->del_date));
                 $data_tmp['del_qty'] = $result->del_qty;
-                $data_tmp['prod_date'] = date('d-m-Y',strtotime($result->prod_date));
+                $data_tmp['prod_date'] = date('d-m-Y', strtotime($result->prod_date));
                 $data_tmp['prod_lot'] = $result->prod_lot;
                 $data_tmp['material'] = $result->material;
                 $data_tmp['o_name'] = $result->o_name;
@@ -85,17 +85,15 @@ class ReceivingDetailsController extends Controller
                 'data' => $data,
                 'total' => count($resultAlls),
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -104,33 +102,31 @@ class ReceivingDetailsController extends Controller
         $vendor = auth()->user()->vendor_code;
 
         $ReceivingDetails = ReceivingDetails::where('_id', $id);
-        if ($vendor != ''){
+        if ($vendor != '') {
             $ReceivingDetails = $ReceivingDetails->where('vendor', $vendor);
         }
         $ReceivingDetails = $ReceivingDetails->first();
 
-        if ($ReceivingDetails){
+        if ($ReceivingDetails) {
 
             $Vendor = new Vendor;
-    
+
             $vendor_data = $Vendor->checkVendor($ReceivingDetails->vendor);
-            if (count($vendor_data) > 0){
-    
+            if (count($vendor_data) > 0) {
+
                 $vendor_data = $vendor_data[0];
                 $ReceivingDetails->vendor_name = $vendor_data->name;
-    
             } else {
-    
+
                 $ReceivingDetails->vendor_name = '';
-    
             }
-    
+
             $Settings = new Settings;
             $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
-            
+
             foreach ($SettingPPNs as $SettingPPN) {
                 $ppn = explode(';', $SettingPPN['name']);
-                if ($ppn[0] === $ReceivingDetails->ppn){
+                if ($ppn[0] === $ReceivingDetails->ppn) {
                     $ReceivingDetails->ppn_p = $ppn[1];
                 }
             };
@@ -139,17 +135,15 @@ class ReceivingDetailsController extends Controller
                 'type' => 'success',
                 'data' => $ReceivingDetails,
             ], 200);
-
         } else {
-    
+
             return response()->json([
-    
+
                 'type' => 'failed',
                 'message' => 'data not found.',
                 'data' => NULL,
-    
-            ], 400);
 
+            ], 400);
         }
     }
 
@@ -168,28 +162,26 @@ class ReceivingDetailsController extends Controller
             $ReceivingDetails = new ReceivingDetails;
             $data = $ReceivingDetails->scanData($request->PO_Number, $request->material_id, $request->item_no, $vendor);
 
-            if ($data){
+            if ($data) {
 
                 $Vendor = new Vendor;
-        
+
                 $vendor_data = $Vendor->checkVendor($data->vendor);
-                if (count($vendor_data) > 0){
-        
+                if (count($vendor_data) > 0) {
+
                     $vendor_data = $vendor_data[0];
                     $data->vendor_name = $vendor_data->name;
-        
                 } else {
-        
+
                     $data->vendor_name = '';
-        
                 }
-        
+
                 $Settings = new Settings;
                 $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
-                
+
                 foreach ($SettingPPNs as $SettingPPN) {
                     $ppn = explode(';', $SettingPPN['name']);
-                    if ($ppn[0] === $data->ppn){
+                    if ($ppn[0] === $data->ppn) {
                         $data->ppn_p = $ppn[1];
                     }
                 };
@@ -218,29 +210,25 @@ class ReceivingDetailsController extends Controller
                     'message' => NULL,
                     'data' => $data,
                 ], 200);
-
             } else {
-    
+
                 return response()->json([
-        
+
                     'type' => 'failed',
                     'message' => 'Data not found.',
                     'data' => NULL,
-        
+
                 ], 400);
-
             }
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -259,90 +247,81 @@ class ReceivingDetailsController extends Controller
                 'message' => 'The given data was invalid.',
                 'errors' => $validator->errors()
             ], 400);
-
         } else {
 
             $json = $request->getContent();
-    
+
             try {
-    
+
                 $inputs = json_decode($json);
                 $data_empty = 0;
-    
-                if (count($inputs) > 0){
-    
+
+                if (count($inputs) > 0) {
+
                     foreach ($inputs as $input) {
-                
+
                         $ReceivingDetails = ReceivingDetails::where('_id', $input->_id)->first();
-    
+
                         $ReceivingDetails->del_note = $input->del_note;
-                        $ReceivingDetails->del_date = date('Y-m-d',strtotime($input->del_date));
+                        $ReceivingDetails->del_date = date('Y-m-d', strtotime($input->del_date));
                         $ReceivingDetails->del_qty = $input->del_qty;
-                        $ReceivingDetails->prod_date = date('Y-m-d',strtotime($input->prod_date));
+                        $ReceivingDetails->prod_date = date('Y-m-d', strtotime($input->prod_date));
                         $ReceivingDetails->prod_lot = $input->prod_lot;
                         $ReceivingDetails->material = $input->material;
                         $ReceivingDetails->o_name = $input->o_name;
                         $ReceivingDetails->o_code = $input->o_code;
-    
+
                         $ReceivingDetails->updated_by = auth()->user()->username;
                         $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
-    
+
                         $ReceivingDetails->save();
-    
+
                         if (
                             $this->IsNullOrEmptyString($input->del_note) ||
-                            $this->IsNullOrEmptyString($input->del_qty) || 
-                            $this->IsNullOrEmptyString($input->material) || 
-                            $this->IsNullOrEmptyString($input->o_name) || 
+                            $this->IsNullOrEmptyString($input->del_qty) ||
+                            $this->IsNullOrEmptyString($input->material) ||
+                            $this->IsNullOrEmptyString($input->o_name) ||
                             $this->IsNullOrEmptyString($input->o_code) ||
                             intval($input->del_qty) < intval($ReceivingDetails->qty)
-                        )
-                        {
+                        ) {
                             $data_empty = $data_empty + 1;
                         }
-    
                     }
-    
-                    if ($data_empty == 0){
-    
+
+                    if ($data_empty == 0) {
+
                         $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 1]);
-    
+
                         return response()->json([
-                
+
                             "result" => true,
                             "msg_type" => 'Success',
                             "message" => 'Data stored successfully!',
-                
+
                         ], 200);
-    
                     } else {
-    
+
                         $updatePOStatus = Receiving::where('PO_Number', $inputs[0]->PO_Number)->update(['PO_Status' => 0]);
-    
+
                         return response()->json([
-                
+
                             "result" => true,
                             "msg_type" => 'Success',
                             "message" => 'Data stored successfully with empty field!',
-                
+
                         ], 200);
-    
                     }
-    
                 }
-    
             } catch (\Exception $e) {
-    
+
                 return response()->json([
-        
+
                     "result" => false,
                     "msg_type" => 'error',
-                    "message" => 'err: '.$e,
-        
-                ], 400);
-    
-            }
+                    "message" => 'err: ' . $e,
 
+                ], 400);
+            }
         }
     }
 
