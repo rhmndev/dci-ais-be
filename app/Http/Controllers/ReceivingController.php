@@ -31,7 +31,7 @@ class ReceivingController extends Controller
         $vendor = auth()->user()->vendor_code;
 
         try {
-    
+
             $data = array();
             $Receiving = new Receiving;
             $ReceivingDetails = new ReceivingDetails;
@@ -44,14 +44,14 @@ class ReceivingController extends Controller
             $results = $Receiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
-                
+
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['PO_Number'] = $result->PO_Number;
                 $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
-                $data_tmp['create_date'] = date('d-m-Y',strtotime($result->create_date));
-                $data_tmp['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
-                $data_tmp['release_date'] = date('d-m-Y',strtotime($result->release_date));
+                $data_tmp['create_date'] = date('d-m-Y', strtotime($result->create_date));
+                $data_tmp['delivery_date'] = date('d-m-Y', strtotime($result->delivery_date));
+                $data_tmp['release_date'] = date('d-m-Y', strtotime($result->release_date));
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
@@ -62,9 +62,9 @@ class ReceivingController extends Controller
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $PODetail->_id;
                     $data_tmp_d['PO_Number'] = $PODetail->PO_Number;
-                    $data_tmp_d['create_date'] = date('d-m-Y',strtotime($result->create_date));
-                    $data_tmp_d['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
-                    $data_tmp_d['release_date'] = date('d-m-Y',strtotime($result->release_date));
+                    $data_tmp_d['create_date'] = date('d-m-Y', strtotime($result->create_date));
+                    $data_tmp_d['delivery_date'] = date('d-m-Y', strtotime($result->delivery_date));
+                    $data_tmp_d['release_date'] = date('d-m-Y', strtotime($result->release_date));
                     $data_tmp_d['material_id'] = $PODetail->material_id;
                     $data_tmp_d['material_name'] = $PODetail->material_name;
                     $data_tmp_d['item_po'] = $PODetail->item_po;
@@ -75,20 +75,20 @@ class ReceivingController extends Controller
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
                     $data_tmp_d['ppn'] = $PODetail->ppn;
-                    $data_tmp_d['QRCode'] = $result->_id.';'.$PODetail->_id;
-            
+                    $data_tmp_d['QRCode'] = $result->_id . ';' . $PODetail->_id;
+
                     $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                     foreach ($SettingPPNs as $SettingPPN) {
                         $ppn = explode(';', $SettingPPN['name']);
-                        if ($ppn[0] === $PODetail->ppn){
+                        if ($ppn[0] === $PODetail->ppn) {
                             $data_tmp_d['ppnp'] = $ppn[1];
                         }
                     };
 
                     $data_tmp_d['del_note'] = $PODetail->del_note;
-                    $data_tmp_d['del_date'] = date('d-m-Y',strtotime($PODetail->del_date));
+                    $data_tmp_d['del_date'] = date('d-m-Y', strtotime($PODetail->del_date));
                     $data_tmp_d['del_qty'] = $PODetail->del_qty;
-                    $data_tmp_d['prod_date'] = date('d-m-Y',strtotime($PODetail->prod_date));
+                    $data_tmp_d['prod_date'] = date('d-m-Y', strtotime($PODetail->prod_date));
                     $data_tmp_d['prod_lot'] = $PODetail->prod_lot;
                     $data_tmp_d['material'] = $PODetail->material;
                     $data_tmp_d['o_name'] = $PODetail->o_name;
@@ -101,18 +101,16 @@ class ReceivingController extends Controller
 
                     $data_tmp_d['total'] = $total;
 
-    
+
                     $total_po = $total_po + $total;
 
                     array_push($data_tmp['data'], $data_tmp_d);
-
                 }
                 $data_tmp['total'] = $total_po;
 
-                if ($data_tmp['total'] > 0){
-    
-                    array_push($data, $data_tmp);
+                if ($data_tmp['total'] > 0) {
 
+                    array_push($data, $data_tmp);
                 }
             }
 
@@ -122,17 +120,15 @@ class ReceivingController extends Controller
                 'total' => count($resultAlls),
                 'Material_Perpage' => $Material_Perpage
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -160,7 +156,7 @@ class ReceivingController extends Controller
             ]);
             $results = json_decode($json->getBody())->d->results;
 
-            if (count($results) > 0){
+            if (count($results) > 0) {
 
                 $Material = new Material;
                 $Vendor = new Vendor;
@@ -171,7 +167,7 @@ class ReceivingController extends Controller
                 foreach ($results as $result) {
 
                     $checkVendor = $Vendor->checkVendor($result->Vendor);
-    
+
                     if (count($checkVendor) > 0) {
 
                         $PO_Number = $this->stringtoupper($result->PoNo);
@@ -180,11 +176,11 @@ class ReceivingController extends Controller
 
                         $PR_Number = $this->stringtoupper($result->PurchaseReq);
                         $gudang_id = $this->stringtoupper($result->Warehouse);
-    
+
                         $create_date = $this->dateMaking($result->Crdate);
                         $delivery_date = $this->dateMaking($result->Deldate);
                         $release_date = $this->dateMaking($result->Reldate);
-    
+
                         $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
 
                         $Receiving->PO_Number = $PO_Number;
@@ -193,17 +189,17 @@ class ReceivingController extends Controller
                         $Receiving->release_date = $release_date;
                         $Receiving->vendor = $result->Vendor;
                         $Receiving->PO_Status = 0;
-    
+
                         $Receiving->created_by = auth()->user()->username;
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $Receiving->updated_by = auth()->user()->username;
                         $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $Receiving->save();
-    
+
                         $checkMaterial = $Material->checkMaterial($material_id);
-    
+
                         if (count($checkMaterial) > 0) {
-    
+
                             $ReceivingDetails = ReceivingDetails::firstOrNew([
                                 'PO_Number' => $PO_Number,
                                 'item_po' => $result->ItemNo,
@@ -230,11 +226,11 @@ class ReceivingController extends Controller
                             $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
                             foreach ($SettingGudangDatas as $SettingGudangData) {
                                 $gd = explode(';', $SettingGudangData['name']);
-                                if ($gd[0] === $gudang_id){
+                                if ($gd[0] === $gudang_id) {
                                     $ReceivingDetails->gudang_nm = $gd[1];
                                 }
                             };
-                            
+
                             if (!$ReceivingDetails->exists) {
 
                                 $ReceivingDetails->del_note = null;
@@ -247,84 +243,71 @@ class ReceivingController extends Controller
                                 $ReceivingDetails->o_code = null;
 
                                 $ReceivingDetails->flag = 0;
-
                             }
-    
+
                             $ReceivingDetails->created_by = auth()->user()->username;
                             $ReceivingDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                             $ReceivingDetails->updated_by = auth()->user()->username;
                             $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                             $ReceivingDetails->save();
-                            
                         } else {
                             array_push($material_nf, $material_id);
                         }
-    
                     } else {
                         array_push($vendor_nf, $result->Vendor);
                     }
-
                 }
 
-                if (count($vendor_nf) > 0){
+                if (count($vendor_nf) > 0) {
 
                     return response()->json([
-            
+
                         "result" => false,
                         "msg_type" => 'failed',
                         "message" => 'Sync SAP unsuccessfully!',
                         "Not Found Vendor" => array_unique($vendor_nf),
-            
-                    ], 400);
 
-                } elseif (count($material_nf) > 0){
+                    ], 400);
+                } elseif (count($material_nf) > 0) {
 
                     return response()->json([
-            
+
                         "result" => true,
                         "msg_type" => 'Success',
                         "message" => 'Sync SAP successfully with skiped material!',
                         "Not Found Material" => array_unique($material_nf),
-            
-                    ], 200);
 
+                    ], 200);
                 } else {
 
                     return response()->json([
-            
+
                         "result" => true,
                         "msg_type" => 'success',
                         "message" => 'Sync SAP Success',
-            
+
                     ], 200);
-
                 }
-
             } else {
 
                 return response()->json([
-        
+
                     "result" => false,
                     "msg_type" => 'failed',
                     "message" => 'Data not found',
-        
+
                 ], 400);
-
             }
-
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
+                "message" => 'err: ' . $e,
+
             ], 400);
-
         }
-
     }
 
     public function postGR(Request $request)
@@ -340,7 +323,7 @@ class ReceivingController extends Controller
             $documentDate = date('Y-m-d\TH:i:s', strtotime($request->documentDate));
             $headerText = $request->headerText != '' ? $this->stringtoupper($request->headerText) : '';
 
-            if (count($inputs) > 0){
+            if (count($inputs) > 0) {
 
                 $dataGR = array();
                 $dataPO = array();
@@ -361,7 +344,7 @@ class ReceivingController extends Controller
                 );
 
                 foreach ($inputs as $input) {
-    
+
                     $data_tmp = array();
                     $data_tmp['Reference'] = $reference;
                     $data_tmp['Item'] = strval($input->index_po);
@@ -377,77 +360,76 @@ class ReceivingController extends Controller
                     array_push($dataGR, $input->PO_Number);
                     array_push($dataPO, $input->PO_Number);
                     array_push($data['GoodReceiptSet'], $data_tmp);
-
                 }
 
                 $postSAP = $this->postSAP($data, $getHeader);
                 $postSAP = json_decode($postSAP);
 
-                if ( isset($postSAP->d) ){
+                if (isset($postSAP->d)) {
 
-                    if ( $postSAP->d->Status === 'S' ){
+                    if ($postSAP->d->Status === 'S') {
 
                         #region Insert to Receiving
                         $Material = new Material;
-        
+
                         // $GR_Number = $this->genGR($dataGR).'-'.strtotime($data['PostingDate']);
                         $PO_Number_joins = $this->genPO($dataPO);
-        
+
                         foreach ($inputs as $input) {
-        
+
                             $PO_Number = $this->stringtoupper($input->PO_Number);
                             $material_id = $this->stringtoupper($input->material_id);
                             $material_name = $this->stringtoupper($input->material_name);
-        
+
                             $Receiving = new Receiving;
                             $ReceivingData = $Receiving->getFirst($PO_Number);
-            
+
                             $GoodReceiving = GoodReceiving::firstOrNew([
                                 'SJ_Number' => $reference,
                                 'PO_Number' => join(", ", $PO_Number_joins)
                             ]);
-            
+
                             $GoodReceiving->GR_Number = '-';
                             $GoodReceiving->PO_Number = join(", ", $PO_Number_joins);
                             $GoodReceiving->SJ_Number = $reference;
-        
+
                             $GoodReceiving->create_date = $input->create_date;
                             $GoodReceiving->delivery_date = $input->delivery_date;
                             $GoodReceiving->release_date = $input->release_date;
-        
+
                             $GoodReceiving->PO_Status = $ReceivingData->PO_Status;
                             $GoodReceiving->GR_Date = '-';
-                            
+
                             $GoodReceiving->vendor_id = $input->vendor;
                             $GoodReceiving->vendor_nm = $Vendor->checkVendor($input->vendor)[0]->name;
                             $GoodReceiving->warehouse_id = $input->gudang_id;
                             $GoodReceiving->warehouse_nm = $input->gudang_nm;
                             $GoodReceiving->description = null;
                             $GoodReceiving->headerText = $headerText;
-                            
+
                             $GoodReceiving->created_by = auth()->user()->username;
                             $GoodReceiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                             $GoodReceiving->updated_by = auth()->user()->username;
                             $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                             $GoodReceiving->save();
-            
+
                             $checkMaterial = $Material->checkMaterial($material_id);
-        
+
                             if (count($checkMaterial) > 0) {
-        
+
                                 $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
                                     'reference' => $reference,
                                     'PO_Number' => $PO_Number,
                                     'item_po' => $input->item_po,
                                 ]);
-        
+
                                 $GoodReceivingDetail->GR_Number = '-';
-        
+
                                 $GoodReceivingDetail->PO_Number = $PO_Number;
                                 $GoodReceivingDetail->create_date = $input->create_date;
                                 $GoodReceivingDetail->delivery_date = $input->delivery_date;
                                 $GoodReceivingDetail->release_date = $input->release_date;
-        
+
                                 $GoodReceivingDetail->material_id = $material_id;
                                 $GoodReceivingDetail->material_name = $material_name;
                                 $GoodReceivingDetail->item_po = $input->item_po;
@@ -458,7 +440,7 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->currency = $input->currency;
                                 $GoodReceivingDetail->vendor = $input->vendor;
                                 $GoodReceivingDetail->ppn = $input->ppn;
-        
+
                                 $GoodReceivingDetail->del_note = $input->del_note;
                                 $GoodReceivingDetail->del_date = $input->del_date;
                                 $GoodReceivingDetail->del_qty = $input->del_qty;
@@ -467,121 +449,107 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->material = $input->material;
                                 $GoodReceivingDetail->o_name = $input->o_name;
                                 $GoodReceivingDetail->o_code = $input->o_code;
-        
+
                                 $GoodReceivingDetail->receive_qty = $input->receive_qty;
                                 $GoodReceivingDetail->reference = $reference;
                                 $GoodReceivingDetail->gudang_id = $input->gudang_id;
                                 $GoodReceivingDetail->gudang_nm = $input->gudang_nm;
                                 $GoodReceivingDetail->batch = $input->batch;
-        
+
                                 $GoodReceivingDetail->PR_Number = $input->PR_Number;
                                 $GoodReceivingDetail->residual_qty = $input->scale_qty;
                                 $GoodReceivingDetail->stock = null;
                                 $GoodReceivingDetail->description = null;
-        
+
                                 $GoodReceivingDetail->created_by = auth()->user()->username;
                                 $GoodReceivingDetail->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                                 $GoodReceivingDetail->updated_by = auth()->user()->username;
                                 $GoodReceivingDetail->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                                 $GoodReceivingDetail->save();
-                                
                             }
 
                             $sisa = $input->qty - $input->receive_qty;
 
-                            if ($input->qty > $input->receive_qty){
-        
-                                $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
-                                ->where('material_id', $material_id)
-                                ->where('index_po', $input->index_po)
-                                ->update(['qty' => $sisa, 'del_qty' => $sisa]);
+                            if ($input->qty > $input->receive_qty) {
 
+                                $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
+                                    ->where('material_id', $material_id)
+                                    ->where('index_po', $input->index_po)
+                                    ->update(['qty' => $sisa, 'del_qty' => $sisa]);
                             } else {
-        
-                                $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
-                                ->where('material_id', $material_id)
-                                ->where('index_po', $input->index_po)
-                                ->update(['flag' => 1]);
 
+                                $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
+                                    ->where('material_id', $material_id)
+                                    ->where('index_po', $input->index_po)
+                                    ->update(['flag' => 1]);
                             }
-        
                         }
                         #endregion
 
-                        if ( $GoodReceiving && $GoodReceivingDetail && $updateData ){
+                        if ($GoodReceiving && $GoodReceivingDetail && $updateData) {
 
                             return response()->json([
-                        
+
                                 "result" => true,
                                 "msg_type" => 'Success',
                                 "message" => 'Data success sended',
-                    
-                            ], 200);
 
+                            ], 200);
                         } else {
 
                             return response()->json([
-                        
+
                                 "result" => false,
                                 "msg_type" => 'failed',
                                 "message" => 'Update data failed',
-                    
+
                             ], 400);
-
                         }
-
-                    } elseif( $postSAP->d->Status === 'E' ) {
+                    } elseif ($postSAP->d->Status === 'E') {
 
                         return response()->json([
-                    
+
                             "result" => false,
                             "msg_type" => 'failed',
-                            "message" => 'SAP: '.$postSAP->d->Message,
-                
+                            "message" => 'SAP: ' . $postSAP->d->Message,
+
                         ], 400);
-
                     }
-
                 } else {
 
                     return response()->json([
-                
+
                         "result" => false,
                         "msg_type" => 'failed',
-                        "message" => 'SAP: '.$postSAP->error->message->value,
-            
+                        "message" => 'SAP: ' . $postSAP->error->message->value,
+
                     ], 400);
-
                 }
-
             } else {
 
                 return response()->json([
-        
+
                     "result" => false,
                     "msg_type" => 'failed',
                     "message" => 'Data not found!',
-        
-                ], 400);
 
+                ], 400);
             }
-            
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
-            ], 400);
+                "message" => 'err: ' . $e,
 
+            ], 400);
         }
     }
 
     private function stringtoupper($string)
     {
-        if ($string != ''){
+        if ($string != '') {
             $string = strtolower($string);
             $string = strtoupper($string);
         }
@@ -591,7 +559,7 @@ class ReceivingController extends Controller
     private function dateMaking($date)
     {
         $date = explode('.', $date);
-        $date = $date[0].'-'.$date[1].'-'.$date[2];
+        $date = $date[0] . '-' . $date[1] . '-' . $date[2];
         $date = date('Y-m-d', strtotime($date));
         return $date;
     }
@@ -601,21 +569,21 @@ class ReceivingController extends Controller
 
         $us = 'wcs-abap';
         $pw = 'Wilmar12';
-        $account = $us.':'.$pw;
-            
+        $account = $us . ':' . $pw;
+
         $url = 'http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110&\$format=json';
 
         try {
 
             $ch = curl_init();
-    
+
             curl_setopt($ch, CURLOPT_URL, $url);
             $header = array('x-csrf-token: Fetch', 'Connection: keep-alive');
             curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
             curl_setopt($ch, CURLOPT_USERPWD, $account);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_HEADER, 1);
-    
+
             $response = curl_exec($ch);
             $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             $header = substr($response, 0, $header_size);
@@ -628,11 +596,9 @@ class ReceivingController extends Controller
                 'x-csrf-token' => $data['x-csrf-token'],
                 'set-cookie' => $data['set-cookie'],
             ];
-
         } catch (\Exception $e) {
 
-            return 'err: '.$e;
-
+            return 'err: ' . $e;
         }
     }
 
@@ -640,13 +606,12 @@ class ReceivingController extends Controller
     {
         $arr = array();
 
-        $data = substr($res, 0 , strpos($res, "\r\n\r\n"));
+        $data = substr($res, 0, strpos($res, "\r\n\r\n"));
 
         foreach (explode("\r\n", $data) as $key => $value) {
-            if ($key === 0){
+            if ($key === 0) {
 
                 $arr['http_code'] = $value;
-
             } else {
                 list($k, $v) = explode(': ', $value);
 
@@ -662,12 +627,12 @@ class ReceivingController extends Controller
 
         $us = 'wcs-abap';
         $pw = 'Wilmar12';
-        $account = $us.':'.$pw;
-            
+        $account = $us . ':' . $pw;
+
         $url = 'http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110';
 
         $header = array(
-            'X-CSRF-TOKEN: '.$headervalue['x-csrf-token'],
+            'X-CSRF-TOKEN: ' . $headervalue['x-csrf-token'],
             'Content-Type: application/json',
             'Accept: application/json',
         );
@@ -676,21 +641,21 @@ class ReceivingController extends Controller
         try {
 
             $ch = curl_init();
-    
+
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_COOKIE, 'sap-usercontext=sap-client=110; path=/; Domain=erpdev-dp.dharmap.com;');
             curl_setopt($ch, CURLOPT_COOKIE, $headervalue['set-cookie']);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
             curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                'X-CSRF-TOKEN: '.$headervalue['x-csrf-token'],
+                'X-CSRF-TOKEN: ' . $headervalue['x-csrf-token'],
                 'Content-Type: application/json',
                 'Accept: application/json',
             ));
             curl_setopt($ch, CURLOPT_USERPWD, $account);
 
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    
+
             $response = curl_exec($ch);
             $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             $header = substr($response, 0, $header_size);
@@ -698,11 +663,9 @@ class ReceivingController extends Controller
             curl_close($ch);
 
             return $response;
-
         } catch (\Exception $e) {
 
-            return 'err: '.$e;
-
+            return 'err: ' . $e;
         }
     }
 
