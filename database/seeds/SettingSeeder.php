@@ -62,10 +62,12 @@ class SettingSeeder extends Seeder
                     {"id":0.6584882123637634,"name":"EN01;ENGINEERING"},
                     {"id":0.1769217311649797,"name":"GS01;GS / ATK"},
                     {"id":0.1204737882898632,"name":"MT01;MAINTENANCE"},
-                    {"id":0.14935756956400503,"name":"OH01;OHP (OUT HOUSE P"},
+                    {"id":0.14935756956400503,"name":"OH01;OHP (OUT HOUSE P)"},
                     {"id":0.07490602284114334,"name":"PB01;POOLING BUYING M"},
                     {"id":0.97406668456854,"name":"PB02;POOLING BUYING F"},
-                    {"id":0.5598219072063504,"name":"PE01;PROD. ENGINEERIN"}
+                    {"id":0.5598219072063504,"name":"PE01;PROD. ENGINEERING"},
+                    {"id":0.112276079422025,"name":"RM01;RAW MATERIAL"}
+                    
                 ]'),
                 'created_by' => 'seeder',
                 'changed_by' => 'seeder'
