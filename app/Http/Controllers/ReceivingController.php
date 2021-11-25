@@ -457,7 +457,7 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->batch = $input->batch;
 
                                 $GoodReceivingDetail->PR_Number = $input->PR_Number;
-                                $GoodReceivingDetail->residual_qty = $input->scale_qty;
+                                $GoodReceivingDetail->residual_qty = $input->qty - $input->receive_qty;
                                 $GoodReceivingDetail->stock = null;
                                 $GoodReceivingDetail->description = null;
 
