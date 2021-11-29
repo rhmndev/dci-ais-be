@@ -384,7 +384,7 @@ class ReceivingController extends Controller
                             $Receiving = new Receiving;
                             $ReceivingData = $Receiving->getFirst($PO_Number);
 
-                            $GoodReceiving = GoodReceiving::firstOrNew([
+                            $GoodReceiving = GoodReceiving::create([
                                 'SJ_Number' => $reference,
                                 'PO_Number' => join(", ", $PO_Number_joins)
                             ]);
@@ -417,7 +417,7 @@ class ReceivingController extends Controller
 
                             if (count($checkMaterial) > 0) {
 
-                                $GoodReceivingDetail = GoodReceivingDetail::firstOrNew([
+                                $GoodReceivingDetail = GoodReceivingDetail::create([
                                     'reference' => $reference,
                                     'PO_Number' => $PO_Number,
                                     'item_po' => $input->item_po,
