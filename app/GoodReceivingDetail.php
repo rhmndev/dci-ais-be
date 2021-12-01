@@ -13,12 +13,12 @@ class GoodReceivingDetail extends Model
         'item_po'
     ];
 
-    public function getDetails($SJ_Number, $vendor)
+    public function getDetails($PO_Number, $vendor)
     {
 
         $query = GoodReceivingDetail::query();
 
-        $query = $query->where('reference', $SJ_Number);
+        $query = $query->where('PO_Number', $PO_Number);
 
         if ($vendor != '') {
             $query = $query->where('vendor', $vendor);

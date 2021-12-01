@@ -57,7 +57,7 @@ class GoodReceivingController extends Controller
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
-                $GRDetails = $GoodReceivingDetail->getDetails($result->SJ_Number, $result->vendor);
+                $GRDetails = $GoodReceivingDetail->getDetails($result->PO_Number, $result->vendor);
 
                 foreach ($GRDetails as $GRDetail) {
 
