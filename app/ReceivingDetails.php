@@ -89,7 +89,7 @@ class ReceivingDetails extends Model
     {
         $query = ReceivingDetails::query();
 
-        if ($vendor != '') {
+        if ($vendor) {
             $query = $query->where('vendor', $vendor);
         }
 
