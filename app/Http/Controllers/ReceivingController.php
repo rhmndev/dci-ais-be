@@ -325,6 +325,24 @@ class ReceivingController extends Controller
 
             if (count($inputs) > 0) {
 
+                foreach ($inputs as $input) {
+                    $checkData = GoodReceiving::where('SJ_Number', $reference)
+                        ->where('PO_Number', $input->PO_Number)
+                        ->where('vendor_id', $input->vendor)
+                        ->first();
+                    if ($checkData) {
+
+                        return response()->json([
+        
+                            "result" => false,
+                            "msg_type" => 'failed',
+                            "message" => 'Data with No. Surat Jalan '.$reference.' & PO Number '.$input->PO_Number.' already exist.',
+        
+                        ], 400);
+                    }
+                }
+
+
                 $dataGR = array();
                 $dataPO = array();
 
