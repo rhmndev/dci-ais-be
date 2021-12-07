@@ -176,7 +176,7 @@ class GoodReceivingController extends Controller
 
                 $total_po = 0;
 
-                $GRDetails = $GoodReceivingDetail->getDetails($GoodReceiving->SJ_Number, $GoodReceiving->vendor);
+                $GRDetails = $GoodReceivingDetail->getDetails($GoodReceiving->SJ_Number, $GoodReceiving->PO_Number, $GoodReceiving->vendor);
 
                 foreach ($GRDetails as $GRDetail) {
 
