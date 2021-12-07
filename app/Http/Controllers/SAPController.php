@@ -626,8 +626,9 @@ class SAPController extends Controller
 
                     $reference = $this->stringtoupper($input->ref);
                     $GR_Number = $this->stringtoupper($input->matdoc);
+                    $vendor_id = $this->stringtoupper($input->vendor);
 
-                    $GoodReceiving = GoodReceiving::where('SJ_Number', $reference)->first();
+                    $GoodReceiving = GoodReceiving::where('SJ_Number', $reference)->where('vendor_id', $vendor_id)->first();
                     if ($GoodReceiving){
                         $GoodReceiving->GR_Number = $GR_Number;
                         $GoodReceiving->GR_Date = date('Y-m-d', strtotime($input->grdate));
