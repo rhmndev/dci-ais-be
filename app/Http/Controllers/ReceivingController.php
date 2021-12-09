@@ -493,7 +493,7 @@ class ReceivingController extends Controller
                                 $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
                                     ->where('material_id', $material_id)
                                     ->where('index_po', $input->index_po)
-                                    ->update(['qty' => $sisa, 'del_qty' => $sisa]);
+                                    ->update(['del_qty' => $sisa]);
                             } else {
 
                                 $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
