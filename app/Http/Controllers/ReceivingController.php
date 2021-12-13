@@ -486,7 +486,8 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->save();
                             }
 
-                            $sisa = $input->qty - $input->receive_qty;
+                            // $sisa = $input->qty - $input->receive_qty;
+                            $sisa = $input->del_qty - $input->receive_qty;
 
                             if ($input->qty > $input->receive_qty) {
 
