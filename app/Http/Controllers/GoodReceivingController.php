@@ -222,7 +222,8 @@ class GoodReceivingController extends Controller
 
                     $data_tmp['GR_Number'] = $GRDetail->GR_Number;
                     $data_tmp['PR_Number'] = $GRDetail->PR_Number;
-                    $data_tmp['residual_qty'] = $GRDetail->del_qty - $GRDetail->receive_qty;
+                    $data_tmp['residual_qty'] = $GRDetail->residual_qty;
+                    // $data_tmp['residual_qty'] = $GRDetail->del_qty - $GRDetail->receive_qty;
                     $data_tmp['stock'] = $GRDetail->stock;
                     $data_tmp['description'] = $GRDetail->description;
 
