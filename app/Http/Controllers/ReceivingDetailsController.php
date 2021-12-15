@@ -164,52 +164,54 @@ class ReceivingDetailsController extends Controller
 
             if ($data) {
 
-                $Vendor = new Vendor;
+                if (intval($data->del_qty) == 0) {
 
-                $vendor_data = $Vendor->checkVendor($data->vendor);
-                if (count($vendor_data) > 0) {
+                    return response()->json([
+    
+                        'type' => 'failed',
+                        'message' => $request->material_id.' already delivered.',
+                        'data' => NULL,
+    
+                    ], 400);
 
-                    $vendor_data = $vendor_data[0];
-                    $data->vendor_name = $vendor_data->name;
                 } else {
 
-                    $data->vendor_name = '';
-                }
-
-                $Settings = new Settings;
-                $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
-
-                foreach ($SettingPPNs as $SettingPPN) {
-                    $ppn = explode(';', $SettingPPN['name']);
-                    if ($ppn[0] === $data->ppn) {
-                        $data->ppn_p = $ppn[1];
+                    $Vendor = new Vendor;
+    
+                    $vendor_data = $Vendor->checkVendor($data->vendor);
+                    if (count($vendor_data) > 0) {
+    
+                        $vendor_data = $vendor_data[0];
+                        $data->vendor_name = $vendor_data->name;
+                    } else {
+    
+                        $data->vendor_name = '';
                     }
-                };
+    
+                    $Settings = new Settings;
+                    $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
+    
+                    foreach ($SettingPPNs as $SettingPPN) {
+                        $ppn = explode(';', $SettingPPN['name']);
+                        if ($ppn[0] === $data->ppn) {
+                            $data->ppn_p = $ppn[1];
+                        }
+                    };
+    
+                    $Scale = DB::connection('mysql')->table('vtb_t_measure')->first();
+                    $data->scale_qty = $Scale->measure;
+    
+                    $data->receive_qty = intval($data->del_qty);
+                    $data->qty = intval($data->qty);
+                    $data->del_qty = intval($data->del_qty);
+    
+                    return response()->json([
+                        'type' => 'success',
+                        'message' => NULL,
+                        'data' => $data,
+                    ], 200);
 
-                // $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
-                // $gudangData = array();
-                // foreach ($SettingGudangDatas as $SettingGudangData) {
-                //     $gd = explode(';', $SettingGudangData['name']);
-                //     $temp = array(
-                //         'id' => $gd[0],
-                //         'name' => $gd[1],
-                //     );
-                //     array_push($gudangData, $temp);
-                // };
-                // $data->gudangData = $gudangData;
-
-                $Scale = DB::connection('mysql')->table('vtb_t_measure')->first();
-                $data->scale_qty = $Scale->measure;
-
-                $data->receive_qty = intval($data->del_qty);
-                $data->qty = intval($data->qty);
-                $data->del_qty = intval($data->del_qty);
-
-                return response()->json([
-                    'type' => 'success',
-                    'message' => NULL,
-                    'data' => $data,
-                ], 200);
+                }
             } else {
 
                 return response()->json([
