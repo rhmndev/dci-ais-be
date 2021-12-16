@@ -245,6 +245,8 @@ class ReceivingController extends Controller
                                 $ReceivingDetails->flag = 0;
                             }
 
+                            $ReceivingDetails->residual_qty = $result->Quantity;
+
                             $ReceivingDetails->created_by = auth()->user()->username;
                             $ReceivingDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                             $ReceivingDetails->updated_by = auth()->user()->username;
@@ -333,11 +335,11 @@ class ReceivingController extends Controller
                     if ($checkData) {
 
                         return response()->json([
-        
+
                             "result" => false,
                             "msg_type" => 'failed',
-                            "message" => 'Data with No. Surat Jalan '.$reference.' & PO Number '.$input->PO_Number.' already exist.',
-        
+                            "message" => 'Data with No. Surat Jalan ' . $reference . ' & PO Number ' . $input->PO_Number . ' already exist.',
+
                         ], 400);
                     }
                 }
@@ -475,7 +477,7 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->batch = $input->batch;
 
                                 $GoodReceivingDetail->PR_Number = $input->PR_Number;
-                                $GoodReceivingDetail->residual_qty = $input->qty - $input->receive_qty;
+                                $GoodReceivingDetail->residual_qty = $input->residual_qty - $input->receive_qty;
                                 $GoodReceivingDetail->stock = null;
                                 $GoodReceivingDetail->description = null;
 
@@ -486,15 +488,15 @@ class ReceivingController extends Controller
                                 $GoodReceivingDetail->save();
                             }
 
-                            // $sisa = $input->qty - $input->receive_qty;
-                            $sisa = $input->del_qty - $input->receive_qty;
+                            $sisa = $input->residual_qty - $input->receive_qty;
+                            // $sisa = $input->del_qty - $input->receive_qty;
 
-                            if ($input->qty > $input->receive_qty) {
+                            if ($input->residual_qty > $input->receive_qty) {
 
                                 $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
                                     ->where('material_id', $material_id)
                                     ->where('index_po', $input->index_po)
-                                    ->update(['del_qty' => $sisa]);
+                                    ->update(['residual_qty' => $sisa]);
                             } else {
 
                                 $updateData = ReceivingDetails::where('PO_Number', $PO_Number)
