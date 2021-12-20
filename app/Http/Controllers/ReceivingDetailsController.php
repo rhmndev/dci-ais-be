@@ -284,7 +284,7 @@ class ReceivingDetailsController extends Controller
                             $this->IsNullOrEmptyString($input->material) ||
                             $this->IsNullOrEmptyString($input->o_name) ||
                             $this->IsNullOrEmptyString($input->o_code) ||
-                            intval($input->del_qty) < intval($ReceivingDetails->qty)
+                            intval($input->del_qty) < intval($ReceivingDetails->residual_qty)
                         ) {
                             $data_empty = $data_empty + 1;
                         }
