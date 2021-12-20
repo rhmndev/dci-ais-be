@@ -70,6 +70,7 @@ class ReceivingController extends Controller
                     $data_tmp_d['item_po'] = $PODetail->item_po;
                     $data_tmp_d['index_po'] = $PODetail->index_po;
                     $data_tmp_d['qty'] = $PODetail->qty;
+                    $data_tmp_d['residual_qty'] = $PODetail->residual_qty;
                     $data_tmp_d['unit'] = $PODetail->unit;
                     $data_tmp_d['price'] = $PODetail->price;
                     $data_tmp_d['currency'] = $PODetail->currency;
@@ -94,7 +95,8 @@ class ReceivingController extends Controller
                     $data_tmp_d['o_name'] = $PODetail->o_name;
                     $data_tmp_d['o_code'] = $PODetail->o_code;
 
-                    $total = $PODetail->qty * $PODetail->price;
+                    // $total = $PODetail->qty * $PODetail->price;
+                    $total = $PODetail->residual_qty * $PODetail->price;
                     $data_tmp_d['sub_total'] = $total;
 
                     $total = ((str_replace("%", "", $data_tmp_d['ppnp']) / 100) * $total) + $total;
