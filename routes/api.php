@@ -23,10 +23,10 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Master User
         Route::get('/user', 'UserController@index');
         Route::get('/user/{id}', 'UserController@show');
-	Route::post('/user', 'UserController@store');
-	Route::post('/user/{id}', 'UserController@store');
+        Route::post('/user', 'UserController@store');
+        Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
-	Route::post('/userimport', 'UserController@import');
+        Route::post('/userimport', 'UserController@import');
         #endregion
 
         #region Master Vendor
@@ -68,14 +68,14 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/receiveDetail', 'ReceivingDetailsController@index');
         Route::get('/receiveDetail/{id}', 'ReceivingDetailsController@show');
         Route::get('/scanData', 'ReceivingDetailsController@scanData');
-        
+
         Route::post('/receiveDetail', 'ReceivingDetailsController@update');
         #endregion
 
         #region Transaction Receive GR
         Route::get('/receiveGR', 'GoodReceivingController@index');
         Route::get('/receiveGRDetail/{id}', 'GoodReceivingController@show');
-        
+
         Route::post('/receiveGR', 'GoodReceivingController@update');
         #endregion
 
@@ -122,3 +122,5 @@ Route::post('/dataPOSAP', 'SAPController@storePO');
 
 Route::get('/dataGRSAP', 'SAPController@getGR');
 Route::post('/dataGRSAP', 'SAPController@storeGR');
+
+Route::get('/getCustomer', 'InspectionController@getCustomer');

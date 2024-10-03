@@ -150,10 +150,12 @@ class ReceivingController extends Controller
             $date = date('Y-m-d\TH:i:s', strtotime($request->date));
 
             $client = new Client;
-            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/PurchaseOrderSet?\$filter=Comp eq '$code' and Ersda eq datetime'$date'&sap-client=110&\$format=json", [
+            $json = $client->get("http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/PurchaseOrderSet?\$filter=Comp eq '$code' and Ersda eq datetime'$date'&sap-client=300&\$format=json", [
                 'auth' => [
-                    'wcs-abap',
-                    'Wilmar12'
+                    // 'wcs-abap',
+                    // 'Wilmar12'
+                    'DCI-DGT01',
+                    'DCI0001'
                 ],
             ]);
             $results = json_decode($json->getBody())->d->results;
@@ -590,11 +592,13 @@ class ReceivingController extends Controller
     private function getSAPToken()
     {
 
-        $us = 'wcs-abap';
-        $pw = 'Wilmar12';
+        // $us = 'wcs-abap';
+        // $pw = 'Wilmar12';
+        $us = 'DCI-DGT01';
+        $pw = 'DCI0001';
         $account = $us . ':' . $pw;
 
-        $url = 'http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110&\$format=json';
+        $url = 'http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=300&\$format=json';
 
         try {
 
@@ -648,11 +652,13 @@ class ReceivingController extends Controller
     private function postSAP($data, $headervalue)
     {
 
-        $us = 'wcs-abap';
-        $pw = 'Wilmar12';
+        // $us = 'wcs-abap';
+        // $pw = 'Wilmar12';
+        $us = 'DCI-DGT01';
+        $pw = 'DCI0001';
         $account = $us . ':' . $pw;
 
-        $url = 'http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=110';
+        $url = 'http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/Headerset?sap-client=300';
 
         $header = array(
             'X-CSRF-TOKEN: ' . $headervalue['x-csrf-token'],
@@ -666,7 +672,7 @@ class ReceivingController extends Controller
             $ch = curl_init();
 
             curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_COOKIE, 'sap-usercontext=sap-client=110; path=/; Domain=erpdev-dp.dharmap.com;');
+            curl_setopt($ch, CURLOPT_COOKIE, 'sap-usercontext=sap-client=300; path=/; Domain=erpprd-app1.dharmap.com;');
             curl_setopt($ch, CURLOPT_COOKIE, $headervalue['set-cookie']);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);

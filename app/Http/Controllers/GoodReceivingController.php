@@ -30,7 +30,7 @@ class GoodReceivingController extends Controller
         $vendor = auth()->user()->vendor_code;
 
         try {
-    
+
             $data = array();
             $GoodReceiving = new GoodReceiving;
             $GoodReceivingDetail = new GoodReceivingDetail;
@@ -43,7 +43,7 @@ class GoodReceivingController extends Controller
             $results = $GoodReceiving->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
-                
+
                 $data_tmp = array();
                 $data_tmp['_id'] = $result->_id;
                 $data_tmp['GR_Number'] = $result->GR_Number;
@@ -51,9 +51,9 @@ class GoodReceivingController extends Controller
                 $data_tmp['SJ_Number'] = $result->SJ_Number;
                 $data_tmp['PO_Status'] = $POStatus[$result->PO_Status]['name'];
                 $data_tmp['GR_Date'] = $result->GR_Date;
-                $data_tmp['create_date'] = date('d-m-Y',strtotime($result->create_date));
-                $data_tmp['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
-                $data_tmp['release_date'] = date('d-m-Y',strtotime($result->release_date));
+                $data_tmp['create_date'] = date('d-m-Y', strtotime($result->create_date));
+                $data_tmp['delivery_date'] = date('d-m-Y', strtotime($result->delivery_date));
+                $data_tmp['release_date'] = date('d-m-Y', strtotime($result->release_date));
                 $data_tmp['data'] = array();
                 $total_po = 0;
 
@@ -62,7 +62,7 @@ class GoodReceivingController extends Controller
                 foreach ($GRDetails as $GRDetail) {
 
                     $getVendor = $Vendor->checkVendor($GRDetail->vendor);
-                    if (count($getVendor) > 0){
+                    if (count($getVendor) > 0) {
                         $vendor_nm = $getVendor[0]->name;
                     } else {
                         $vendor_nm = '-';
@@ -71,9 +71,9 @@ class GoodReceivingController extends Controller
                     $data_tmp_d = array();
                     $data_tmp_d['_id'] = $GRDetail->_id;
                     $data_tmp_d['PO_Number'] = $GRDetail->PO_Number;
-                    $data_tmp_d['create_date'] = date('d-m-Y',strtotime($result->create_date));
-                    $data_tmp_d['delivery_date'] = date('d-m-Y',strtotime($result->delivery_date));
-                    $data_tmp_d['release_date'] = date('d-m-Y',strtotime($result->release_date));
+                    $data_tmp_d['create_date'] = date('d-m-Y', strtotime($result->create_date));
+                    $data_tmp_d['delivery_date'] = date('d-m-Y', strtotime($result->delivery_date));
+                    $data_tmp_d['release_date'] = date('d-m-Y', strtotime($result->release_date));
                     $data_tmp_d['material_id'] = $GRDetail->material_id;
                     $data_tmp_d['material_name'] = $GRDetail->material_name;
                     $data_tmp_d['item_po'] = $GRDetail->item_po;
@@ -85,20 +85,20 @@ class GoodReceivingController extends Controller
                     $data_tmp_d['vendor'] = $GRDetail->vendor;
                     $data_tmp_d['vendor_name'] = $vendor_nm;
                     $data_tmp_d['ppn'] = $GRDetail->ppn;
-                    $data_tmp_d['QRCode'] = $result->_id.';'.$GRDetail->_id;
-            
+                    $data_tmp_d['QRCode'] = $result->_id . ';' . $GRDetail->_id;
+
                     $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                     foreach ($SettingPPNs as $SettingPPN) {
                         $ppn = explode(';', $SettingPPN['name']);
-                        if ($ppn[0] === $GRDetail->ppn){
+                        if ($ppn[0] === $GRDetail->ppn) {
                             $data_tmp_d['ppn_p'] = $ppn[1];
                         }
                     };
 
                     $data_tmp_d['del_note'] = $GRDetail->del_note;
-                    $data_tmp_d['del_date'] = date('d-m-Y',strtotime($GRDetail->del_date));
+                    $data_tmp_d['del_date'] = date('d-m-Y', strtotime($GRDetail->del_date));
                     $data_tmp_d['del_qty'] = $GRDetail->del_qty;
-                    $data_tmp_d['prod_date'] = date('d-m-Y',strtotime($GRDetail->prod_date));
+                    $data_tmp_d['prod_date'] = date('d-m-Y', strtotime($GRDetail->prod_date));
                     $data_tmp_d['prod_lot'] = $GRDetail->prod_lot;
                     $data_tmp_d['material'] = $GRDetail->material;
                     $data_tmp_d['o_name'] = $GRDetail->o_name;
@@ -121,15 +121,14 @@ class GoodReceivingController extends Controller
 
                     $data_tmp_d['total'] = $total;
 
-    
+
                     $total_po = $total_po + $total;
 
                     array_push($data_tmp['data'], $data_tmp_d);
-
                 }
-                
+
                 $data_tmp['total'] = $total_po;
-    
+
                 array_push($data, $data_tmp);
             }
 
@@ -140,17 +139,15 @@ class GoodReceivingController extends Controller
                 'data' => $data,
                 'total' => count($resultAlls)
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -165,14 +162,13 @@ class GoodReceivingController extends Controller
             $GoodReceivingDetail = new GoodReceivingDetail;
 
             $GoodReceiving = GoodReceiving::where('_id', $id);
-            if ($vendor != ''){
+            if ($vendor != '') {
 
                 $GoodReceiving = $GoodReceiving->where('vendor_id', $vendor);
-
             }
             $GoodReceiving = $GoodReceiving->first();
 
-            if ($GoodReceiving){
+            if ($GoodReceiving) {
 
                 $total_po = 0;
 
@@ -183,9 +179,9 @@ class GoodReceivingController extends Controller
                     $data_tmp = array();
                     $data_tmp['_id'] = $GRDetail->_id;
                     $data_tmp['PO_Number'] = $GRDetail->PO_Number;
-                    $data_tmp['create_date'] = date('d-m-Y',strtotime($GRDetail->create_date));
-                    $data_tmp['delivery_date'] = date('d-m-Y',strtotime($GRDetail->delivery_date));
-                    $data_tmp['release_date'] = date('d-m-Y',strtotime($GRDetail->release_date));
+                    $data_tmp['create_date'] = date('d-m-Y', strtotime($GRDetail->create_date));
+                    $data_tmp['delivery_date'] = date('d-m-Y', strtotime($GRDetail->delivery_date));
+                    $data_tmp['release_date'] = date('d-m-Y', strtotime($GRDetail->release_date));
                     $data_tmp['material_id'] = $GRDetail->material_id;
                     $data_tmp['material_name'] = $GRDetail->material_name;
                     $data_tmp['item_po'] = $GRDetail->item_po;
@@ -196,7 +192,7 @@ class GoodReceivingController extends Controller
                     $data_tmp['currency'] = $GRDetail->currency;
                     $data_tmp['vendor'] = $GRDetail->vendor;
                     $data_tmp['ppn'] = $GRDetail->ppn;
-            
+
                     // $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                     // foreach ($SettingPPNs as $SettingPPN) {
                     //     $ppn = explode(';', $SettingPPN['name']);
@@ -206,14 +202,14 @@ class GoodReceivingController extends Controller
                     // };
 
                     $data_tmp['del_note'] = $GRDetail->del_note;
-                    $data_tmp['del_date'] = date('d-m-Y',strtotime($GRDetail->del_date));
+                    $data_tmp['del_date'] = date('d-m-Y', strtotime($GRDetail->del_date));
                     $data_tmp['del_qty'] = $GRDetail->del_qty;
-                    $data_tmp['prod_date'] = date('d-m-Y',strtotime($GRDetail->prod_date));
+                    $data_tmp['prod_date'] = date('d-m-Y', strtotime($GRDetail->prod_date));
                     $data_tmp['prod_lot'] = $GRDetail->prod_lot;
                     $data_tmp['material'] = $GRDetail->material;
                     $data_tmp['o_name'] = $GRDetail->o_name;
                     $data_tmp['o_code'] = $GRDetail->o_code;
-                    
+
                     $data_tmp['receive_qty'] = $GRDetail->receive_qty;
                     $data_tmp['reference'] = $GRDetail->reference;
                     $data_tmp['gudang_id'] = $GRDetail->gudang_id;
@@ -231,7 +227,6 @@ class GoodReceivingController extends Controller
                     $data_tmp['sub_total'] = $total;
 
                     array_push($data, $data_tmp);
-
                 }
                 $GoodReceiving->details = $data;
 
@@ -240,29 +235,25 @@ class GoodReceivingController extends Controller
                     'message' => '',
                     'data' => $GoodReceiving,
                 ], 200);
-
             } else {
-    
+
                 return response()->json([
-        
+
                     'type' => 'failed',
                     'message' => 'Data not found.',
                     'data' => NULL,
-        
+
                 ], 400);
-
             }
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 }

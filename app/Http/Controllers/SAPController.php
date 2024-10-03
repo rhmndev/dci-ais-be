@@ -18,7 +18,7 @@ class SAPController extends Controller
     //
     public function getVendor(Request $request)
     {
-        
+
         $request->validate([
             'search'    => 'nullable|string',
             'sort'      => 'required|string',
@@ -29,29 +29,27 @@ class SAPController extends Controller
         $columns = array('code', 'name');
 
         try {
-    
+
             $Vendor = new Vendor;
 
             $results = $Vendor->getAllData($request->search, $columns, $request->sort, $order);
 
             return response()->json([
-                
+
                 'type' => 'success',
                 'message' => '',
                 'data' => $results,
-                
+
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -60,7 +58,7 @@ class SAPController extends Controller
         $data = array();
 
         $json = $request->getContent();
-            
+
         try {
 
             $Vendor = new Vendor();
@@ -74,12 +72,12 @@ class SAPController extends Controller
 
                 $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $this->stringtoupper($input->code));
 
-                if (count($QueryGetDataByFilter->get()) > 0){
+                if (count($QueryGetDataByFilter->get()) > 0) {
                     $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
                 }
 
                 $data_tmp = array();
-                
+
                 $data_tmp['code'] = $this->stringtoupper($input->code);
                 $data_tmp['name'] = $this->stringtoupper($input->name);
                 $data_tmp['address'] = $this->stringtoupper($input->address);
@@ -95,35 +93,32 @@ class SAPController extends Controller
 
                 // Converting to Array
                 array_push($data, $data_tmp);
-
             }
 
             $Vendor->insert($data);
 
             return response()->json([
-    
+
                 "result" => true,
                 "msg_type" => 'Success',
                 "message" => 'Data stored successfully!',
-    
-            ], 200);
 
+            ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
-            ], 400);
+                "message" => 'err: ' . $e,
 
+            ], 400);
         }
     }
 
     public function getMaterial(Request $request)
     {
-        
+
         $request->validate([
             'search'    => 'nullable|string',
             'sort'      => 'required|string',
@@ -134,29 +129,27 @@ class SAPController extends Controller
         $columns = array('code', 'description');
 
         try {
-    
+
             $Material = new Material;
 
             $results = $Material->getAllData($request->search, $columns, $request->sort, $order);
 
             return response()->json([
-                
+
                 'type' => 'success',
                 'message' => '',
                 'data' => $results,
-                
+
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -165,7 +158,7 @@ class SAPController extends Controller
         $data = array();
 
         $json = $request->getContent();
-            
+
         try {
 
             $Material = new Material();
@@ -179,12 +172,12 @@ class SAPController extends Controller
 
                 $QueryGetDataByFilter = $QueryGetDataByFilter->where('code', $this->stringtoupper($input->code));
 
-                if (count($QueryGetDataByFilter->get()) > 0){
+                if (count($QueryGetDataByFilter->get()) > 0) {
                     $QueryGetDataByFilter = $QueryGetDataByFilter->delete();
                 }
 
                 $data_tmp = array();
-                
+
                 $data_tmp['code'] = $this->stringtoupper($input->code);
                 $data_tmp['description'] = $this->stringtoupper($input->description);
                 $data_tmp['type'] = $this->stringtoupper($input->type);
@@ -198,35 +191,32 @@ class SAPController extends Controller
 
                 // Converting to Array
                 array_push($data, $data_tmp);
-
             }
 
             $Material->insert($data);
 
             return response()->json([
-    
+
                 "result" => true,
                 "msg_type" => 'Success',
                 "message" => 'Data stored successfully!',
-    
-            ], 200);
 
+            ], 200);
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
-            ], 400);
+                "message" => 'err: ' . $e,
 
+            ], 400);
         }
     }
 
     public function getPO(Request $request)
     {
-        
+
         $request->validate([
             'search'    => 'nullable|string',
             'perpage'   => 'required|numeric',
@@ -243,7 +233,7 @@ class SAPController extends Controller
         $columns = array('PO_Number');
 
         try {
-    
+
             $data = array();
             $Receiving = new Receiving;
             $ReceivingDetails = new ReceivingDetails;
@@ -283,12 +273,12 @@ class SAPController extends Controller
                     $data_tmp_d['price'] = $PODetail->price;
                     $data_tmp_d['currency'] = $PODetail->currency;
                     $data_tmp_d['vendor'] = $PODetail->vendor;
-                    $data_tmp_d['QRCode'] = $result->_id.';'.$PODetail->_id;
-            
+                    $data_tmp_d['QRCode'] = $result->_id . ';' . $PODetail->_id;
+
                     $SettingPPNs = $Settings->scopeGetValue($Settings, 'PPN');
                     foreach ($SettingPPNs as $SettingPPN) {
                         $ppn = explode(';', $SettingPPN['name']);
-                        if ($ppn[0] === $PODetail->ppn){
+                        if ($ppn[0] === $PODetail->ppn) {
                             $data_tmp_d['ppn'] = $ppn[1];
                         }
                     };
@@ -300,35 +290,32 @@ class SAPController extends Controller
 
                     $data_tmp_d['total'] = $total;
 
-    
+
                     $total_po = $total_po + $total;
 
                     array_push($data_tmp['data'], $data_tmp_d);
-
                 }
                 $data_tmp['total'] = $total_po;
-    
+
                 array_push($data, $data_tmp);
             }
 
             return response()->json([
-                
+
                 'type' => 'success',
                 'message' => '',
                 'data' => $data,
-                
+
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -337,12 +324,12 @@ class SAPController extends Controller
         $data = array();
 
         $json = $request->getContent();
-            
+
         try {
 
             $inputs = json_decode($json);
 
-            if (count($inputs) > 0){
+            if (count($inputs) > 0) {
 
                 $Material = new Material;
                 $Vendor = new Vendor;
@@ -354,14 +341,14 @@ class SAPController extends Controller
                 foreach ($inputs as $input) {
 
                     $checkVendor = $Vendor->checkVendor($input->vendor);
-    
+
                     if (count($checkVendor) > 0) {
 
                         $PO_Number = $this->stringtoupper($input->po_number);
                         $create_date = $input->create_date;
                         $delivery_date = $input->delivery_date;
                         $release_date = $input->release_date;
-    
+
                         $Receiving = Receiving::firstOrNew(['PO_Number' => $PO_Number]);
 
                         $Receiving->PO_Number = $PO_Number;
@@ -370,32 +357,32 @@ class SAPController extends Controller
                         $Receiving->release_date = $release_date;
                         $Receiving->vendor = $input->vendor;
                         $Receiving->PO_Status = 0;
-    
+
                         $Receiving->created_by = 'SAP';
                         $Receiving->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $Receiving->updated_by = 'SAP';
                         $Receiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $Receiving->save();
-    
+
                         $details = $input->data;
-    
-                        if (count($details) > 0){
-    
+
+                        if (count($details) > 0) {
+
                             foreach ($details as $detail) {
-    
+
                                 $material_id = $this->stringtoupper($detail->material_id);
                                 $material_name = $this->stringtoupper($detail->material_name);
-    
+
                                 $PR_Number = $this->stringtoupper($detail->PurchaseReq);
                                 $gudang_id = $this->stringtoupper($detail->Warehouse);
-    
+
                                 $qty = $this->checkNumber($detail->qty);
                                 $price = $this->checkNumber($detail->price);
-    
+
                                 $checkMaterial = $Material->checkMaterial($material_id);
-    
+
                                 if (count($checkMaterial) > 0) {
-            
+
                                     $ReceivingDetails = ReceivingDetails::firstOrNew([
                                         'PO_Number' => $PO_Number,
                                         'item_po' => $detail->item_po,
@@ -417,17 +404,17 @@ class SAPController extends Controller
                                     $ReceivingDetails->ppn = $detail->ppn;
 
                                     $ReceivingDetails->gudang_id = $gudang_id;
-        
+
                                     $SettingGudangDatas = $Settings->scopeGetValue($Settings, 'Gudang');
                                     foreach ($SettingGudangDatas as $SettingGudangData) {
                                         $gd = explode(';', $SettingGudangData['name']);
-                                        if ($gd[0] === $gudang_id){
+                                        if ($gd[0] === $gudang_id) {
                                             $ReceivingDetails->gudang_nm = $gd[1];
                                         }
                                     };
-                            
+
                                     if (!$ReceivingDetails->exists) {
-        
+
                                         $ReceivingDetails->del_note = null;
                                         $ReceivingDetails->del_date = $delivery_date;
                                         $ReceivingDetails->del_qty = $qty;
@@ -438,81 +425,69 @@ class SAPController extends Controller
                                         $ReceivingDetails->o_code = null;
 
                                         $ReceivingDetails->flag = 0;
-        
                                     }
-            
+
                                     $ReceivingDetails->created_by = 'SAP';
                                     $ReceivingDetails->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                                     $ReceivingDetails->updated_by = 'SAP';
                                     $ReceivingDetails->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                                     $ReceivingDetails->save();
-                                    
                                 } else {
                                     array_push($material_nf, $material_id);
                                 }
-    
                             }
-    
                         }
-
                     } else {
                         array_push($vendor_nf, $input->vendor);
                     }
-
                 }
-
             }
 
-            if (count($vendor_nf) > 0){
+            if (count($vendor_nf) > 0) {
 
                 return response()->json([
-        
+
                     "result" => true,
                     "msg_type" => 'failed',
                     "message" => 'Data stored unsuccessfully!',
                     "Not Found Vendor" => array_unique($vendor_nf),
-        
-                ], 400);
 
-            } elseif (count($material_nf) > 0){
+                ], 400);
+            } elseif (count($material_nf) > 0) {
 
                 return response()->json([
-        
+
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data stored successfully with skiped material!',
                     "Not Found Material" => array_unique($material_nf),
-        
-                ], 200);
 
+                ], 200);
             } else {
 
                 return response()->json([
-        
+
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data stored successfully!',
-        
+
                 ], 200);
-
             }
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
-            ], 400);
+                "message" => 'err: ' . $e,
 
+            ], 400);
         }
     }
 
     public function getGR(Request $request)
     {
-        
+
         $request->validate([
             'code'      => 'nullable|string',
             'perpage'   => 'required|numeric',
@@ -528,7 +503,7 @@ class SAPController extends Controller
         $columns = array('GR_Number');
 
         try {
-    
+
             $data = array();
             $GoodReceiving = new GoodReceiving;
             $GoodReceivingDetail = new GoodReceivingDetail;
@@ -536,7 +511,7 @@ class SAPController extends Controller
 
             $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
             $code = $code_sap[1]['name'];
-            
+
             $results = $GoodReceiving->getData($code, $columns, $request->perpage, $request->page, $request->sort, $order, $vendor);
 
             foreach ($results as $result) {
@@ -581,30 +556,27 @@ class SAPController extends Controller
                     $data_tmp_d['description'] = $GRDetail->description;
 
                     array_push($data_tmp['data'], $data_tmp_d);
-
                 }
-    
+
                 array_push($data, $data_tmp);
             }
 
             return response()->json([
-                
+
                 'type' => 'success',
                 'message' => '',
                 'data' => $data,
-                
+
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -613,12 +585,12 @@ class SAPController extends Controller
         $data = array();
 
         $json = $request->getContent();
-            
+
         try {
 
             $inputs = json_decode($json);
 
-            if (count($inputs) > 0){
+            if (count($inputs) > 0) {
 
                 $Ref_nf = array();
 
@@ -629,79 +601,70 @@ class SAPController extends Controller
                     $vendor_id = $this->stringtoupper($input->vendor);
 
                     $GoodReceiving = GoodReceiving::where('SJ_Number', $reference)->where('vendor_id', $vendor_id)->first();
-                    if ($GoodReceiving){
+                    if ($GoodReceiving) {
                         $GoodReceiving->GR_Number = $GR_Number;
                         $GoodReceiving->GR_Date = date('Y-m-d', strtotime($input->grdate));
                         $GoodReceiving->updated_by = 'SAP';
                         $GoodReceiving->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $GoodReceiving->save();
 
-                        
+
                         $GoodReceivingDetail = GoodReceivingDetail::where('reference', $reference)->first();
-                        if ($GoodReceivingDetail){
+                        if ($GoodReceivingDetail) {
                             $GoodReceivingDetail->GR_Number = $GR_Number;
                             $GoodReceivingDetail->updated_by = 'SAP';
                             $GoodReceivingDetail->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                             $GoodReceivingDetail->save();
-
                         }
-
                     } else {
                         array_push($Ref_nf, $input->ref);
                     }
-
                 }
 
-                if (count($Ref_nf) > 0){
+                if (count($Ref_nf) > 0) {
 
                     return response()->json([
-            
+
                         "result" => false,
                         "msg_type" => 'failed',
-                        "message" => 'Ref: '.join(',', $Ref_nf).' Not found!',
-            
-                    ], 400);
+                        "message" => 'Ref: ' . join(',', $Ref_nf) . ' Not found!',
 
+                    ], 400);
                 } else {
 
                     return response()->json([
-            
+
                         "result" => true,
                         "msg_type" => 'Success',
                         "message" => 'Data Update successfully!',
-            
+
                     ], 200);
-
                 }
-
             } else {
 
                 return response()->json([
-        
+
                     "result" => false,
                     "msg_type" => 'failed',
                     "message" => 'Data Not found!',
-        
+
                 ], 400);
-
             }
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
-            ], 400);
+                "message" => 'err: ' . $e,
 
+            ], 400);
         }
     }
 
     private function stringtoupper($string)
     {
-        if ($string != ''){
+        if ($string != '') {
             $string = strtolower($string);
             $string = strtoupper($string);
         }
