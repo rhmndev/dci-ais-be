@@ -159,10 +159,12 @@ class VendorController extends Controller
             $date = date('Y-m-d\TH:i:s', strtotime($request->date));
 
             $client = new Client;
-            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/vendorSet?\$filter=Comp eq '$code' and Ersda eq datetime'$date'&sap-client=110&\$format=json", [
+            $json = $client->get("http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/vendorSet?\$filter=Comp eq '$code' and Ersda eq datetime'$date'&sap-client=300&\$format=json", [
                 'auth' => [
-                    'wcs-abap',
-                    'Wilmar12'
+                    // 'wcs-abap',
+                    // 'Wilmar12'
+                    'DCI-DGT01',
+                    'DCI0001'
                 ],
             ]);
             $results = json_decode($json->getBody())->d->results;

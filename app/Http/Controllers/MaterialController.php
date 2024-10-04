@@ -149,10 +149,12 @@ class MaterialController extends Controller
             $date = date('Y-m-d\TH:i:s', strtotime($request->date));
 
             $client = new Client;
-            $json = $client->get("http://erpdev-dp.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '$code' and Ersda eq datetime'$date'&\$format=json&sap-client=110", [
+            $json = $client->get("http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '$code' and Ersda eq datetime'$date'&\$format=json&sap-300", [
                 'auth' => [
-                    'wcs-abap',
-                    'Wilmar12'
+                    // 'wcs-abap',
+                    // 'Wilmar12'
+                    'DCI-DGT01',
+                    'DCI0001'
                 ],
             ]);
             $results = json_decode($json->getBody())->d->results;
