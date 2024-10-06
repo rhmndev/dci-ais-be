@@ -59,7 +59,16 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/customer/{id}', 'CustomerController@store');
         Route::delete('/customer/{id}', 'CustomerController@destroy');
         Route::post('/customerimport', 'CustomerController@import');
-        Route::get('/customerhello', 'CustomerController@hello');
+
+        #region Master Parts Components Customer
+        Route::get('/part-component', 'PartComponentController@index');
+        Route::get('/part-component/{id}', 'PartComponentController@show');
+        Route::get('/part-componentlist', 'PartComponentController@list');
+        Route::get('/part-component-sync', 'PartComponentController@SyncSAP');
+        Route::post('/part-component', 'PartComponentController@store');
+        Route::post('/part-component/{id}', 'PartComponentController@store');
+        Route::delete('/part-component/{id}', 'PartComponentController@destroy');
+        Route::post('/part-component-import', 'PartComponentController@import');
         #endregion
 
         #region Master News
