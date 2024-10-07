@@ -125,6 +125,15 @@ class PermissionSeeder extends Seeder
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					],
+					[
+						"name" => "Reporting Inspection",
+						"description" => null,
+						"url" => "inspeksilaporan",
+						"icon" => null,
+						"order_number" => 3,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					]
 				]
 			],
 			[
