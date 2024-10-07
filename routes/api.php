@@ -53,23 +53,33 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Master Customer
         Route::get('/customer', 'CustomerController@index');
         Route::get('/customer/{id}', 'CustomerController@show');
-        Route::get('/customerlist', 'CustomerController@list');
         Route::get('/customersync', 'CustomerController@SyncSAP');
         Route::post('/customer', 'CustomerController@store');
         Route::post('/customer/{id}', 'CustomerController@store');
         Route::delete('/customer/{id}', 'CustomerController@destroy');
         Route::post('/customerimport', 'CustomerController@import');
+        Route::get('/customer/list', 'CustomerController@list');
+        Route::get('/customer/{id}/parts/list', 'CustomerController@listParts');
 
         #region Master Parts Components Customer
         Route::get('/part-component', 'PartComponentController@index');
         Route::get('/part-component/{id}', 'PartComponentController@show');
-        Route::get('/part-componentlist', 'PartComponentController@list');
+        Route::get('/part-component/{id}/list', 'PartComponentController@list');
+        Route::get('/part-component/list', 'PartComponentController@list');
         Route::get('/part-component-sync', 'PartComponentController@SyncSAP');
         Route::post('/part-component', 'PartComponentController@store');
         Route::post('/part-component/{id}', 'PartComponentController@store');
         Route::delete('/part-component/{id}', 'PartComponentController@destroy');
         Route::post('/part-component-import', 'PartComponentController@import');
         #endregion
+
+        #region Master Inspection
+        Route::get('/inspection', 'InspectionController@index');
+        Route::get('/inspection/{id}', 'InspectionController@show');
+        Route::post('/inspection', 'InspectionController@store');
+        Route::post('/inspection/{id}', 'InspectionController@store');
+        Route::delete('/inspection/{id}', 'InspectionController@destroy');
+        #endregion Master Inspection
 
         #region Master News
         Route::get('/news', 'NewsController@index');
@@ -124,7 +134,6 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/settings/{id}', 'SettingsController@update');
         Route::delete('/settings/{id}', 'SettingsController@destroy');
         #endregion
-
 });
 
 Route::post('/login', 'AuthController@login');
@@ -143,3 +152,6 @@ Route::post('/dataPOSAP', 'SAPController@storePO');
 
 Route::get('/dataGRSAP', 'SAPController@getGR');
 Route::post('/dataGRSAP', 'SAPController@storeGR');
+
+Route::get('/part-component/list', 'PartComponentController@list');
+Route::get('/status-part-component/list', 'StatusPartComponentController@list');

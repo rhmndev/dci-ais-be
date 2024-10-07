@@ -59,30 +59,16 @@ class CustomerController extends Controller
 
     public function list(Request $request)
     {
+        $Customer = Customer::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->get();
 
-        $keyword = ($request->keyword != null) ? $request->keyword : '';
-        $data = array();
-
-        try {
-
-            $Customer = new Customer;
-            $results = $Customer->getList($keyword);
-
-            return response()->json([
-                'type' => 'success',
-                'message' => 'Success.',
-                'data' => $results,
-            ], 200);
-        } catch (\Exception $e) {
-
-            return response()->json([
-
-                'type' => 'failed',
-                'message' => 'Err: ' . $e . '.',
-                'data' => NULL,
-
-            ], 400);
-        }
+        return response()->json([
+            'type' => 'success',
+            'data' => $Customer
+        ], 200);
     }
 
     public function store(Request $request)
@@ -139,6 +125,18 @@ class CustomerController extends Controller
         return response()->json([
             'type' => 'success',
             'message' => 'Data deleted successfully'
+        ], 200);
+    }
+
+    public function listParts($id)
+    {
+        $Customer = Customer::findOrFail($id);
+
+        $parts = $Customer->partcomponents;
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $parts
         ], 200);
     }
 }

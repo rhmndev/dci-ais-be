@@ -15,7 +15,7 @@ class PartComponentSeeder extends Seeder
         PartComponent::truncate();
         $datas = [
             [
-                'customer_id' => '670332969c02000053006c8c', // Replace with actual customer ID
+                'customer_id' => '67034148cd38000072001990', // Replace with actual customer ID
                 'name' => 'CABLE COMP A THROTTLE K1A',
                 'number' => '17910-K1A -N020-M2',
                 'photo' => 'component.jpg', // Replace with actual photo filename
@@ -24,14 +24,24 @@ class PartComponentSeeder extends Seeder
                 'updated_by' => 'seeder'
             ],
             [
-                'customer_id' => '670332969c02000053006c8c', // Replace with actual customer ID
+                'customer_id' => '67034148cd38000072001990', // Replace with actual customer ID
                 'name' => 'CABLE COMP B THROTTLE K1A',
                 'number' => '17920-K1A -N020-M2',
                 'photo' => 'component.png', // Replace with actual photo filename
                 'description' => 'Description for Component',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
+            ],
+            [
+                'customer_id' => '67034148cd38000072001991', // Replace with actual customer ID
+                'name' => 'CABLE COMP X',
+                'number' => 'X-K1A -B-M2',
+                'photo' => 'component.jpg', // Replace with actual photo filename
+                'description' => 'Description for Component',
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
             ]
+
         ];
 
         foreach ($datas as $data) {

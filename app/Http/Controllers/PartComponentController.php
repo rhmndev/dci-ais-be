@@ -160,4 +160,18 @@ class PartComponentController extends Controller
         }
         return $string;
     }
+
+    public function list(Request $request)
+    {
+        $PartComponent = PartComponent::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)->get();
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $PartComponent
+        ], 200);
+    }
 }
