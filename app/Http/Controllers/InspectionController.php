@@ -3,7 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Inspection;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+use Illuminate\Support\Facades\Storage;
+use Zxing\QrReader;
 
 class InspectionController extends Controller
 {
@@ -55,11 +62,15 @@ class InspectionController extends Controller
             // $Inspection = Inspection::firstOrNew(['code' => $request->code]);
             $Inspection = new Inspection;
             $Inspection->code = isset($request->code) ? $request->code : "DEVELOPMENT-AAAA";
-            $Inspection->report_date = $request->report_date;
-            $Inspection->line_number = $request->line_number;
-            $Inspection->lot_number = $request->lot_number;
+            // $Inspection->report_date = $request->report_date;
+            // $Inspection->line_number = $request->line_number;
+            // $Inspection->lot_number = $request->lot_number;
+            $Inspection->report_date = "10/10/2024";
+            $Inspection->line_number = "J119";
+            $Inspection->lot_number = "20241010001";
 
-            $Inspection->customer_id = $request->customer_id;
+            $Inspection->customer_id = auth()->user()->id;
+            // $Inspection->customer_id = $request->customer_id;
             // $Inspection->customer_name = Inspection::getNameCustomerById($request->customer_id);
             $Inspection->customer_name = "Tarjo";
 
@@ -69,18 +80,35 @@ class InspectionController extends Controller
             $Inspection->qty_ok = $request->qty_ok;
             // $Inspection->inspection_by = isset($request->inspection_by) ? $request->inspection_by : auth()->user()->name;
             $Inspection->inspection_by = "developer";
-
-            $Inspection->qrcode_path = Inspection::GenerateQR();
-
+            // $Inspection->qrcode_path = Inspection::GenerateQR();
             $Inspection->save();
 
-            return response()->json([
+            $inspectionId = $Inspection->id;
 
+            try {
+                $qrCodeUrl = $this->qrcode($inspectionId);
+            } catch (\Exception $e) {
+                // Log the error message
+                // Log::error('QR Code generation failed: ' . $e->getMessage());
+
+                // Return response indicating that the QR code generation failed
+                return response()->json([
+                    'type' => 'success',
+                    'message' => 'Inspection data saved but QR code failed to generated',
+                    'data' => [
+                        'inspection_id' => $inspectionId,
+                        'QR_PATH' => 'QR Code generation error: ' . $e->getMessage(),
+                    ],
+                ], 500);
+            }
+            return response()->json([
                 'type' => 'success',
                 'message' => '',
-                'data' => $Inspection->qrcode_path,
-
-            ], 400);
+                'data' => [
+                    'inspection_id' => $inspectionId,
+                    'QR_PATH' => $qrCodeUrl,
+                ],
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'failed',
@@ -88,5 +116,25 @@ class InspectionController extends Controller
                 'data' => NULL,
             ], 400);
         }
+    }
+
+    public function qrcode($id)
+    {
+        $renderer = new ImageRenderer(
+            new RendererStyle(400),
+            new ImagickImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+        $qrCodeId = Str::uuid()->toString();
+        // Format QR : SUPPLIER_NAME|PART_NAME|PART_NUMBER|LOT_SUPPLIER|Qty|LOT_DCI|UUID
+        $data = "SUPPLIER_NAME|PART_NAME|PART_NUMBER|LOT_SUPPLIER|Qty|LOT_DCI|{$qrCodeId}";
+        $qrImage = $writer->writeString($data);
+        $fileName = 'qrcode_' . time() . '.png';
+        Storage::disk('public')->put('qrcode/' . $fileName, $qrImage);
+        // return response()->json(['file_path' => 'storage/qrcode/' . $fileName]);
+        return response()->json([
+            'file_path' => 'storage/qrcode/' . $fileName, // Return the path to the stored QR code
+            'base64' => 'data:image/png;base64,' . base64_encode($qrImage) // Return base64-encoded image
+        ]);
     }
 }

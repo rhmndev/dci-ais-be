@@ -132,7 +132,7 @@ class CustomerController extends Controller
     {
         $Customer = Customer::findOrFail($id);
 
-        $parts = $Customer->partcomponents;
+        $parts = isset($Customer->partcomponents) ? $Customer->partcomponents : [];
 
         return response()->json([
             'type' => 'success',

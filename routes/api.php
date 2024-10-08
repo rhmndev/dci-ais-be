@@ -53,12 +53,12 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Master Customer
         Route::get('/customer', 'CustomerController@index');
         Route::get('/customer/{id}', 'CustomerController@show');
+        Route::get('/customerlist', 'CustomerController@list');
         Route::get('/customersync', 'CustomerController@SyncSAP');
         Route::post('/customer', 'CustomerController@store');
         Route::post('/customer/{id}', 'CustomerController@store');
         Route::delete('/customer/{id}', 'CustomerController@destroy');
         Route::post('/customerimport', 'CustomerController@import');
-        Route::get('/customer/list', 'CustomerController@list');
         Route::get('/customer/{id}/parts/list', 'CustomerController@listParts');
 
         #region Master Parts Components Customer
@@ -72,6 +72,15 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/part-component/{id}', 'PartComponentController@destroy');
         Route::post('/part-component-import', 'PartComponentController@import');
         #endregion
+
+        #region Master Inspection
+        // Route::get('/line-number', 'LineNumberController@index');
+        // Route::get('/line-number/{id}', 'LineNumberController@show');
+        // Route::post('/line-number', 'LineNumberController@store');
+        Route::get('/line-number-list', 'LineNumberController@list');
+        // Route::post('/line-number/{id}', 'LineNumberController@store');
+        // Route::delete('/line-number/{id}', 'LineNumberController@destroy');
+        #endregion Master Inspection
 
         #region Master Inspection
         Route::get('/inspection', 'InspectionController@index');
@@ -155,3 +164,5 @@ Route::post('/dataGRSAP', 'SAPController@storeGR');
 
 Route::get('/part-component/list', 'PartComponentController@list');
 Route::get('/status-part-component/list', 'StatusPartComponentController@list');
+
+Route::get('/qrcode', 'InspectionController@qrcode');
