@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 
 Route::group(['middleware' => ['auth:api']], function () {
 
+        Route::get('/getmydata', 'UserController@myData');
+
         #region Dashboard
         Route::get('/dashboard', 'DashboardController@index');
         Route::get('/dashboardV', 'DashboardController@indexV');
@@ -48,6 +50,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/material/{id}', 'MaterialController@store');
         Route::delete('/material/{id}', 'MaterialController@destroy');
         Route::post('/materialimport', 'MaterialController@import');
+        Route::get('/materialexport', 'MaterialController@export');
         #endregion
 
         #region Master Customer
@@ -166,3 +169,4 @@ Route::get('/part-component/list', 'PartComponentController@list');
 Route::get('/status-part-component/list', 'StatusPartComponentController@list');
 
 Route::get('/qrcode', 'InspectionController@qrcode');
+Route::get('/readqrcode', 'InspectionController@qrDecode');

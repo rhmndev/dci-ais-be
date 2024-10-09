@@ -255,7 +255,6 @@ class UserController extends Controller
 
                 ], 200);
             }
-            
         } catch (\Exception $e) {
 
             return response()->json([
@@ -309,5 +308,32 @@ class UserController extends Controller
         }
 
         return $number;
+    }
+
+    public function myData(Request $request)
+    {
+        try {
+            $user = auth()->user(); // Get the authenticated user
+
+            if ($user) {
+                return response()->json([
+                    'type' => 'success',
+                    'message' => 'User data retrieved successfully.',
+                    'data' => $user,
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User not authenticated.',
+                    'data' => null,
+                ], 401);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error retrieving user data: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
     }
 }
