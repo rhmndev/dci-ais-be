@@ -91,6 +91,21 @@ class SupplierController extends Controller
         }
     }
 
+    public function list(Request $request)
+    {
+        $Supplier = Supplier::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)
+            ->get();
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $Supplier
+        ], 200);
+    }
+
     public function destroy($id)
     {
         $Supplier = Supplier::find($id);
