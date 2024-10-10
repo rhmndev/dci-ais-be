@@ -56,6 +56,8 @@ class InspectionController extends Controller
             'line_number' => 'required',
             'lot_number' => 'required',
             'customer_id' => 'required',
+            'part_component_id' => 'required',
+            'part_component_number' => 'required',
             'check' => 'required',
             'qty_ok' => 'required',
         ]);
@@ -63,7 +65,7 @@ class InspectionController extends Controller
         try {
             // $Inspection = Inspection::firstOrNew(['code' => $request->code]);
             $Inspection = new Inspection;
-            $Inspection->code = isset($request->code) ? $request->code : "DEVELOPMENT-AAAA";
+            $Inspection->code = "INSPECTION-" . date('YmdHis') . "-" . $request->lot_number . "-" . Inspection::GetTotalRow();
             // $Inspection->report_date = $request->report_date;
             // $Inspection->line_number = $request->line_number;
             // $Inspection->lot_number = $request->lot_number;
@@ -77,11 +79,12 @@ class InspectionController extends Controller
             $Inspection->customer_name = "developing";
 
             $Inspection->part_component_id = $request->part_component_id;
-            $Inspection->part_component_number = "X11111";
+            $Inspection->part_component_name = isset($request->part_component_name) ? $request->part_component_name : '';
+            $Inspection->part_component_number = $request->part_component_number;
             $Inspection->check = $request->check;
             $Inspection->qty_ok = $request->qty_ok;
             // $Inspection->inspection_by = isset($request->inspection_by) ? $request->inspection_by : auth()->user()->name;
-            $Inspection->inspection_by = isset($request->inspection_by) ? $request->inspection_by : auth()->user()->id;
+            $Inspection->inspection_by = auth()->user()->npk;
             // $Inspection->qrcode_path = Inspection::GenerateQR();
             $Inspection->save();
 
@@ -127,12 +130,12 @@ class InspectionController extends Controller
 
             $writer = new Writer($renderer);
 
-            $qrCodeId = Str::uuid()->toString();
+            $qrCodeId = str_pad(rand(0, 99999999999), 11, '0', STR_PAD_LEFT);
 
             $Inspection = Inspection::findOrFail($dataId);
 
-            $data = "SUPPLIER_NAME|CABLE COMP A THROTTLE K1A|{$Inspection->part_component_number}|LOT_SUPPLIER|{$Inspection->qty_ok}|{$Inspection->lot_number}|{$qrCodeId}";
 
+            $data = "SUPPLIER_NAME|{$Inspection->part_component_name}|{$Inspection->part_component_number}|LOT_SUPPLIER|{$Inspection->qty_ok}|{$Inspection->lot_number}|{$qrCodeId}";
             // Format QR : SUPPLIER_NAME|PART_NAME|PART_NUMBER|LOT_SUPPLIER|Qty|LOT_DCI|UUID
             // $data = "SUPPLIER_NAME|PART_NAME|PART_NUMBER|LOT_SUPPLIER|Qty|LOT_DCI|{$qrCodeId}";
             $qrImage = $writer->writeString($data);
@@ -143,8 +146,11 @@ class InspectionController extends Controller
             $QrCode->uuid = $qrCodeId;
             $QrCode->path = 'qrcode/' . $fileName;
             $QrCode->type = 'inspection';
-            $QrCode->created_by = auth()->user()->id;
+            $QrCode->created_by = auth()->user()->npk;
             $QrCode->save();
+
+            $Inspection->qr_uuid = $qrCodeId;
+            $Inspection->save();
 
             return true;
         } catch (\Exception $e) {

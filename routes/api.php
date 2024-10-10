@@ -42,10 +42,22 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/vendorimport', 'VendorController@import');
         #endregion
 
+        #region Master Supplier
+        Route::get('/supplier', 'SupplierController@index');
+        Route::get('/supplier/{id}', 'SupplierController@show');
+        Route::get('/supplierlist', 'SupplierController@list');
+        Route::get('/suppliersync', 'SupplierController@SyncSAP');
+        Route::post('/supplier', 'SupplierController@store');
+        Route::post('/supplier/{id}', 'SupplierController@store');
+        Route::delete('/supplier/{id}', 'SupplierController@destroy');
+        Route::post('/supplierimport', 'SupplierController@import');
+        #endregion
+
         #region Master Material
         Route::get('/material', 'MaterialController@index');
         Route::get('/material/{id}', 'MaterialController@show');
         Route::get('/materialsync', 'MaterialController@SyncSAP');
+        Route::get('/materiallist', 'MaterialController@list');
         Route::post('/material', 'MaterialController@store');
         Route::post('/material/{id}', 'MaterialController@store');
         Route::delete('/material/{id}', 'MaterialController@destroy');
@@ -169,4 +181,5 @@ Route::get('/part-component/list', 'PartComponentController@list');
 Route::get('/status-part-component/list', 'StatusPartComponentController@list');
 
 Route::get('/qrcode', 'InspectionController@qrcode');
+Route::get('/qr-get-data', 'QrController@getData');
 Route::get('/readqrcode', 'InspectionController@qrDecode');

@@ -3,37 +3,25 @@
 namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
-use Jenssegers\Mongodb\Eloquent\SoftDeletes;
 
-class Inspection extends Model
+class Supplier extends Model
 {
-    use SoftDeletes;
-
-    protected $table = 'inspection';
+    protected $table = 'supplier';
 
     protected $fillable = [
-        'code',
-        'report_date',
-        'line_number',
-        'lot_number',
-        'customer_id',
-        'customer_name',
-        'part_component_id',
-        'part_component_name',
-        'part_component_number',
-        'check',
-        'qty_ok',
-        'inspection_by',
-        'qr_uuid',
-        'qrcode_path',
-        'changed_by',
-        'deleted_by',
+        'name',
+        'address',
+        'phone',
+        'email',
+        'contact',
+        'created_by',
+        'updated_by'
     ];
 
     public function getAllData($keyword, $columns, $sort, $order)
     {
 
-        $query = Inspection::query();
+        $query = Supplier::query();
 
         if (!empty($keyword)) {
 
@@ -59,7 +47,7 @@ class Inspection extends Model
     public function getData($keyword, $columns, $perpage, $page, $sort, $order)
     {
 
-        $query = Inspection::query();
+        $query = Supplier::query();
         $skip = $perpage * ($page - 1);
 
         if (!empty($keyword)) {
@@ -81,32 +69,5 @@ class Inspection extends Model
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
         return $data;
-    }
-
-    public static function getCustomerDataById($id)
-    {
-        return Customer::firstOrFail($id);
-    }
-
-    public static function getNameCustomerById($id)
-    {
-        $data = Inspection::getCustomerDataById($id);
-
-        return ($data->name != '') ? $data->name : "";
-    }
-
-    public static function getPartComponentDataById($id)
-    {
-        return PartComponent::find($id);
-    }
-
-    public static function GenerateQR()
-    {
-        return "path/to/qr";
-    }
-
-    public static function GetTotalRow()
-    {
-        return Inspection::count();
     }
 }

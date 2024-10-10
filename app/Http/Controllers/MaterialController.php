@@ -302,4 +302,19 @@ class MaterialController extends Controller
             ], 500);
         }
     }
+
+    public function list(Request $request)
+    {
+        $materials = Material::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)
+            ->get();
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $materials
+        ], 200);
+    }
 }

@@ -6,7 +6,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 
 class PartComponent extends Model
 {
-    protected $fillable = ['customer_id', 'name', 'number'];
+    protected $fillable = ['customer_id', 'part_id', 'name', 'number'];
 
     public function getAllData($keyword, $columns, $sort, $order)
     {

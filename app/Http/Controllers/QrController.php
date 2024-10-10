@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Inspection;
 use App\Qr;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class QrController extends Controller
 {
@@ -132,6 +134,46 @@ class QrController extends Controller
             return response()->json([
                 'type' => 'failed',
                 'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
+    public function getData(Request $request)
+    {
+        $request->validate([
+            'type' => 'required',
+            'data' => 'required',
+        ]);
+
+        $result = [];
+        try {
+            if ($request->has('type') && $request->has('data')) {
+                switch ($request->type) {
+                    case 'inspection':
+                        $qrCode = Qr::where('uuid', $request->data)->first();
+                        if ($qrCode) {
+                            $inspection = Inspection::where('qr_uuid', $qrCode->uuid)->first();
+                            if ($inspection) {
+                                $inspection->qr_image_path = asset('storage/' . $qrCode->path);
+                                $result = $inspection;
+                            }
+                        }
+                        break;
+
+                    default:
+
+                        break;
+                }
+                return response()->json([
+                    'type' => 'success',
+                    'data' => $result
+                ], 200);
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $th->getMessage() . '.',
                 'data' => NULL,
             ], 400);
         }
