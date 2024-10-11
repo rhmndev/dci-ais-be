@@ -163,6 +163,12 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/settings/{id}', 'SettingsController@update');
         Route::delete('/settings/{id}', 'SettingsController@destroy');
         #endregion
+
+        Route::get('/purchase-orders', 'PurchaseOrderController@index');
+        Route::get('/purchase-orders/{id}', 'PurchaseOrderController@show');
+        Route::post('/purchase-orders', 'PurchaseOrderController@store');
+        Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
+        Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
 });
 
 Route::post('/login', 'AuthController@login');

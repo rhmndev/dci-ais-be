@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Customer;
 use App\Inspection;
+use App\Material;
 use App\Qr;
+use App\SupplierPart;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -55,6 +58,7 @@ class InspectionController extends Controller
         $request->validate([
             'report_date' => 'required',
             'line_number' => 'required',
+            'lot_supplier' => 'required',
             'lot_number' => 'required',
             'customer_id' => 'required',
             'part_component_id' => 'required',
@@ -64,7 +68,6 @@ class InspectionController extends Controller
         ]);
 
         try {
-            // $Inspection = Inspection::firstOrNew(['code' => $request->code]);
             $Inspection = new Inspection;
             $Inspection->code = "INSPECTION-" . date('YmdHis') . "-" . $request->lot_number . "-" . Inspection::GetTotalRow();
             // $Inspection->report_date = $request->report_date;
@@ -74,19 +77,26 @@ class InspectionController extends Controller
             $Inspection->line_number = $request->line_number;
             $Inspection->lot_number = $request->lot_number;
 
-            $Inspection->customer_id = $request->customer_id;
-            // $Inspection->customer_id = $request->customer_id;
-            // $Inspection->customer_name = Inspection::getNameCustomerById($request->customer_id);
-            $Inspection->customer_name = "developing";
+            $CustomerData = Customer::findOrFail($request->customer_id);
+            $cust_name = isset($CustomerData->name) ? $CustomerData->name : $request->customer_id;
 
+            $Inspection->customer_id = $request->customer_id;
+            $Inspection->customer_name = $cust_name;
+
+            $MaterialData = Material::findOrFail($request->part_component_id);
+            $material_name = isset($MaterialData->description) ? $MaterialData->description : $request->part_component_id;
+            $Inspection->lot_supplier = $request->lot_supplier;
+
+            $SupplierData = SupplierPart::where('part_id', $request->part_component_id)->where('part_number', $request->part_component_number)->first();
+
+            $Inspection->supplier_name = isset($SupplierData->supplier) ? $SupplierData->supplier->name : $SupplierData->supplier_id;
+            $Inspection->supplier_id = isset($SupplierData->supplier) ? $SupplierData->supplier->id : $SupplierData->supplier_id;
             $Inspection->part_component_id = $request->part_component_id;
-            $Inspection->part_component_name = isset($request->part_component_name) ? $request->part_component_name : '';
+            $Inspection->part_component_name = $material_name;
             $Inspection->part_component_number = $request->part_component_number;
             $Inspection->check = $request->check;
             $Inspection->qty_ok = $request->qty_ok;
-            // $Inspection->inspection_by = isset($request->inspection_by) ? $request->inspection_by : auth()->user()->name;
             $Inspection->inspection_by = auth()->user()->npk;
-            // $Inspection->qrcode_path = Inspection::GenerateQR();
             $Inspection->save();
 
             $inspectionId = $Inspection->id;
@@ -135,8 +145,7 @@ class InspectionController extends Controller
 
             $Inspection = Inspection::findOrFail($dataId);
 
-
-            $data = "SUPPLIER_NAME|{$Inspection->part_component_name}|{$Inspection->part_component_number}|LOT_SUPPLIER|{$Inspection->qty_ok}|{$Inspection->lot_number}|{$qrCodeId}";
+            $data = "{$Inspection->supplier_name}|{$Inspection->part_component_name}|{$Inspection->part_component_number}|{$Inspection->lot_supplier}|{$Inspection->qty_ok}|{$Inspection->lot_number}|{$qrCodeId}";
             // Format QR : SUPPLIER_NAME|PART_NAME|PART_NUMBER|LOT_SUPPLIER|Qty|LOT_DCI|UUID
             // $data = "SUPPLIER_NAME|PART_NAME|PART_NUMBER|LOT_SUPPLIER|Qty|LOT_DCI|{$qrCodeId}";
             $qrImage = $writer->writeString($data);

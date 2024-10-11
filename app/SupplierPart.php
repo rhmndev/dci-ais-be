@@ -17,7 +17,7 @@ class SupplierPart extends Model
 
     public function supplier()
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id');
+        return $this->hasOne(Supplier::class, '_id', 'supplier_id');
     }
 
     public function part()

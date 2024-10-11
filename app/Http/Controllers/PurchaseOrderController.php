@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\PurchaseOrder;
+use App\Supplier;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use App\Mail\PurchaseOrderCreated;
+use App\PurchaseOrderItem;
+use Illuminate\Support\Facades\Mail;
+
+class PurchaseOrderController extends Controller
+{
+    // Create a new Purchase Order
+    public function store(Request $request)
+    {
+        $request->validate([
+            // 'po_number' => 'required|string|unique:purchase_order,po_number',
+            'order_date' => 'required|string|date',
+            'supplier_id' => 'required|exists:supplier,_id',
+            'items' => 'required|array',
+            'items.*.material_id' => 'required|exists:materials,_id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0.01',
+            'items.*.unit_price_type' => 'required|string',
+        ]);
+
+        try {
+            // Calculate total amount
+            $totalAmount = 0;
+            foreach ($request->items as $item) {
+                $totalAmount += $item['quantity'] * $item['unit_price'];
+            }
+
+            // Get the number of existing Purchase Orders
+            $numberOfPOs = PurchaseOrder::count();
+            $nextPONumber = 'PO-' . str_pad($numberOfPOs + 1, 5, '0', STR_PAD_LEFT); // Generate PO-00001, PO-00002, etc.
+
+            // Fetch supplier
+            $supplier = Supplier::find($request->supplier_id);
+
+            // Create the Purchase Order
+            $purchaseOrder = new PurchaseOrder([
+                'po_number' => $nextPONumber,
+                'supplier_id' => $supplier->_id,
+                'order_date' => $request->orderDate,
+                'delivery_date' => $request->deliveryDate,
+                'total_amount' => $totalAmount,
+                'status' => 'pending',
+                'created_by' => auth()->user()->id,
+            ]);
+
+            $purchaseOrder->save();
+
+            // save items of purchase order to purchase order items
+            foreach ($request->items as $item) {
+                $purchaseOrderItem = new PurchaseOrderItem([
+                    'purchase_order_id' => $purchaseOrder->_id,
+                    'material_id' => $item['material_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                ]);
+
+                $purchaseOrderItem->save();
+            }
+
+            // Send an email notification
+            // Mail::to($supplier->email)->send(new PurchaseOrderCreated($purchaseOrder));
+
+            return response()->json(['message' => 'Purchase order created successfully', 'data' => $purchaseOrder], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $th->getMessage(),
+            ], 400);
+        }
+    }
+}
