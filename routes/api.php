@@ -86,6 +86,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/part-component/{id}', 'PartComponentController@store');
         Route::delete('/part-component/{id}', 'PartComponentController@destroy');
         Route::post('/part-component-import', 'PartComponentController@import');
+        Route::get('/part-component-supplier/{id}', 'SupplierPartController@show');
+        Route::get('/part-component-supplier/supplier/{supplier_id}', 'SupplierPartController@getBySupplier');
+        Route::post('/part-component-supplier', 'SupplierPartController@store');
         #endregion
 
         #region Master Inspection
@@ -103,6 +106,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/inspection', 'InspectionController@store');
         Route::post('/inspection/{id}', 'InspectionController@store');
         Route::delete('/inspection/{id}', 'InspectionController@destroy');
+        Route::get('/inspection-summary', 'InspectionController@getInspectionSummary');
+        Route::get('/get-last-lot-number', 'InspectionController@getLastLOTNumber');
         #endregion Master Inspection
 
         #region Master News

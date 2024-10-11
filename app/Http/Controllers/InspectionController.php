@@ -12,6 +12,7 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Storage;
 use Zxing\QrReader;
+use Carbon\Carbon;
 
 class InspectionController extends Controller
 {
@@ -203,6 +204,59 @@ class InspectionController extends Controller
                 'type' => 'failed',
                 'message' => 'Error decoding QR code: ' . $e->getMessage(),
                 'data' => null,
+            ], 500);
+        }
+    }
+
+    public function getInspectionSummary()
+    {
+        try {
+            $totalInspections = Inspection::count();
+
+            $today = Carbon::today();
+            $totalInspectionsToday = Inspection::where('report_date', '>=', $today)
+                ->where('report_date', '<', $today->copy()->addDay())
+                ->count();
+
+            $lastInspection = Inspection::orderBy('updated_at', 'desc')->first();
+            $lastInspectionCode = $lastInspection ? $lastInspection->code : null;
+            $lastUpdateDate = $lastInspection ? $lastInspection->updated_at->toDateTimeString() : null;
+
+            return response()->json([
+                'type' => 'success',
+                'data' => [
+                    'total_inspections' => $totalInspections,
+                    'total_inspections_today' => $totalInspectionsToday,
+                    'last_inspection_code' => $lastInspectionCode,
+                    'last_update_date' => $lastUpdateDate,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 500);
+        }
+    }
+
+    public function getLastLOTNumber()
+    {
+        try {
+            $lastInspection = Inspection::orderBy('lot_number', 'desc')->first();
+            $lastLotNumber = $lastInspection ? $lastInspection->lot_number : null;
+
+            return response()->json([
+                'type' => 'success',
+                'data' => [
+                    'last_lot_number' => $lastLotNumber,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
             ], 500);
         }
     }

@@ -31,6 +31,7 @@ class PartComponent extends Model
 
         $data = $query->get();
 
+        $data->customer_name = isset($data->customer) ? $data->customer->name : '';
         return $data;
     }
 
@@ -103,6 +104,6 @@ class PartComponent extends Model
 
     public function customer()
     {
-        return $this->hasOne('App\Customer');
+        return $this->belongsTo(Customer::class, 'customer_id'); // Adjust foreign key if needed
     }
 }

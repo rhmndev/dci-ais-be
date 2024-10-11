@@ -14,6 +14,9 @@ class Inspection extends Model
     protected $fillable = [
         'code',
         'report_date',
+        'supplier_id',
+        'supplier_name',
+        'lot_supplier',
         'line_number',
         'lot_number',
         'customer_id',
