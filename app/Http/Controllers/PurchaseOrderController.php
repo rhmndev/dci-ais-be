@@ -17,6 +17,7 @@ class PurchaseOrderController extends Controller
     {
         $request->validate([
             // 'po_number' => 'required|string|unique:purchase_order,po_number',
+            'nomor_type' => 'required|bool',
             'order_date' => 'required|string|date',
             'supplier_id' => 'required|exists:supplier,_id',
             'items' => 'required|array',
@@ -76,5 +77,47 @@ class PurchaseOrderController extends Controller
                 "message" => 'err: ' . $th->getMessage(),
             ], 400);
         }
+    }
+
+    public function getDashboardData()
+    {
+        return response()->json([
+            'activities' => [
+                ['time' => '20:33', 'description' => 'Ubah Desain Cetakan Pesanan Pembelian'],
+            ],
+            'upcomingActivities' => [],
+            'salesTrend' => [
+                ['date' => 'Sen', 'sales' => 0],
+                ['date' => 'Sel', 'sales' => 0],
+                ['date' => 'Rab', 'sales' => 0],
+                ['date' => 'Kam', 'sales' => 0],
+                ['date' => 'Jum', 'sales' => 0],
+                ['date' => 'Sab', 'sales' => 0],
+                ['date' => 'Min', 'sales' => 0],
+            ],
+            'cashFlow' => [
+                ['date' => '6 Okt', 'cash' => 0],
+                ['date' => '7 Okt', 'cash' => 0],
+                ['date' => '8 Okt', 'cash' => 0],
+                ['date' => '9 Okt', 'cash' => 0],
+                ['date' => '10 Okt', 'cash' => 0],
+                ['date' => '11 Okt', 'cash' => 0],
+                ['date' => '12 Okt', 'cash' => 0],
+            ],
+            'companyExpenses' => ['total' => 0],
+            'profitAndLoss' => [
+                'revenue' => 0,
+                'hpp' => 0,
+                'expenses' => 0,
+            ],
+            'sales' => [
+                'revenue' => 0,
+                'unpaid' => 0,
+            ],
+            'purchases' => [
+                'total' => 0,
+                'unpaid' => 0,
+            ],
+        ]);
     }
 }

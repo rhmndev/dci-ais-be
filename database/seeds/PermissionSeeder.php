@@ -146,11 +146,20 @@ class PermissionSeeder extends Seeder
 				]
 			],
 			[
+				"name" => "Purchase Order",
+				"description" => null,
+				"url" => "purchase-order",
+				"icon" => "cart-shopping",
+				"order_number" => 6,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
 				"name" => "Settings",
 				"description" => null,
 				"url" => "settings",
 				"icon" => "cogs",
-				"order_number" => 6,
+				"order_number" => 7,
 				"created_by" => "seeder",
 				"changed_by" => "seeder",
 				"children" => [

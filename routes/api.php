@@ -169,6 +169,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-orders', 'PurchaseOrderController@store');
         Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
         Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
+        Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
 });
 
 Route::post('/login', 'AuthController@login');
