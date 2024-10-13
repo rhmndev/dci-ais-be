@@ -67,7 +67,7 @@ class PurchaseOrderController extends Controller
             }
 
             // Send an email notification
-            // Mail::to($supplier->email)->send(new PurchaseOrderCreated($purchaseOrder));
+            Mail::to($supplier->email)->send(new PurchaseOrderCreated($purchaseOrder));
 
             return response()->json(['message' => 'Purchase order created successfully', 'data' => $purchaseOrder], 201);
         } catch (\Throwable $th) {
