@@ -14,6 +14,7 @@ class Supplier extends Model
         'phone',
         'email',
         'contact',
+        'currency',
         'created_by',
         'updated_by'
     ];

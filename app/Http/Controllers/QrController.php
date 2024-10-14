@@ -6,6 +6,7 @@ use App\Inspection;
 use App\Qr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class QrController extends Controller
 {
@@ -23,7 +24,6 @@ class QrController extends Controller
         $request->validate([
             'path' => 'required',
             'type' => 'required',
-            'description' => 'required',
         ]);
 
         try {
@@ -32,8 +32,8 @@ class QrController extends Controller
             $qr->path = $request->path;
             $qr->type = $request->type;
             $qr->has_expired = $request->has_expired ?? 0;
-            $qr->expired_date = $request->expired_date;
-            $qr->description = $request->description;
+            $qr->expired_date = isset($request->expired_date) ? $request->expired_date : '';
+            $qr->description = isset($request->description) ? $request->description : '';
             $qr->created_by = auth()->user()->id;
             $qr->save();
 
