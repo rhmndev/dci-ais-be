@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Imports\SuppliersImport;
 use App\Supplier;
+use Carbon\Carbon;
+use Excel;
 
 class SupplierController extends Controller
 {
@@ -106,6 +108,64 @@ class SupplierController extends Controller
         ], 200);
     }
 
+    public function import(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        try {
+
+            if ($files = $request->file('file')) {
+
+                //store file into document folder
+                $Excels = Excel::toArray(new SuppliersImport, $files);
+                $Excels = $Excels[0];
+
+                foreach ($Excels as $Excel) {
+
+                    if ($Excel['name'] != null) {
+
+                        //store your file into database
+                        $Supplier = Supplier::firstOrNew(['name' => $Excel['name']]);
+                        $Supplier->name = $this->stringtoupper($Excel['name']);
+                        $Supplier->address = $Excel['address'];
+                        $Supplier->phone = $Excel['phone'];
+                        $Supplier->contact = $Excel['contact'];
+                        $Supplier->email = $Excel['email'];
+                        $Supplier->currency = $Excel['currency'];
+
+                        $Supplier->created_by = auth()->user()->username;
+                        $Supplier->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Supplier->updated_by = auth()->user()->username;
+                        $Supplier->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Supplier->save();
+                    }
+                }
+
+                return response()->json([
+
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data stored successfully!',
+                    // "message" => $data,
+
+                ], 200);
+            }
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $e,
+
+            ], 400);
+        }
+    }
+
     public function destroy($id)
     {
         $Supplier = Supplier::find($id);
@@ -116,6 +176,15 @@ class SupplierController extends Controller
             'type' => 'success',
             'message' => 'Data deleted successfully'
         ], 200);
+    }
+
+    private function stringtoupper($string)
+    {
+        if ($string != '') {
+            $string = strtolower($string);
+            $string = strtoupper($string);
+        }
+        return $string;
     }
 
     private function phoneNumber($number)

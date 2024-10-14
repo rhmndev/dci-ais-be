@@ -21,6 +21,7 @@ class CreateSupplierTable extends Migration
             $table->string('phone');
             $table->string('email');
             $table->string('contact');
+            $table->string('currency');
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
             $table->timestamps();
