@@ -7,8 +7,10 @@ use App\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\PurchaseOrderCreated;
+use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Crypt;
 
 class PurchaseOrderController extends Controller
 {
@@ -79,6 +81,87 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function show(Request $request, $id)
+    {
+        $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $PurchaseOrder
+        ], 200);
+    }
+
+    public function showPO(Request $request, $po_number)
+    {
+        $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+        $PurchaseOrder->dataSupplier = $PurchaseOrder->supplier->name;
+        return response()->json([
+            'type' => 'success',
+            'data' => $PurchaseOrder
+        ], 200);
+    }
+
+    public function markAsSeen($po_number)
+    {
+        try {
+            $purchaseOrderActivity = PurchaseOrderActivities::where('po_number', $po_number)->first();
+            if ($purchaseOrderActivity) {
+                // $purchaseOrderActivity->po_id = $purchaseOrderActivity->purchaseOrder->_id;
+                $purchaseOrderActivity->seen += 1;
+                $purchaseOrderActivity->save();
+            } else {
+                // Create a new record if it doesn't exist
+
+                PurchaseOrderActivities::create([
+                    'po_id' => $purchaseOrderActivity,
+                    'po_number' => $po_number,
+                    'seen' => 1
+                ]);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'data' => 'Success'
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function markAsDownloaded($po_number)
+    {
+        try {
+            $purchaseOrderActivity = PurchaseOrderActivities::where('po_number', $po_number)->first();
+            if ($purchaseOrderActivity) {
+                // $purchaseOrderActivity->po_id = $purchaseOrderActivity->purchaseOrder->_id;
+                $purchaseOrderActivity->downloaded += 1;
+                // $purchaseOrderActivity->last_downloaded_at =
+                $purchaseOrderActivity->save();
+            } else {
+                // Create a new record if it doesn't exist
+
+                PurchaseOrderActivities::create([
+                    'po_id' => $purchaseOrderActivity,
+                    'po_number' => $po_number,
+                    'downloaded' => 1
+                ]);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'data' => 'Success'
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function getDashboardData()
     {
         return response()->json([
@@ -119,5 +202,25 @@ class PurchaseOrderController extends Controller
                 'unpaid' => 0,
             ],
         ]);
+    }
+
+    public function showToSupplier($po_number)
+    {
+        $res_po = Crypt::decryptString($po_number);
+        try {
+            $PurchaseOrder = PurchaseOrder::where('po_number', $res_po)->first();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrder
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
     }
 }

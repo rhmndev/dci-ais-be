@@ -170,6 +170,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
         Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
         Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
+        Route::get('/purchase-orders/d/{po_number}', 'PurchaseOrderController@showPO');
+        Route::post('/purchase-orders/mark-as-seen/{po_number}', 'PurchaseOrderController@markAsSeen');
+        Route::post('/purchase-orders/mark-as-downloaded/{po_number}', 'PurchaseOrderController@markAsDownloaded');
 });
 
 Route::post('/login', 'AuthController@login');
@@ -195,3 +198,10 @@ Route::get('/status-part-component/list', 'StatusPartComponentController@list');
 Route::get('/qrcode', 'InspectionController@qrcode');
 Route::get('/qr-get-data', 'QrController@getData');
 Route::get('/readqrcode', 'InspectionController@qrDecode');
+
+Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
+Route::post('/{po_number}/download', 'PurchaseOrderController@download');
+Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
+
+Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
+Route::post('/send-test-email', 'EmailController@sendTestEmail');

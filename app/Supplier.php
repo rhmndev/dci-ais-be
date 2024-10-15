@@ -9,6 +9,7 @@ class Supplier extends Model
     protected $table = 'supplier';
 
     protected $fillable = [
+        'code',
         'name',
         'address',
         'phone',
@@ -70,5 +71,11 @@ class Supplier extends Model
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
         return $data;
+    }
+
+    // Define the relationship to PurchaseOrders
+    public function purchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class, 'supplier_id');
     }
 }

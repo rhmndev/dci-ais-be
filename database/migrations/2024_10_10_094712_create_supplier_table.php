@@ -16,6 +16,7 @@ class CreateSupplierTable extends Migration
         Schema::dropIfExists('supplier');
         Schema::create('supplier', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('code')->unique();
             $table->string('name');
             $table->string('address');
             $table->string('phone');

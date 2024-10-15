@@ -19,6 +19,7 @@ class CreatePurchaseOrderItemTable extends Migration
             $table->unsignedBigInteger('purchase_order_id');
             $table->unsignedBigInteger('material_id');
             $table->integer('quantity');
+            $table->string('unit_type');
             $table->decimal('unit_price');
             $table->string('unit_price_type', 3)->default('IDR');
             $table->timestamps();
