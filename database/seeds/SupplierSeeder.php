@@ -17,7 +17,7 @@ class SupplierSeeder extends Seeder
         $faker = Faker::create();
         for ($i = 0; $i < 50; $i++) {
             Supplier::create([
-                'code' => random_int(100000, 999999),
+                'code' => (string)random_int(100000, 999999),
                 'name' => "PT " . $faker->name,
                 'address' => $faker->address,
                 'phone' => $faker->phoneNumber,

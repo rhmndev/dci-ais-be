@@ -14,6 +14,7 @@ class PurchaseOrder extends Model
         'delivery_date',
         'delivery_address',
         'supplier_id',
+        'supplier_code',
         'total_item_quantity',
         'total_amount',
         'status',
@@ -26,8 +27,14 @@ class PurchaseOrder extends Model
     // Define the relationship to Supplier
     public function supplier()
     {
-        return $this->hasOne(Supplier::class, '_id', 'supplier_id');
+        return $this->hasOne(Supplier::class, 'code', 'supplier_code');
     }
+
+    public function items()
+    {
+        return $this->hasMany(PurchaseOrderItem::class, 'purchase_order_id');
+    }
+
 
     public function purchaseOrderActivity()
     {

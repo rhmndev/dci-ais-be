@@ -25,6 +25,6 @@ class DatabaseSeeder extends Seeder
         $this->call(LineNumberSeeder::class);
         $this->call(SupplierSeeder::class);
         $this->call(EmailTemplateSeeder::class);
-        $this->call(PurchaseOrder::class);
+        // $this->call(PurchaseOrder::class);
     }
 }

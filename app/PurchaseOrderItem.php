@@ -14,4 +14,14 @@ class PurchaseOrderItem extends Model
         'unit_price',
         'unit_price_type',
     ];
+
+    public function purchaseOrder()
+    {
+        return $this->hasOne(PurchaseOrder::class, 'po_number', 'purchase_order_id');
+    }
+
+    public function material()
+    {
+        return $this->hasOne(Material::class, '_id', 'material_id');
+    }
 }

@@ -22,6 +22,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->date('delivery_date');
             $table->string('delivery_address');
             $table->string('supplier_id');
+            $table->string('supplier_code');
             $table->decimal('total_item_quantity');
             $table->decimal('total_amount');
             $table->string('status')->default('pending');

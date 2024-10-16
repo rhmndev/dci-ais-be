@@ -74,8 +74,12 @@ class Supplier extends Model
     }
 
     // Define the relationship to PurchaseOrders
+    // public function purchaseOrders()
+    // {
+    //     return $this->hasMany(PurchaseOrder::class, 'supplier_id');
+    // }
     public function purchaseOrders()
     {
-        return $this->hasMany(PurchaseOrder::class, 'supplier_id');
+        return $this->belongsTo(PurchaseOrder::class, 'supplier_code', 'code');
     }
 }

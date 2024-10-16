@@ -13,21 +13,18 @@ class Material extends Model
     {
 
         $query = Material::query();
-        
-        if(!empty($keyword)){
+
+        if (!empty($keyword)) {
 
             foreach ($columns as $index => $column) {
 
                 if ($index == 0) {
 
-                    $query = $query->where($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->where($column, 'like', '%' . $keyword . '%');
                 } else {
 
-                    $query = $query->orWhere($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
                 }
-
             }
         }
 
@@ -43,21 +40,18 @@ class Material extends Model
 
         $query = Material::query();
         $skip = $perpage * ($page - 1);
-        
-        if(!empty($keyword)){
+
+        if (!empty($keyword)) {
 
             foreach ($columns as $index => $column) {
 
                 if ($index == 0) {
 
-                    $query = $query->where($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->where($column, 'like', '%' . $keyword . '%');
                 } else {
 
-                    $query = $query->orWhere($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
                 }
-
             }
         }
 
@@ -66,7 +60,6 @@ class Material extends Model
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
         return $data;
-
     }
 
     public function checkMaterial($code)

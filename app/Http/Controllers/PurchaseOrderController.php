@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PurchaseOrderResource;
 use App\PurchaseOrder;
 use App\Supplier;
 use Illuminate\Http\Request;
@@ -14,6 +15,48 @@ use Illuminate\Support\Facades\Crypt;
 
 class PurchaseOrderController extends Controller
 {
+    public function index(Request $request)
+    {
+        $skip = $request->perpage * ($request->page - 1);
+        $purchaseOrder = PurchaseOrder::where(function ($where) use ($request) {
+
+            if (!empty($request->keyword)) {
+                foreach ($request->columns as $index => $column) {
+                    if ($index == 0) {
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
+                    } else {
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
+                    }
+                }
+            }
+        })
+            ->when(!empty($request->sort), function ($query) use ($request) {
+                $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
+            })
+            ->take((int)$request->perpage)
+            ->skip((int)$skip)
+            ->get();
+
+        $total = PurchaseOrder::where(function ($where) use ($request) {
+
+            if (!empty($request->keyword)) {
+                foreach ($request->columns as $index => $column) {
+                    if ($index == 0) {
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
+                    } else {
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
+                    }
+                }
+            }
+        })->count();
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $purchaseOrder,
+            'total' => $total
+        ], 200);
+    }
+
     // Create a new Purchase Order
     public function store(Request $request)
     {
@@ -93,12 +136,29 @@ class PurchaseOrderController extends Controller
 
     public function showPO(Request $request, $po_number)
     {
-        $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
-        $PurchaseOrder->dataSupplier = $PurchaseOrder->supplier->name;
-        return response()->json([
-            'type' => 'success',
-            'data' => $PurchaseOrder
-        ], 200);
+        try {
+            $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            // $PurchaseOrder->supplier = isset($PurchaseOrder->supplier) ? $PurchaseOrder->supplier : '';
+            // $PurchaseOrder->items = isset($PurchaseOrder->items) ? $PurchaseOrder->items : '';
+            // get material details
+            if ($PurchaseOrder->items != '') {
+                foreach ($PurchaseOrder->items as $item) {
+                    $item->material = isset($item->material) ? $item->material : '';
+                }
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => new PurchaseOrderResource($PurchaseOrder)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     public function markAsSeen($po_number)

@@ -24,6 +24,7 @@ class PurchaseOrderSeeder extends Seeder
                 'delivery_date' => $faker->date(),
                 'delivery_address' => $faker->address(),
                 'supplier_id' => $faker->uuid(), // Assuming supplier_id is a UUID
+                'supplier_code' => $faker->randomElement(['710519', '988938', '956459', '147510']), // Assuming supplier_id is a UUID
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 100, 10000),
                 'status' => $faker->randomElement(['approved']),
