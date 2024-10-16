@@ -8,6 +8,8 @@ class EmailLog extends Model
 {
     protected $fillable = [
         'recipient',
+        'cc',
+        'bcc',
         'subject',
         'message',
         'status',

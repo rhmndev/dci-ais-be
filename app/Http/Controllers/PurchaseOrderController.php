@@ -138,9 +138,6 @@ class PurchaseOrderController extends Controller
     {
         try {
             $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
-            // $PurchaseOrder->supplier = isset($PurchaseOrder->supplier) ? $PurchaseOrder->supplier : '';
-            // $PurchaseOrder->items = isset($PurchaseOrder->items) ? $PurchaseOrder->items : '';
-            // get material details
             if ($PurchaseOrder->items != '') {
                 foreach ($PurchaseOrder->items as $item) {
                     $item->material = isset($item->material) ? $item->material : '';
@@ -171,7 +168,6 @@ class PurchaseOrderController extends Controller
                 $purchaseOrderActivity->save();
             } else {
                 // Create a new record if it doesn't exist
-
                 PurchaseOrderActivities::create([
                     'po_id' => $purchaseOrderActivity,
                     'po_number' => $po_number,
@@ -274,6 +270,134 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => '',
                 'data' => $PurchaseOrder
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+
+    public function listNeedSigned(Request $request)
+    {
+        $request->validate([
+            'type'
+        ]);
+
+        try {
+            $PurchaseOrder = "";
+
+            switch ($request->type) {
+                case "knowed":
+                    $PurchaseOrder = PurchaseOrder::whereNull('purchase_knowed_by')
+                        ->orWhere(function ($query) {
+                            $query->where('purchase_knowed_by', '!=', null)
+                                ->where('purchase_knowed_by', '=', '');
+                        })
+                        ->get();
+                    break;
+
+                case "checked":
+                    $PurchaseOrder = PurchaseOrder::whereNull('purchase_checked_by')
+                        ->orWhere(function ($query) {
+                            $query->where('purchase_checked_by', '!=', null)
+                                ->where('purchase_checked_by', '=', '');
+                        })
+                        ->get();
+                    break;
+
+                case "approved":
+                    $PurchaseOrder = PurchaseOrder::whereNull('purchase_agreement_by')
+                        ->orWhere(function ($query) {
+                            $query->where('purchase_agreement_by', '!=', null)
+                                ->where('purchase_agreement_by', '=', '');
+                        })
+                        ->get();
+                    break;
+
+                default:
+                    return response()->json([
+                        'type' => 'error',
+                        'message' => '',
+                        'data' => "Type not found!"
+                    ]);
+            }
+
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrder
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+
+    public function signedAsKnowed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
+            // $PurchaseOrder->knowed_at = 
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to knowed."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsChecked($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_checked_by = auth()->user()->npk;
+            // $PurchaseOrder->checked_at = 
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to checked."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsApproved($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_agreement_by = auth()->user()->npk;
+            // $PurchaseOrder->approved_at = 
+            $PurchaseOrder->status = "approved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to approved."
             ]);
         } catch (\Throwable $th) {
             return response()->json([

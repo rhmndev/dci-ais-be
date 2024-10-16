@@ -9,13 +9,18 @@ use App\PurchaseOrder;
 use App\EmailLog;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
+use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\Storage;
 
 class EmailController extends Controller
 {
     public function sendTestEmail(Request $request)
     {
+
         try {
             $emailTo = $request->input('email');
+            $ccTo = $request->input('cc') ? explode(',', $request->input('cc')) : [];
+            $bccTo = $request->input('bcc') ? explode(',', $request->input('bcc')) : [];
 
             $template = EmailTemplate::where('template_type', 'purchase_order_to_vendor')
                 ->where('is_active', true)
@@ -25,12 +30,23 @@ class EmailController extends Controller
                 return response()->json(['message' => 'Template not found'], 404);
             }
 
-            $noPO = 'PO-02012';
+            $noPO = 'PO-13474';
+
+            $POData = PurchaseOrder::where('po_number', $noPO)->first();
+
+            $pdf = PDF::loadView('purchase_orders.pdf', ['purchaseOrder' => $POData]);
+            $pdfContent = $pdf->output(); // Get the PDF content
+
+            // 2. Store the PDF temporarily (optional but recommended)
+            $pdfPath = 'temp/' . $noPO . '.pdf';
+            Storage::put($pdfPath, $pdfContent);
 
             $data = [
-                'userName' => 'John Doe',
+                'supplierName' => 'PT Jaya Abadi',
                 'orderNumber' => $noPO,
-                'purchaseOrderLink' => 'http://127.0.0.1:580/dcci-po-tracker/?po=' . Crypt::encryptString($noPO)
+                'purchaseOrderLink' => env('VENDOR_URL') . '/?view=' . Crypt::encryptString($noPO),
+                // 'cc' => $ccTo,
+                // 'bcc' => $bccTo,
             ];
 
             $bodyEmail = new DynamicEmail($template, $data);
@@ -38,8 +54,16 @@ class EmailController extends Controller
             // Get the rendered email content as a string
             $emailContent = $bodyEmail->render();
 
+            $attachments = [
+                // [
+                //     'path' => $pdfPath,
+                //     'name' => 'Purchase Order ' . $noPO . '.pdf', // Optional custom name
+                // ],
+            ];
+
+
             Mail::to($emailTo) // Get email from the request
-                ->send(new DynamicEmail($template, $data));
+                ->send(new DynamicEmail($template, $data, $attachments));
 
             EmailLog::create([
                 'recipient' => $emailTo,

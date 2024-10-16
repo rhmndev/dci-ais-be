@@ -16,6 +16,8 @@ class CreateEmailLogsTable extends Migration
         Schema::create('email_logs', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('recipient'); // The email recipient
+            $table->longText('cc')->nullable(); // The email recipient
+            $table->longText('bcc')->nullable(); // The email recipient
             $table->string('subject'); // The subject of the email
             $table->text('message'); // The content of the email (optional)
             $table->enum('status', ['sent', 'failed'])->default('sent'); // Status of the email

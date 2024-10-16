@@ -23,9 +23,12 @@ class PurchaseOrderResource extends JsonResource
             'total_item_quantity' => $this->total_item_quantity,
             'total_amount' => $this->total_amount,
             'status' => $this->status,
+            'purchase_currency_type' => $this->purchase_currency_type,
             'purchase_type' => $this->purchase_type,
-            'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
+            'purchase_checked_by' => $this->purchase_checked_by,
+            'checked_at' => $this->checked_at,
+            'purchase_knowed_by' => $this->purchase_knowed_by,
+            'knowed_at' => $this->knowed_at,
             'purchase_agreement_by' => $this->purchase_agreement_by,
             'approved_at' => $this->approved_at,
             'items' => $this->whenLoaded('items', function () {
@@ -34,6 +37,8 @@ class PurchaseOrderResource extends JsonResource
                 });
             }),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
+            'created_by' => $this->created_by,
+            'updated_by' => $this->updated_by,
         ];
     }
 }

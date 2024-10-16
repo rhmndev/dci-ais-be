@@ -174,6 +174,11 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/a/{po_number}', 'PurchaseOrderActivitiesController@getActivityByPO');
         Route::post('/purchase-orders/mark-as-seen/{po_number}', 'PurchaseOrderController@markAsSeen');
         Route::post('/purchase-orders/mark-as-downloaded/{po_number}', 'PurchaseOrderController@markAsDownloaded');
+
+        Route::post('/purchase-order/list-need-signed', 'PurchaseOrderController@listNeedSigned');
+        Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');
+        Route::post('/purchase-order/s/checked/{id}/confirm', 'PurchaseOrderController@signedAsChecked');
+        Route::post('/purchase-order/s/approved/{id}/confirm', 'PurchaseOrderController@signedAsApproved');
 });
 
 Route::post('/login', 'AuthController@login');

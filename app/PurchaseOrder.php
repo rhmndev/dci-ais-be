@@ -9,6 +9,7 @@ class PurchaseOrder extends Model
 {
     protected $fillable = [
         'po_number',
+        'user',
         'order_date',
         'delivery_email',
         'delivery_date',
@@ -17,11 +18,15 @@ class PurchaseOrder extends Model
         'supplier_code',
         'total_item_quantity',
         'total_amount',
+        'purchase_checked_by',
+        'checked_at',
+        'purchase_knowed_by',
+        'knowed_at',
+        'purchase_agreement_by',
+        'approved_at',
         'status',
         'created_by',
         'updated_by',
-        'purchase_agreement_by',
-        'approved_at',
     ];
 
     // Define the relationship to Supplier

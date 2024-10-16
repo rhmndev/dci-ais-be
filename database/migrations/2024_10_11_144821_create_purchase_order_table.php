@@ -17,6 +17,7 @@ class CreatePurchaseOrderTable extends Migration
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('po_number')->unique();
+            $table->string('user');
             $table->date('order_date');
             $table->string('delivery_email');
             $table->date('delivery_date');
@@ -25,13 +26,18 @@ class CreatePurchaseOrderTable extends Migration
             $table->string('supplier_code');
             $table->decimal('total_item_quantity');
             $table->decimal('total_amount');
-            $table->string('status')->default('pending');
-
-            $table->string('purchase_type');
-            $table->string('created_by');
-            $table->string('updated_by');
+            $table->string('purchase_currency_type');
+            $table->string('purchase_checked_by');
+            $table->date('checked_at');
+            $table->string('purchase_knowed_by');
+            $table->date('knowed_at');
             $table->string('purchase_agreement_by');
             $table->date('approved_at');
+            $table->string('tax')->nullable();
+            $table->string('tax_type')->nullable();
+            $table->string('status')->default('pending');
+            $table->string('created_by');
+            $table->string('updated_by');
             $table->timestamps();
         });
     }
