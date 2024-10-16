@@ -211,3 +211,4 @@ Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 
 Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
 Route::post('/send-test-email', 'EmailController@sendTestEmail');
+Route::apiResource('purchase-order-signers', 'PurchaseOrderSignerController');
