@@ -16,7 +16,36 @@ class PurchaseOrderSeeder extends Seeder
     {
         PurchaseOrder::truncate();
         $faker = Faker::create();
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 1000; $i++) {
+            $type = $faker->randomElement(['pending', 'unapproved', 'approved']);
+            switch ($type) {
+                case 'unapproved':
+                    $checkedBy = "39748";
+                    $knowedBy = "39748";
+                    $approvedBy = "39748";
+                    $dateChecked = $faker->date();
+                    $dateKnowed = $faker->date();
+                    $dateApproved = $faker->date();
+                    break;
+
+                case 'approved':
+                    $checkedBy = "39748";
+                    $knowedBy = "39748";
+                    $approvedBy = "39748";
+                    $dateChecked = $faker->date();
+                    $dateKnowed = $faker->date();
+                    $dateApproved = $faker->date();
+                    break;
+
+                default:
+                    $checkedBy = "";
+                    $knowedBy = "";
+                    $approvedBy = "";
+                    $dateChecked = "";
+                    $dateKnowed = "";
+                    $dateApproved = "";
+                    break;
+            }
             $purchaseOrder = PurchaseOrder::create([
                 'po_number' => $faker->unique()->regexify('PO-[0-9]{5}'),
                 'user' => '39748',
@@ -29,15 +58,17 @@ class PurchaseOrderSeeder extends Seeder
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 100, 10000),
                 'purchase_currency_type' => "IDR",
-                'purchase_checked_by' => $faker->uuid(),
-                'checked_at' => $faker->optional()->date(),
-                'purchase_knowed_by' => $faker->uuid(),
-                'knowed_at' => $faker->optional()->date(),
-                'purchase_agreement_by' => $faker->uuid(),
-                'approved_at' => $faker->optional()->date(),
-                'tax' => $faker->randomFloat(2, 0, 10),
+                'purchase_checked_by' => $checkedBy,
+                'checked_at' => $dateChecked,
+                'purchase_knowed_by' => $knowedBy,
+                'knowed_at' => $dateKnowed,
+                'purchase_agreement_by' => $approvedBy,
+                'approved_at' => $dateApproved,
+                'tax' => $faker->randomFloat(2, 100, 10000),
                 'tax_type' => $faker->randomElement(['PPN']),
-                'status' => $faker->randomElement(['approved']),
+                'status' => $type,
+                'is_send_email_to_supplier' => 0,
+                'notes' => '',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder',
             ]);
@@ -53,7 +84,7 @@ class PurchaseOrderSeeder extends Seeder
         for ($j = 0; $j < $numberOfItems; $j++) {
             PurchaseOrderItem::create([
                 'purchase_order_id' => $purchaseOrder->_id,
-                'material_id' => $faker->randomElement(['622ab8b35a0300005f001fb3', '622ab8b35a0300005f001fb4', '622ab8b35a0300005f001fb5', '622ab8b35a0300005f001fb6', '622ab8b35a0300005f001fb7', '622ab8b35a0300005f001fb8', '622ab8b35a0300005f001fb9']), // Replace with your material ID generation logic
+                'material_id' => $faker->randomElement(['622ab8b35a0300005f001fae', '622ab8b35a0300005f001fb1', '622ab8b35a0300005f001fb0', '622ab8b35a0300005f001fb2', '622ab8b35a0300005f001fb3', '622ab8b35a0300005f001fb4', '622ab8b35a0300005f001fb5']), // Replace with your material ID generation logic
                 'quantity' => $faker->randomNumber(2), // Random 2-digit quantity
                 'unit_type' => $faker->randomElement(['pcs', 'pce', 'kg', 'L']), // Random unit type
                 'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00

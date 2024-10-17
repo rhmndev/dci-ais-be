@@ -6,32 +6,41 @@ table {
   font-family: arial, sans-serif;
   border-collapse: collapse;
   width: 100%;
+  font-size: 12px; /* Adjust font size as needed */
 }
 
 td, th {
   border: 1px solid #dddddd;
   text-align: left;
   padding: 8px;
+  font-size: 12px; /* Adjust font size as needed */
 }
 
 tr:nth-child(even) {
   background-color: #dddddd;
 }
+
+body {
+  font-size: 12px; /* Adjust font size for the entire document */
+}
+
+h3, p { /* Adjust font size for headings and paragraphs */
+  font-size: 14px; 
+}
 </style>
 </head>
 <body>
-
-<h2>Purchase Control</h2>
+  <img src="{{ public_path('/img/logo.png') }}">
 <hr>
 
 <h3>Purchase Order</h3>
-<p>PO No.: PO00495</p>
-<p>04/26/2017</p>
-<p>PO Status Closed Completed</p>
+<p>PO: {{ $purchaseOrder->po_number }}</p>
+<p>1601 - DCI Cikarang</p>
+<p>04-Oktober-2024</p>
 
 <table>
   <tr>
-    <th>Supplier</th>
+    <th>Kepada</th>
     <th>Delivery Address</th>
   </tr>
   <tr>
@@ -66,6 +75,7 @@ tr:nth-child(even) {
 
 <table>
   <tr>
+    <th></th>
     <th>Item Name</th>
     <th>Item Code</th>
     <th>Qty.</th>
@@ -74,6 +84,7 @@ tr:nth-child(even) {
     <th>Total</th>
   </tr>
   <tr>
+    <td></td>
     <td>Nescafe Gold Blend Coffee 7oz.</td>
     <td>QD2-0035 </td>
     <td>2</td>

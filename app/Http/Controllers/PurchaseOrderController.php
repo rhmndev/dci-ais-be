@@ -12,6 +12,7 @@ use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class PurchaseOrderController extends Controller
 {
@@ -52,7 +53,7 @@ class PurchaseOrderController extends Controller
 
         return response()->json([
             'type' => 'success',
-            'data' => $purchaseOrder,
+            'data' => new PurchaseOrderResource($purchaseOrder),
             'total' => $total
         ], 200);
     }
@@ -280,6 +281,48 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function downloadPDF($po_number)
+    {
+        try {
+            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+
+            if (!$purchaseOrder) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order not found',
+                    'data' => null
+                ], 404);
+            }
+
+            // check status purchase order
+            if (!isset($purchaseOrder->status)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order status not found',
+                    'data' => null
+                ], 404);
+            }
+
+            switch ($purchaseOrder->status) {
+                case 'approved':
+                    $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => $purchaseOrder]);
+                    return $pdf->download('' . $purchaseOrder->po_number . '.pdf');
+                    break;
+
+                default:
+                    $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => $purchaseOrder]);
+                    return $pdf->download('' . $purchaseOrder->po_number . '-unapproved.pdf');
+                    break;
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
     public function listNeedSigned(Request $request)
     {
         $request->validate([
@@ -346,6 +389,8 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder = PurchaseOrder::findOrFail($id);
 
             $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
+            $PurchaseOrder->knowed_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_knowed = 1;
             // $PurchaseOrder->knowed_at = 
             $PurchaseOrder->save();
 
@@ -368,6 +413,8 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder = PurchaseOrder::findOrFail($id);
 
             $PurchaseOrder->purchase_checked_by = auth()->user()->npk;
+            $PurchaseOrder->checked_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_checked = 1;
             // $PurchaseOrder->checked_at = 
             $PurchaseOrder->save();
 
@@ -390,7 +437,8 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder = PurchaseOrder::findOrFail($id);
 
             $PurchaseOrder->purchase_agreement_by = auth()->user()->npk;
-            // $PurchaseOrder->approved_at = 
+            $PurchaseOrder->approved_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_approved = 1;
             $PurchaseOrder->status = "approved";
             $PurchaseOrder->save();
 

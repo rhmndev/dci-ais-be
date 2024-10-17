@@ -27,16 +27,20 @@ class PurchaseOrderResource extends JsonResource
             'purchase_type' => $this->purchase_type,
             'purchase_checked_by' => $this->purchase_checked_by,
             'checked_at' => $this->checked_at,
+            'is_checked' => $this->is_checked,
             'purchase_knowed_by' => $this->purchase_knowed_by,
             'knowed_at' => $this->knowed_at,
+            'is_knowed' => $this->is_knowed,
             'purchase_agreement_by' => $this->purchase_agreement_by,
             'approved_at' => $this->approved_at,
+            'is_approved' => $this->is_approved,
             'items' => $this->whenLoaded('items', function () {
                 return $this->items->map(function ($item) {
                     return new PurchaseOrderItemsResource($item);
                 });
             }),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
+            'is_send_email_to_supplier' => $this->is_send_email_to_supplier,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
         ];

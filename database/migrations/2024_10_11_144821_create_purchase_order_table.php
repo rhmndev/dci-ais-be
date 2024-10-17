@@ -29,13 +29,18 @@ class CreatePurchaseOrderTable extends Migration
             $table->string('purchase_currency_type');
             $table->string('purchase_checked_by');
             $table->date('checked_at');
+            $table->boolean('is_checked')->default(false);
             $table->string('purchase_knowed_by');
             $table->date('knowed_at');
+            $table->boolean('is_knowed')->default(false);
             $table->string('purchase_agreement_by');
             $table->date('approved_at');
+            $table->boolean('is_approved')->default(false);
             $table->string('tax')->nullable();
             $table->string('tax_type')->nullable();
             $table->string('status')->default('pending');
+            $table->boolean('is_send_email_to_supplier')->default(false);
+            $table->longText('notes')->nullable();
             $table->string('created_by');
             $table->string('updated_by');
             $table->timestamps();
