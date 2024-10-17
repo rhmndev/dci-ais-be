@@ -48,7 +48,8 @@ class PurchaseOrderSeeder extends Seeder
             }
             $purchaseOrder = PurchaseOrder::create([
                 'po_number' => $faker->unique()->regexify('PO-[0-9]{5}'),
-                'user' => '39748',
+                'user' => 'Admin',
+                'user_npk' => '39748',
                 'order_date' => $faker->date(),
                 'delivery_email' => $faker->companyEmail,
                 'delivery_date' => $faker->date(),

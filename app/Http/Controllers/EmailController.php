@@ -7,6 +7,7 @@ use App\Mail\DynamicEmail;
 use App\EmailTemplate;
 use App\PurchaseOrder;
 use App\EmailLog;
+use App\Http\Resources\PurchaseOrderResource;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -30,16 +31,10 @@ class EmailController extends Controller
                 return response()->json(['message' => 'Template not found'], 404);
             }
 
-            $noPO = 'PO-13474';
+            $noPO = 'PO-21399';
 
             $POData = PurchaseOrder::where('po_number', $noPO)->first();
 
-            $pdf = PDF::loadView('purchase_orders.pdf', ['purchaseOrder' => $POData]);
-            $pdfContent = $pdf->output(); // Get the PDF content
-
-            // 2. Store the PDF temporarily (optional but recommended)
-            $pdfPath = 'temp/' . $noPO . '.pdf';
-            Storage::put($pdfPath, $pdfContent);
 
             $data = [
                 'supplierName' => 'PT Jaya Abadi',
@@ -48,6 +43,13 @@ class EmailController extends Controller
                 // 'cc' => $ccTo,
                 // 'bcc' => $bccTo,
             ];
+
+            $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => new PurchaseOrderResource($POData)]);
+            $pdfContent = $pdf->output(); // Get the PDF content
+
+            // 2. Store the PDF temporarily (optional but recommended)
+            $pdfPath = 'temp/' . $noPO . '.pdf';
+            Storage::put($pdfPath, $pdfContent);
 
             $bodyEmail = new DynamicEmail($template, $data);
 

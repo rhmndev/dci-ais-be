@@ -10,6 +10,7 @@ class PurchaseOrder extends Model
     protected $fillable = [
         'po_number',
         'user',
+        'user_npk',
         'order_date',
         'delivery_email',
         'delivery_date',
@@ -51,5 +52,20 @@ class PurchaseOrder extends Model
     public function purchaseOrderActivity()
     {
         return $this->hasOne(PurchaseOrderActivities::class, 'po_number', 'po_number');
+    }
+
+    public function checkedUserBy()
+    {
+        return $this->hasOne(User::class, 'npk', 'purchase_checked_by');
+    }
+
+    public function knowedUserBy()
+    {
+        return $this->hasOne(User::class, 'npk', 'purchase_knowed_by');
+    }
+
+    public function approvedUserBy()
+    {
+        return $this->hasOne(User::class, 'npk', 'purchase_agreement_by');
     }
 }

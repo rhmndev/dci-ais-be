@@ -18,6 +18,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->bigIncrements('id');
             $table->string('po_number')->unique();
             $table->string('user');
+            $table->string('user_npk');
             $table->date('order_date');
             $table->string('delivery_email');
             $table->date('delivery_date');

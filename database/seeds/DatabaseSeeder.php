@@ -1,7 +1,5 @@
 <?php
 
-use App\Customer;
-use App\PurchaseOrder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -25,6 +23,6 @@ class DatabaseSeeder extends Seeder
         $this->call(LineNumberSeeder::class);
         $this->call(SupplierSeeder::class);
         $this->call(EmailTemplateSeeder::class);
-        // $this->call(PurchaseOrder::class);
+        $this->call(PurchaseOrderSeeder::class);
     }
 }

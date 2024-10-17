@@ -113,7 +113,7 @@ class PurchaseOrderController extends Controller
             }
 
             // Send an email notification
-            Mail::to($supplier->email)->send(new PurchaseOrderCreated($purchaseOrder));
+            // Mail::to($supplier->email)->send(new PurchaseOrderCreated($purchaseOrder));
 
             return response()->json(['message' => 'Purchase order created successfully', 'data' => $purchaseOrder], 201);
         } catch (\Throwable $th) {
@@ -170,7 +170,7 @@ class PurchaseOrderController extends Controller
             } else {
                 // Create a new record if it doesn't exist
                 PurchaseOrderActivities::create([
-                    'po_id' => $purchaseOrderActivity,
+                    'po_id' => $purchaseOrderActivity->_id,
                     'po_number' => $po_number,
                     'seen' => 1
                 ]);
@@ -267,6 +267,8 @@ class PurchaseOrderController extends Controller
         try {
             $PurchaseOrder = PurchaseOrder::where('po_number', $res_po)->first();
 
+            $this->markAsSeen($PurchaseOrder->po_number);
+
             return response()->json([
                 'type' => 'success',
                 'message' => '',
@@ -302,6 +304,12 @@ class PurchaseOrderController extends Controller
                     'data' => null
                 ], 404);
             }
+
+            // return response()->json([
+            //     'type' => 'success',
+            //     'message' => ' ',
+            //     'data' => new PurchaseOrderResource($purchaseOrder)
+            // ], 200);
 
             switch ($purchaseOrder->status) {
                 case 'approved':

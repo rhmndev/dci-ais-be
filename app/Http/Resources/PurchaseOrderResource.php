@@ -14,6 +14,12 @@ class PurchaseOrderResource extends JsonResource
      */
     public function toArray($request)
     {
+        $this->items;
+        $this->supplier;
+        $this->checkedUserBy;
+        $this->knowedUserBy;
+        $this->approvedUserBy;
+
         return [
             '_id' => $this->id,
             'po_number' => $this->po_number,
@@ -21,6 +27,7 @@ class PurchaseOrderResource extends JsonResource
             'delivery_date' => $this->delivery_date,
             'delivery_address' => $this->delivery_address,
             'total_item_quantity' => $this->total_item_quantity,
+            'tax' => $this->tax,
             'total_amount' => $this->total_amount,
             'status' => $this->status,
             'purchase_currency_type' => $this->purchase_currency_type,
@@ -34,8 +41,12 @@ class PurchaseOrderResource extends JsonResource
             'purchase_agreement_by' => $this->purchase_agreement_by,
             'approved_at' => $this->approved_at,
             'is_approved' => $this->is_approved,
+            'user_checked' => new PurchaseOrderUserResource($this->whenLoaded('checkedUserBy')),
+            'user_knowed' => new PurchaseOrderUserResource($this->whenLoaded('knowedUserBy')),
+            'user_approved' => new PurchaseOrderUserResource($this->whenLoaded('approvedUserBy')),
             'items' => $this->whenLoaded('items', function () {
                 return $this->items->map(function ($item) {
+                    $item->material = isset($item->material) ? $item->material : '';
                     return new PurchaseOrderItemsResource($item);
                 });
             }),
