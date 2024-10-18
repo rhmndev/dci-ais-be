@@ -21,7 +21,7 @@ class PurchaseOrderResource extends JsonResource
         $this->approvedUserBy;
 
         return [
-            '_id' => $this->id,
+            '_id' => $this->_id,
             'po_number' => $this->po_number,
             'order_date' => $this->order_date,
             'delivery_date' => $this->delivery_date,

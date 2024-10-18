@@ -18,44 +18,41 @@ class PurchaseOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $skip = $request->perpage * ($request->page - 1);
-        $purchaseOrder = PurchaseOrder::where(function ($where) use ($request) {
+        $request->validate([
+            'columns' => 'required',
+            'perpage' => 'required|numeric',
+            'page' => 'required|numeric',
+            'sort' => 'required|string',
+            'order' => 'string',
+        ]);
 
-            if (!empty($request->keyword)) {
-                foreach ($request->columns as $index => $column) {
-                    if ($index == 0) {
-                        $where->where($column, 'like', '%' . $request->keyword . '%');
-                    } else {
-                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
-                    }
-                }
-            }
-        })
-            ->when(!empty($request->sort), function ($query) use ($request) {
-                $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
-            })
-            ->take((int)$request->perpage)
-            ->skip((int)$skip)
-            ->get();
+        $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $order = ($request->order != null) ? $request->order : 'ascend';
 
-        $total = PurchaseOrder::where(function ($where) use ($request) {
+        try {
 
-            if (!empty($request->keyword)) {
-                foreach ($request->columns as $index => $column) {
-                    if ($index == 0) {
-                        $where->where($column, 'like', '%' . $request->keyword . '%');
-                    } else {
-                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
-                    }
-                }
-            }
-        })->count();
+            $PurchaseOrder = new PurchaseOrder;
+            $data = array();
 
-        return response()->json([
-            'type' => 'success',
-            'data' => new PurchaseOrderResource($purchaseOrder),
-            'total' => $total
-        ], 200);
+            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order);
+            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => PurchaseOrderResource::collection($results),
+                'dataAll' => $resultAlls,
+                'total' => count($resultAlls),
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
     }
 
     // Create a new Purchase Order
