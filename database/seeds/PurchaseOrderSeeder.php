@@ -4,6 +4,7 @@ use App\PurchaseOrder;
 use App\PurchaseOrderItem;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
+use Carbon\Carbon;
 
 class PurchaseOrderSeeder extends Seeder
 {
@@ -23,18 +24,18 @@ class PurchaseOrderSeeder extends Seeder
                     $checkedBy = "39748";
                     $knowedBy = "39748";
                     $approvedBy = "39748";
-                    $dateChecked = $faker->date();
-                    $dateKnowed = $faker->date();
-                    $dateApproved = $faker->date();
+                    $dateChecked = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+                    $dateKnowed = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+                    $dateApproved = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     break;
 
                 case 'approved':
                     $checkedBy = "39748";
                     $knowedBy = "39748";
                     $approvedBy = "39748";
-                    $dateChecked = $faker->date();
-                    $dateKnowed = $faker->date();
-                    $dateApproved = $faker->date();
+                    $dateChecked = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+                    $dateKnowed = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+                    $dateApproved = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     break;
 
                 default:
@@ -50,9 +51,9 @@ class PurchaseOrderSeeder extends Seeder
                 'po_number' => $faker->unique()->regexify('PO-[0-9]{5}'),
                 'user' => 'Admin',
                 'user_npk' => '39748',
-                'order_date' => $faker->date(),
+                'order_date' => Carbon::now()->format('Y-m-d\TH:i:s.vP'),
                 'delivery_email' => $faker->companyEmail,
-                'delivery_date' => $faker->date(),
+                'delivery_date' => Carbon::now()->format('Y-m-d\TH:i:s.vP'),
                 'delivery_address' => $faker->address(),
                 'supplier_id' => $faker->uuid(), // Assuming supplier_id is a UUID
                 'supplier_code' => $faker->randomElement(['710519', '988938', '956459', '147510']), // Assuming supplier_id is a UUID
