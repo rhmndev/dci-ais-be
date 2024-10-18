@@ -91,6 +91,7 @@ class PurchaseOrderSeeder extends Seeder
                 'unit_type' => $faker->randomElement(['pcs', 'pce', 'kg', 'L']), // Random unit type
                 'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
                 'unit_price_type' => $faker->randomElement(['IDR']), // Random unit type
+                'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
             ]);
         }
     }

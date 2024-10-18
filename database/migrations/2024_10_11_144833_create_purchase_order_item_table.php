@@ -21,6 +21,7 @@ class CreatePurchaseOrderItemTable extends Migration
             $table->integer('quantity');
             $table->string('unit_type');
             $table->decimal('unit_price');
+            $table->decimal('unit_price_amount');
             $table->string('unit_price_type', 3)->default('IDR');
             $table->timestamps();
         });

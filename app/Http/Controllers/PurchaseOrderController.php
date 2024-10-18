@@ -168,17 +168,22 @@ class PurchaseOrderController extends Controller
                 $purchaseOrderActivity->seen += 1;
                 $purchaseOrderActivity->save();
             } else {
+                $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+                $po_id = $PurchaseOrder->_id;
                 // Create a new record if it doesn't exist
                 PurchaseOrderActivities::create([
-                    'po_id' => $purchaseOrderActivity->_id,
+                    'po_id' => $po_id,
                     'po_number' => $po_number,
-                    'seen' => 1
+                    'seen' => 1,
+                    'last_seen_at' => new \MongoDB\BSON\UTCDateTime(),
+                    'downloaded' => 0,
+                    'last_downloaded_at' => ''
                 ]);
             }
 
             return response()->json([
                 'type' => 'success',
-                'data' => 'Success'
+                'data' => 'PO No.: ' . $po_number . ' has been marked as seen.'
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -198,12 +203,16 @@ class PurchaseOrderController extends Controller
                 // $purchaseOrderActivity->last_downloaded_at =
                 $purchaseOrderActivity->save();
             } else {
+                $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+                $po_id = $PurchaseOrder->_id;
                 // Create a new record if it doesn't exist
-
                 PurchaseOrderActivities::create([
                     'po_id' => $purchaseOrderActivity,
                     'po_number' => $po_number,
-                    'downloaded' => 1
+                    'seen' => 0,
+                    'last_seen_at' => '',
+                    'downloaded' => 1,
+                    'last_downloaded_at' => new \MongoDB\BSON\UTCDateTime()
                 ]);
             }
 

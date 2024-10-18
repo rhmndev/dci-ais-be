@@ -180,6 +180,10 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');
         Route::post('/purchase-order/s/checked/{id}/confirm', 'PurchaseOrderController@signedAsChecked');
         Route::post('/purchase-order/s/approved/{id}/confirm', 'PurchaseOrderController@signedAsApproved');
+
+        // Email Area
+        Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
+        Route::post('/send-test-email', 'EmailController@sendTestEmail');
 });
 
 Route::post('/login', 'AuthController@login');
@@ -210,6 +214,4 @@ Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 
-Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
-Route::post('/send-test-email', 'EmailController@sendTestEmail');
 Route::apiResource('purchase-order-signers', 'PurchaseOrderSignerController');
