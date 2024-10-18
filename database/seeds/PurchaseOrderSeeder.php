@@ -27,6 +27,9 @@ class PurchaseOrderSeeder extends Seeder
                     $dateChecked = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     $dateKnowed = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     $dateApproved = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+                    $is_checked = true;
+                    $is_knowed = true;
+                    $is_approved = true;
                     break;
 
                 case 'approved':
@@ -36,6 +39,9 @@ class PurchaseOrderSeeder extends Seeder
                     $dateChecked = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     $dateKnowed = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     $dateApproved = Carbon::now()->format('Y-m-d\TH:i:s.vP');
+                    $is_checked = true;
+                    $is_knowed = true;
+                    $is_approved = true;
                     break;
 
                 default:
@@ -45,6 +51,9 @@ class PurchaseOrderSeeder extends Seeder
                     $dateChecked = "";
                     $dateKnowed = "";
                     $dateApproved = "";
+                    $is_checked = false;
+                    $is_knowed = false;
+                    $is_approved = false;
                     break;
             }
             $purchaseOrder = PurchaseOrder::create([
@@ -70,6 +79,9 @@ class PurchaseOrderSeeder extends Seeder
                 'tax_type' => $faker->randomElement(['PPN']),
                 'status' => $type,
                 'is_send_email_to_supplier' => 0,
+                'is_checked' => 0,
+                'is_knowed' => 0,
+                'is_approved' => 0,
                 'notes' => '',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder',

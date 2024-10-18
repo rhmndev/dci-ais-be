@@ -178,12 +178,6 @@
           <tr>
               <td rowspan="10" colspan="2">
                 <strong>Catatan: </strong>
-                  <ol>
-                      <li>Pastikan barang yang dikirim sesuai dengan spesifikasi.</li>
-                      <li>Sertakan dokumen pendukung seperti invoice dan packing list.</li>
-                      <li>Konfirmasi penerimaan barang akan dilakukan setelah pemeriksaan.</li>
-                      <li>Pembayaran akan dilakukan sesuai dengan termin yang disepakati.</li>
-                  </ol>
               </td>
           </tr>
         </tbody>
@@ -210,16 +204,16 @@
                 @if($purchaseOrder->is_checked)
                   <h4>SIGNED</h4>
                   <small>{{$purchaseOrder->checked_at}}</small><br>
-                  <small>{{$purchaseOrder->user_checked->full_name}}</small><br>
-                  <small>{{$purchaseOrder->user_checked->department}}</small>
+                  {{-- <small>{{$purchaseOrder->user_checked->full_name}}</small><br> --}}
+                  {{-- <small>{{$purchaseOrder->user_checked->department}}</small> --}}
                 @endif
               </td>
               <td class="text-center">
                 @if($purchaseOrder->is_knowed)
                   <h4>SIGNED</h4>
                   <small>{{$purchaseOrder->knowed_at}}</small><br>
-                  <small>{{$purchaseOrder->user_knowed->full_name}}</small><br>
-                  <small>{{$purchaseOrder->user_knowed->department}}</small>
+                  {{-- <small>{{$purchaseOrder->user_knowed->full_name}}</small><br>
+                  <small>{{$purchaseOrder->user_knowed->department}}</small> --}}
                 @else
 
                 @endif
@@ -228,8 +222,8 @@
                 @if($purchaseOrder->is_approved)
                 <h4>SIGNED</h4>
                 <small>{{$purchaseOrder->approved_at}}</small><br>
-                <small>{{$purchaseOrder->user_approved->full_name}}</small><br>
-                <small>{{$purchaseOrder->user_approved->department}}</small>
+                {{-- <small>{{$purchaseOrder->user_approved->full_name}}</small><br>
+                <small>{{$purchaseOrder->user_approved->department}}</small> --}}
                 @endif
               </td>
           </tr>
