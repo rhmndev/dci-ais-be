@@ -68,6 +68,34 @@ class UserController extends Controller
         ]);
     }
 
+    public function list(Request $request)
+    {
+
+        $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $data = array();
+
+        try {
+
+            $User = new User;
+            $results = $User->getList($keyword);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Success.',
+                'data' => $results,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
+    }
+
     public function store(Request $request)
     {
 

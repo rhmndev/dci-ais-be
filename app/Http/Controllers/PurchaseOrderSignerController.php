@@ -75,4 +75,43 @@ class PurchaseOrderSignerController extends Controller
         $purchaseOrderSigner->delete();
         return response()->json(null, 204);
     }
+
+    public function mySigner()
+    {
+        try {
+            $userId = auth()->user()->id;
+            $signers = PurchaseOrderSigner::where('user_id', $userId)->get();
+
+            $hasKnowed = false;
+            $hasChecked = false;
+            $hasApproved = false;
+
+            foreach ($signers as $signer) {
+                if ($signer->type === 'knowed') {
+                    $hasKnowed = true;
+                } elseif ($signer->type === 'checked') {
+                    $hasChecked = true;
+                } elseif ($signer->type === 'approved') {
+                    $hasApproved = true;
+                }
+            }
+
+            $result = [
+                'knowed' => $hasKnowed,
+                'checked' => $hasChecked,
+                'approved' => $hasApproved,
+            ];
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $result,
+                'message' => ''
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

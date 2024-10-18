@@ -273,6 +273,11 @@ class PurchaseOrderController extends Controller
     public function showToSupplier($po_number)
     {
         $res_po = Crypt::decryptString($po_number);
+        return response()->json([
+            'type' => 'success',
+            'message' => '',
+            'data' => $res_po
+        ]);
         try {
             $PurchaseOrder = PurchaseOrder::where('po_number', $res_po)->first();
 
@@ -463,6 +468,80 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => '',
                 'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to approved."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsKnowedUnconfirmed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
+            $PurchaseOrder->knowed_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_knowed = 0;
+            // $PurchaseOrder->knowed_at = 
+            $PurchaseOrder->status = "unapproved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was set to unconfirmed to knowed."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsCheckedUnconfirmed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_checked_by = auth()->user()->npk;
+            $PurchaseOrder->checked_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_checked = 0;
+            // $PurchaseOrder->checked_at = 
+            $PurchaseOrder->status = "unapproved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was unconfirmed to checked."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsApprovedUnconfirmed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_agreement_by = auth()->user()->npk;
+            $PurchaseOrder->approved_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_approved = 0;
+            $PurchaseOrder->status = "unapproved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was unconfirmed to approved."
             ]);
         } catch (\Throwable $th) {
             return response()->json([

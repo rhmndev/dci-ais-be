@@ -26,6 +26,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/user', 'UserController@index');
         Route::get('/user/{id}', 'UserController@show');
         Route::post('/user', 'UserController@store');
+        Route::get('/userlist', 'UserController@list');
         Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
         Route::post('/userimport', 'UserController@import');
@@ -180,6 +181,11 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');
         Route::post('/purchase-order/s/checked/{id}/confirm', 'PurchaseOrderController@signedAsChecked');
         Route::post('/purchase-order/s/approved/{id}/confirm', 'PurchaseOrderController@signedAsApproved');
+        Route::post('/purchase-order/s/knowed/{id}/unconfirm', 'PurchaseOrderController@signedAsKnowedUnconfirmed');
+        Route::post('/purchase-order/s/checked/{id}/unconfirm', 'PurchaseOrderController@signedAsCheckedUnconfirmed');
+        Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
+
+        Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
 
         // Email Area
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
