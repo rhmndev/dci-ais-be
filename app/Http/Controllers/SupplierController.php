@@ -55,6 +55,7 @@ class SupplierController extends Controller
     {
 
         $request->validate([
+            'code' => 'required|string',
             'name' => 'required|string',
             'address' => 'required|string',
             'phone' => 'required|string',
@@ -64,9 +65,10 @@ class SupplierController extends Controller
 
         try {
 
-            $Supplier = new Supplier;
+            $Supplier = Supplier::firstOrNew(['code' => $request->code]);
 
-            $Supplier->name = $request->name;
+            $Supplier->code = $this->stringtoupper($request->code);
+            $Supplier->name = $this->stringtoupper($request->name);
             $Supplier->address = $request->address;
             $Supplier->phone = $request->phone;
             $Supplier->email = $request->email;
@@ -107,6 +109,16 @@ class SupplierController extends Controller
             'type' => 'success',
             'data' => $Supplier
         ], 200);
+    }
+
+    public function show(Request $request, $id)
+    {
+        $Supplier = Supplier::findOrFail($id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $Supplier
+        ]);
     }
 
     public function import(Request $request)
