@@ -332,23 +332,8 @@ class PurchaseOrderController extends Controller
                 ], 404);
             }
 
-            // return response()->json([
-            //     'type' => 'success',
-            //     'message' => ' ',
-            //     'data' => new PurchaseOrderResource($purchaseOrder)
-            // ], 200);
-
-            switch ($purchaseOrder->status) {
-                case 'approved':
-                    $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => $purchaseOrder]);
-                    return $pdf->download('' . $purchaseOrder->po_number . '.pdf');
-                    break;
-
-                default:
-                    $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => $purchaseOrder]);
-                    return $pdf->download('' . $purchaseOrder->po_number . '-unapproved.pdf');
-                    break;
-            }
+            $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => new PurchaseOrderResource($purchaseOrder)]);
+            return $pdf->download('' . $purchaseOrder->po_number . '.pdf');
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',

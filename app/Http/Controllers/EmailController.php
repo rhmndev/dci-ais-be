@@ -17,7 +17,7 @@ class EmailController extends Controller
 {
     public function sendTestEmail(Request $request)
     {
-        $noPO = 'PO-07703';
+        $noPO = "PO-91648";
         try {
             $ccTo = $request->input('cc') ? explode(',', $request->input('cc')) : [];
             $bccTo = $request->input('bcc') ? explode(',', $request->input('bcc')) : [];
@@ -32,7 +32,7 @@ class EmailController extends Controller
 
             $POData = PurchaseOrder::where('po_number', $noPO)->first();
 
-            $emailTo = $POData->supplier->email;
+            $emailTo = $POData->delivery_email;
 
             // check if POData not signed
             if (isset($POData->is_knowed) && isset($POData->is_checked) && isset($POData->is_approved) && $POData->is_knowed == 1 && $POData->is_checked == 1 && $POData->is_approved == 1) {

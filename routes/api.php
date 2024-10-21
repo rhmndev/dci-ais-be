@@ -221,3 +221,4 @@ Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
 Route::get('/d/{po_number}/download', 'PurchaseOrderController@downloadPDFForSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
+Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');

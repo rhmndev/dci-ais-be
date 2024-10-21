@@ -57,10 +57,24 @@
             padding: 0;
             margin: 0;
         }
+        /* Styling for the watermark */
+        .watermark {
+            position: fixed;
+            top: 40%;
+            left: 30%;
+            opacity: 0.2;
+            font-size: 5em;
+            color: #000;
+            transform: rotate(-45deg);
+            z-index: -1; 
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
 <body>
+  {{-- <div class="watermark">{{$purchaseOrder->status}}</div> --}}
+
   <table class="w-full" style="border: 0">
     <tr style="border: 0">
         <td class="w-half" style="border: 0">
@@ -168,11 +182,11 @@
           @foreach($purchaseOrder->items as $item)
           <tr>
               <td class="text-center">{{$no++}}</td>
-              <td>{{ isset($item->material) ?? $item->material->code }} / {{ isset($item->material) ?? $item->material->description }}</td>
+              <td>{{ isset($item->material) ? $item->material->code : $item->_id }} / {{ isset($item->material) ? $item->material->description : $item->_id }}</td>
               <td class="text-center">{{ $item->quantity }}</td>
               <td class="text-center">{{ $item->unit_type }}</td>
-              <td class="text-center">{{ $item->price }}</td> 
-              <td>{{ $item->unit_price }}</td> 
+              <td class="text-center">@currency($item->unit_price)</td> 
+              <td>@currency($item->unit_price_amount)</td> 
           </tr>
           @endforeach
           <tr>
@@ -184,15 +198,15 @@
         <tfoot>
           <tr>
               <td colspan="2" style="text-align:right;">Subtotal:</td>
-              <td>30.00</td>
+              <td>@currency($purchaseOrder->subtotal)</td>
           </tr>
           <tr>
               <td colspan="2" style="text-align:right;">PPN:</td>
-              <td>{{$purchaseOrder->tax}}</td>
+              <td>@currency($purchaseOrder->tax)</td>
           </tr>
           <tr>
               <td colspan="2" style="text-align:right;">Total:</td>
-              <td>{{$purchaseOrder->total_amount}}</td>
+              <td>@currency($purchaseOrder->total_amount)</td>
           </tr>
           <tr>
               <td class="text-center"><strong>Dicek Oleh</strong></td>
@@ -206,7 +220,11 @@
                   <small>{{$purchaseOrder->checked_at}}</small><br>
                   {{-- <small>{{$purchaseOrder->user_checked->full_name}}</small><br> --}}
                   {{-- <small>{{$purchaseOrder->user_checked->department}}</small> --}}
-                @endif
+                @else
+                <br>
+                <br>
+                <br>
+                  @endif
               </td>
               <td class="text-center">
                 @if($purchaseOrder->is_knowed)
