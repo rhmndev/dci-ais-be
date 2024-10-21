@@ -133,7 +133,7 @@ class EmailController extends Controller
             }
 
             $POData = PurchaseOrder::where('po_number', $noPO)->first();
-            $emailTo = $POData->supplier->email;
+            $emailTo = $POData->delivery_email;
 
             // check if POData not signed
             if (isset($POData->is_knowed) && isset($POData->is_checked) && isset($POData->is_approved) && $POData->is_knowed == 1 && $POData->is_checked == 1 && $POData->is_approved == 1) {

@@ -90,6 +90,25 @@ class PurchaseOrder extends Model
         return $data;
     }
 
+    public function getDataByStatus($status = null)
+    {
+        $query = PurchaseOrder::query();
+
+        // If a specific status is provided, filter by it
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        // Otherwise, get data for all three statuses
+        else {
+            $query->whereIn('status', ['approved', 'pending', 'unapproved']);
+        }
+
+        $data = $query->get();
+
+        return $data;
+    }
+
     // Define the relationship to Supplier
     public function supplier()
     {

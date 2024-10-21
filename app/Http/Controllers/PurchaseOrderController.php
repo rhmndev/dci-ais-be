@@ -292,21 +292,21 @@ class PurchaseOrderController extends Controller
     {
         $res_po = Crypt::decryptString($po_number);
         try {
-            $PurchaseOrder = $this->downloadPDF($res_po);
+            $this->downloadPDF($res_po);
 
             $this->markAsDownloaded($res_po);
 
             return response()->json([
                 'type' => 'success',
-                'message' => '',
-                'data' => $PurchaseOrder
-            ]);
+                'message' => 'PDF downloaded successfully',
+                'data' => ['po_number' => $res_po]
+            ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
-                'message' => '',
-                'data' => 'Error: ' . $th->getMessage()
-            ]);
+                'message' => 'Error downloading PDF: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
         }
     }
 

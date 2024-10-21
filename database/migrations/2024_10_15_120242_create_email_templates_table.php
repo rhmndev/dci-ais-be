@@ -21,6 +21,8 @@ class CreateEmailTemplatesTable extends Migration
                 'welcome_email',
                 'password_reset',
             ]);
+            $table->longText('cc')->nullable();
+            $table->longText('bcc')->nullable();
             $table->string('subject');
             $table->text('body');
             $table->json('variables')->nullable();
