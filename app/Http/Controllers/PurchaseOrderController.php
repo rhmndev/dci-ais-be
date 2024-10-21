@@ -270,15 +270,31 @@ class PurchaseOrderController extends Controller
     public function showToSupplier($po_number)
     {
         $res_po = Crypt::decryptString($po_number);
-        return response()->json([
-            'type' => 'success',
-            'message' => '',
-            'data' => $res_po
-        ]);
         try {
             $PurchaseOrder = PurchaseOrder::where('po_number', $res_po)->first();
 
             $this->markAsSeen($PurchaseOrder->po_number);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrder
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function downloadPDFForSupplier($po_number)
+    {
+        $res_po = Crypt::decryptString($po_number);
+        try {
+            $PurchaseOrder = $this->downloadPDF($res_po);
+
+            $this->markAsDownloaded($res_po);
 
             return response()->json([
                 'type' => 'success',

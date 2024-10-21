@@ -7,6 +7,7 @@ use App\Imports\SuppliersImport;
 use App\Supplier;
 use Carbon\Carbon;
 use Excel;
+use App\Exports\SuppliersExport;
 
 class SupplierController extends Controller
 {
@@ -207,5 +208,33 @@ class SupplierController extends Controller
         }
 
         return $number;
+    }
+
+    public function export(Request $request)
+    {
+        $request->validate([
+            'columns' => 'required',
+            'sort' => 'required|string',
+            'order' => 'string',
+        ]);
+
+        $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $order = ($request->order != null) ? $request->order : 'ascend';
+
+        $suppliers = Supplier::where(function ($query) use ($keyword, $request) {
+            if (!empty($keyword)) {
+                foreach ($request->columns as $index => $column) {
+                    if ($index == 0) {
+                        $query->where($column, 'like', '%' . $keyword . '%');
+                    } else {
+                        $query->orWhere($column, 'like', '%' . $keyword . '%');
+                    }
+                }
+            }
+        })
+            ->orderBy($request->sort, $order == 'ascend' ? 'asc' : 'desc')
+            ->get();
+
+        return Excel::download(new SuppliersExport($suppliers), 'suppliers.xlsx');
     }
 }

@@ -52,6 +52,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/supplier/{id}', 'SupplierController@store');
         Route::delete('/supplier/{id}', 'SupplierController@destroy');
         Route::post('/supplierimport', 'SupplierController@import');
+        Route::get('/supplierexport', 'SupplierController@export');
         #endregion
 
         #region Master Material
@@ -217,6 +218,7 @@ Route::get('/qr-get-data', 'QrController@getData');
 Route::get('/readqrcode', 'InspectionController@qrDecode');
 
 Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
+Route::get('/d/{po_number}/download', 'PurchaseOrderController@downloadPDFForSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 
