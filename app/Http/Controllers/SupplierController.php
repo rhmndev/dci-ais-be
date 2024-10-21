@@ -127,10 +127,11 @@ class SupplierController extends Controller
 
                 foreach ($Excels as $Excel) {
 
-                    if ($Excel['name'] != null) {
+                    if ($Excel['code'] != null) {
 
                         //store your file into database
-                        $Supplier = Supplier::firstOrNew(['name' => $Excel['name']]);
+                        $Supplier = Supplier::firstOrNew(['code' => $Excel['code']]);
+                        $Supplier->code = $this->stringtoupper($Excel['code']);
                         $Supplier->name = $this->stringtoupper($Excel['name']);
                         $Supplier->address = $Excel['address'];
                         $Supplier->phone = $Excel['phone'];
@@ -161,7 +162,7 @@ class SupplierController extends Controller
 
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: ' . $e,
+                "message" => 'err: ' . $e->getMessage(),
 
             ], 400);
         }
