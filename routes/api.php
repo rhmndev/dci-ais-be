@@ -187,8 +187,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
-        Route::apiResource('purchase-order-signers', 'PurchaseOrderSignerController');
-
+        Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
         // Email Area
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
         Route::post('/send-test-email', 'EmailController@sendTestEmail');

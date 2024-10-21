@@ -26,13 +26,55 @@ class PurchaseOrderSignerController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'type' => 'required|in:knowed,checked,approved',
-            'user_id' => 'required|string',
-        ]);
+        // TODO Bug when remove user not destroyed in db
+        $allTypes = ['knowed', 'checked', 'approved'];
+        $payload = $request->all();
+        try {
+            $providedTypes = collect($payload)->pluck('type')->toArray();
+            $missingTypes = array_diff($allTypes, $providedTypes);
 
-        $signer = PurchaseOrderSigner::create($request->all());
-        return response()->json($signer, 201);
+            foreach ($payload as $signerData) {
+                $request->validate([
+                    '*.type' => 'required|in:knowed,checked,approved',
+                    '*.user_ids' => 'required|array',
+                ]);
+
+                foreach ($signerData['user_ids'] as $user_id) {
+                    $existingSigner = PurchaseOrderSigner::where('type', $signerData['type'])
+                        ->where('user_id', $user_id)
+                        ->first();
+
+                    if ($existingSigner) {
+                        $existingSigner->update([
+                            'updated_at' => now(),
+                        ]);
+                    } else {
+                        PurchaseOrderSigner::create([
+                            'type' => $signerData['type'],
+                            'user_id' => $user_id,
+                        ]);
+                    }
+                }
+            }
+
+            // Handle deletion of missing types
+            if (!empty($missingTypes)) {
+                // Delete signers of missing types for this Purchase Order
+                PurchaseOrderSigner::whereIn('type', $missingTypes)->delete();
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'data' => '',
+                'message' => 'Signers created successfully'
+            ], 201);
+        } catch (\Throwable $th) {
+
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+            ], 500);
+        }
     }
 
     /**
