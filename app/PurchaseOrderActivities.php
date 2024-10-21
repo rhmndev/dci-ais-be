@@ -19,7 +19,7 @@ class PurchaseOrderActivities extends Model
     public function getAllData($keyword, $columns, $sort, $order)
     {
 
-        $query = PurchaseOrderActivities::query();
+        $query = PurchaseOrder::query();
 
         if (!empty($keyword)) {
 
@@ -44,8 +44,7 @@ class PurchaseOrderActivities extends Model
 
     public function getData($keyword, $columns, $perpage, $page, $sort, $order)
     {
-
-        $query = PurchaseOrderActivities::query();
+        $query = PurchaseOrder::query();
         $skip = $perpage * ($page - 1);
 
         if (!empty($keyword)) {
@@ -63,10 +62,22 @@ class PurchaseOrderActivities extends Model
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
+        $data = $query->with(['purchaseOrderActivity' => function ($q) {
+            $q->select('po_number', 'seen', 'last_seen_at', 'downloaded', 'last_downloaded_at');
+        }])->take((int)$perpage)->skip((int)$skip)->get();
 
-        $data = $query->take((int)$perpage)->skip((int)$skip)->get();
+        $transformedData = $data->map(function ($item) {
+            return $item->purchaseOrderActivity ?? (object)[
+                '_id' => $item->_id,
+                'po_number' => $item->po_number,
+                'seen' => 0,
+                'last_seen_at' => null,
+                'downloaded' => 0,
+                'last_downloaded_at' => null
+            ];
+        });
 
-        return $data;
+        return $transformedData;
     }
 
     public function purchaseOrder()

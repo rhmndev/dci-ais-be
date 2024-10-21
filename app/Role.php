@@ -23,8 +23,11 @@ class Role extends Model
 
             $query = $query->where('name', 'Vendor');
         } else {
-
-            $query = $query->where('name', 'Admin');
+            if ($type == 0) {
+                $query = $query->where('name', 'Admin');
+            } else {
+                $query = $query->where('name', 'Purchasing');
+            }
         }
 
         return $query->first();

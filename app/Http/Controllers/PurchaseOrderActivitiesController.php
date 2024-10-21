@@ -15,6 +15,7 @@ class PurchaseOrderActivitiesController extends Controller
             'page' => 'required|numeric',
             'sort' => 'required|string',
             'order' => 'string',
+            'showall' => 'boolean'
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';

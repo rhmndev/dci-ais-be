@@ -41,7 +41,19 @@ class UserSeeder extends Seeder
                 'vendor_name' => 'INDONESIA STEEL TUBE WORKS PT',
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
-            ]
+            ],
+            [
+                'username' => 'purchasing',
+                'full_name' => 'Purchasing',
+                'department' => 'Purchasing',
+                'phone_number' => '+6281234567892',
+                'npk' => '999988',
+                'email' => 'purchasing@example.com',
+                'password' => Hash::make('password'),
+                'type' => 3,
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {
@@ -58,19 +70,18 @@ class UserSeeder extends Seeder
             $user->password = $data['password'];
             $user->type = $data['type'];
 
-            if ($data['type'] == 1){
+            if ($data['type'] == 1) {
 
                 $role = $role->getUserRole($data['type']);
-            
+
                 $user->role_id = $role->id;
                 $user->role_name = $role->name;
                 $user->vendor_code = $data['vendor_code'];
                 $user->vendor_name = $data['vendor_name'];
-
             } else {
 
                 $role = $role->getUserRole($data['type']);
-            
+
                 $user->role_id = $role->id;
                 $user->role_name = $role->name;
                 $user->vendor_code = null;
@@ -82,7 +93,6 @@ class UserSeeder extends Seeder
             $user->created_by = $data['created_by'];
             $user->updated_by = $data['updated_by'];
             $user->save();
-
         }
     }
 }

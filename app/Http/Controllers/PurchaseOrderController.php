@@ -358,6 +358,57 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function downloadMultiplePDF(Request $request)
+    {
+        $request->validate([
+            'po_numbers' => 'required|array',
+        ]);
+
+        try {
+            $zip = new \ZipArchive();
+            $zipFileName = 'purchase_orders_' . date('YmdHis') . '.zip';
+            $zipPath = storage_path('app/public/temp/' . $zipFileName);
+
+            if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($request->po_numbers as $po_number) {
+                    $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+
+                    if ($purchaseOrder) {
+                        $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => $purchaseOrder]);
+                        $pdfFileName = $purchaseOrder->po_number . '.pdf';
+                        $pdf->save(storage_path('app/public/temp/' . $pdfFileName));
+
+                        $zip->addFile(storage_path('app/public/temp/' . $pdfFileName), $pdfFileName);
+                    }
+                }
+
+                $zip->close();
+
+                // Delete temporary PDF files
+                foreach ($request->po_numbers as $po_number) {
+                    $pdfFileName = $po_number . '.pdf';
+                    if (file_exists(storage_path('app/public/temp/' . $pdfFileName))) {
+                        unlink(storage_path('app/public/temp/' . $pdfFileName));
+                    }
+                }
+
+                return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+            } else {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Error creating zip file',
+                    'data' => null
+                ], 500);
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
     public function listNeedSigned(Request $request)
     {
         $request->validate([

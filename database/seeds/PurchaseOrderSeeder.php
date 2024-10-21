@@ -22,7 +22,7 @@ class PurchaseOrderSeeder extends Seeder
             switch ($type) {
                 case 'unapproved':
                     $checkedBy = "39748";
-                    $knowedBy = "39748";
+                    $knowedBy = "999988";
                     $approvedBy = "39748";
                     $dateChecked = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     $dateKnowed = Carbon::now()->format('Y-m-d\TH:i:s.vP');
@@ -34,7 +34,7 @@ class PurchaseOrderSeeder extends Seeder
 
                 case 'approved':
                     $checkedBy = "39748";
-                    $knowedBy = "39748";
+                    $knowedBy = "999988";
                     $approvedBy = "39748";
                     $dateChecked = Carbon::now()->format('Y-m-d\TH:i:s.vP');
                     $dateKnowed = Carbon::now()->format('Y-m-d\TH:i:s.vP');
@@ -65,7 +65,7 @@ class PurchaseOrderSeeder extends Seeder
                 'delivery_date' => Carbon::now()->format('Y-m-d\TH:i:s.vP'),
                 'delivery_address' => $faker->address(),
                 'supplier_id' => $faker->uuid(), // Assuming supplier_id is a UUID
-                'supplier_code' => $faker->randomElement(['710519', '988938', '956459', '147510']), // Assuming supplier_id is a UUID
+                'supplier_code' => $faker->randomElement(['405932', '459571', '997089', '325612']), // Assuming supplier_id is a UUID
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 100, 10000),
                 'purchase_currency_type' => "IDR",
@@ -98,7 +98,7 @@ class PurchaseOrderSeeder extends Seeder
         for ($j = 0; $j < $numberOfItems; $j++) {
             PurchaseOrderItem::create([
                 'purchase_order_id' => $purchaseOrder->_id,
-                'material_id' => $faker->randomElement(['622ab8b35a0300005f001fae', '622ab8b35a0300005f001fb1', '622ab8b35a0300005f001fb0', '622ab8b35a0300005f001fb2', '622ab8b35a0300005f001fb3', '622ab8b35a0300005f001fb4', '622ab8b35a0300005f001fb5']), // Replace with your material ID generation logic
+                'material_id' => $faker->randomElement(['622ab8b35a0300005f001fae', '622ab8b35a0300005f001faf', '622ab8b35a0300005f001fb0', '622ab8b35a0300005f001fb1', '622ab8b35a0300005f001fb2', '622ab8b35a0300005f001fb3']), // Replace with your material ID generation logic
                 'quantity' => $faker->randomNumber(2), // Random 2-digit quantity
                 'unit_type' => $faker->randomElement(['pcs', 'pce', 'kg', 'L']), // Random unit type
                 'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00

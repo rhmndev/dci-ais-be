@@ -187,6 +187,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
+        Route::apiResource('purchase-order-signers', 'PurchaseOrderSignerController');
 
         // Email Area
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
@@ -221,5 +222,3 @@ Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
 Route::get('/d/{po_number}/download', 'PurchaseOrderController@downloadPDFForSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
-
-Route::apiResource('purchase-order-signers', 'PurchaseOrderSignerController');
