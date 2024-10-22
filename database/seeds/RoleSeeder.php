@@ -44,6 +44,21 @@ class RoleSeeder extends Seeder
                 'updated_by' => 'seeder'
             ],
             [
+                'name' => 'Supplier',
+                'description' => 'Supplier',
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
                 'name' => 'Purchasing',
                 'description' => 'Purchasing',
                 'permissions' => $permissions->map(function ($perm) {

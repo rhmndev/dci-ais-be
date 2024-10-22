@@ -167,6 +167,7 @@ class QrController extends Controller
                 }
                 return response()->json([
                     'type' => 'success',
+                    'message' => 'Data fetched successfully.',
                     'data' => $result
                 ], 200);
             }

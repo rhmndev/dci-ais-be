@@ -26,6 +26,8 @@ class PurchaseOrderController extends Controller
             'order' => 'string',
         ]);
 
+        $user = auth()->user();
+
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
 
@@ -33,9 +35,17 @@ class PurchaseOrderController extends Controller
 
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
-
             $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order);
             $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
+
+            if ($user->supplier) {
+                $resultAlls = $PurchaseOrder->where('supplier_code', $user->supplier->code)
+                    ->get();
+                $results = $PurchaseOrder->where('supplier_code', $user->supplier->code)
+                    ->skip($request->perpage * ($request->page - 1))
+                    ->take($request->perpage)
+                    ->get();
+            }
 
             return response()->json([
                 'type' => 'success',
@@ -48,7 +58,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
 
                 'type' => 'failed',
-                'message' => 'Err: ' . $e . '.',
+                'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
 
             ], 400);

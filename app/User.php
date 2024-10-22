@@ -4,9 +4,11 @@ namespace App;
 
 use Jenssegers\Mongodb\Auth\User as Authenticable;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticable
 {
+    use HasRoles;
 
     protected $hidden = [
         'password',
@@ -31,5 +33,10 @@ class User extends Authenticable
         $data = $query->take(10)->get();
 
         return $data;
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
     }
 }

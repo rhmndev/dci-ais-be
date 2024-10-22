@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Customer;
 use App\Inspection;
 use App\Material;
+use App\PartComponent;
 use App\Qr;
 use App\SupplierPart;
 use Illuminate\Support\Str;
@@ -86,7 +87,6 @@ class InspectionController extends Controller
             $MaterialData = Material::findOrFail($request->part_component_id);
             $material_name = isset($MaterialData->description) ? $MaterialData->description : $request->part_component_id;
             $Inspection->lot_supplier = $request->lot_supplier;
-
             $SupplierData = SupplierPart::where('part_id', $request->part_component_id)->where('part_number', $request->part_component_number)->first();
 
             $Inspection->supplier_name = isset($SupplierData->supplier) ? $SupplierData->supplier->name : $SupplierData->supplier_id;
@@ -125,7 +125,7 @@ class InspectionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'failed',
-                'message' => 'Err: ' . $e . '.',
+                'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
             ], 400);
         }

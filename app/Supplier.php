@@ -17,7 +17,8 @@ class Supplier extends Model
         'contact',
         'currency',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'user_id',
     ];
 
     public function getAllData($keyword, $columns, $sort, $order)
@@ -81,5 +82,10 @@ class Supplier extends Model
     public function purchaseOrders()
     {
         return $this->belongsTo(PurchaseOrder::class, 'supplier_code', 'code');
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class);
     }
 }

@@ -81,7 +81,7 @@ class PartComponentController extends Controller
             'name' => 'required',
             'number' => 'required|string',
             'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
-            'description' => 'string'
+            'description' => 'nullable|string'
         ]);
 
         try {

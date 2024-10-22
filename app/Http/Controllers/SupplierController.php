@@ -8,6 +8,8 @@ use App\Supplier;
 use Carbon\Carbon;
 use Excel;
 use App\Exports\SuppliersExport;
+use App\Role;
+use App\User;
 
 class SupplierController extends Controller
 {
@@ -79,6 +81,19 @@ class SupplierController extends Controller
 
             $Supplier->save();
 
+            $user = User::firstOrNew(['username' => $request->email]);
+            $user->email = $request->email;
+            $user->full_name = $Supplier->name;
+            $user->password = bcrypt($request->email);
+            $user->type = 2;
+            $user->role_id = Role::where('name', 'Supplier')->first()->id;
+            $user->role_name = 'Supplier';
+            $user->vendor_code = $request->code;
+            $user->vendor_name = $Supplier->name;
+            $user->created_by = auth()->user()->username;
+            $user->updated_by = auth()->user()->username;
+            $Supplier->user()->save($user);
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Data saved successfully!',
@@ -89,7 +104,7 @@ class SupplierController extends Controller
             return response()->json([
 
                 'type' => 'failed',
-                'message' => 'Err: ' . $e . '.',
+                'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
 
             ], 400);

@@ -30,6 +30,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/user/{id}', 'UserController@store');
         Route::delete('/user/{id}', 'UserController@destroy');
         Route::post('/userimport', 'UserController@import');
+        Route::get('/user/c/permissions', 'UserController@getMyPermissions');
         #endregion
 
         #region Master Vendor

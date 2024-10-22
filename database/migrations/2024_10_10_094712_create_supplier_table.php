@@ -25,6 +25,7 @@ class CreateSupplierTable extends Migration
             $table->string('currency');
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
+            $table->string('user_id')->nullable();
             $table->timestamps();
         });
     }

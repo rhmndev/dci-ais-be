@@ -364,4 +364,32 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function getMyPermissions(Request $request)
+    {
+        try {
+            $user = $request->user(); // Get the authenticated user
+
+            if ($user) {
+                $permissions = $user->getAllPermissions()->pluck('name');
+                return response()->json([
+                    'type' => 'success',
+                    'message' => 'User permissions retrieved successfully.',
+                    'data' => $permissions,
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User not authenticated.',
+                    'data' => null,
+                ], 401);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error retrieving user permissions: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
 }

@@ -37,6 +37,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->string('purchase_agreement_by');
             $table->date('approved_at');
             $table->boolean('is_approved')->default(false);
+            $table->decimal('subtotal');
             $table->string('tax')->nullable();
             $table->string('tax_type')->nullable();
             $table->string('status')->default('pending');
