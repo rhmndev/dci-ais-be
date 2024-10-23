@@ -23,7 +23,8 @@
         "maatwebsite/excel": "^3.1",
         "nesbot/carbon": "^2.51",
         "simplesoftwareio/simple-qrcode": "^3.0",
-        "spatie/laravel-permission": "^5.3"
+        "spatie/laravel-permission": "^5.3",
+        "twilio/sdk": "^8.3"
     },
     "require-dev": {
         "facade/ignition": "^1.4",

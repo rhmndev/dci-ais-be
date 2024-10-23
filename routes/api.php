@@ -223,3 +223,5 @@ Route::get('/d/{po_number}/download', 'PurchaseOrderController@downloadPDFForSup
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');
+
+Route::get('/send-whatsapp', 'WhatsAppController@sendWhatsAppMessage');

@@ -117,7 +117,7 @@ class EmailController extends Controller
         }
     }
 
-    public function sendEmailPurchaseOrderConfirmation(Request $request, $po_number)
+    public static function sendEmailPurchaseOrderConfirmation(Request $request, $po_number)
     {
         $noPO = $po_number;
         try {

@@ -512,7 +512,7 @@ class PurchaseOrderController extends Controller
             ]);
         }
     }
-    public function signedAsApproved($id)
+    public function signedAsApproved(Request $request, $id)
     {
         try {
             $PurchaseOrder = PurchaseOrder::findOrFail($id);
@@ -522,6 +522,13 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder->is_approved = 1;
             $PurchaseOrder->status = "approved";
             $PurchaseOrder->save();
+
+            // Send an email notification
+            EmailController::sendEmailPurchaseOrderConfirmation($request, $PurchaseOrder->po_number);
+
+            $msg = $PurchaseOrder->po_number . ' sudah di approved dan PO sudah dikirim ke supplier.';
+            $receipt_number = 'whatsapp:+12345';
+            WhatsAppController::sendWhatsAppMessage($request, $receipt_number, $msg);
 
             return response()->json([
                 'type' => 'success',
