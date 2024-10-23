@@ -134,12 +134,21 @@ class PurchaseOrderController extends Controller
 
     public function show(Request $request, $id)
     {
-        $PurchaseOrder = PurchaseOrder::findOrFail($id);
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
 
-        return response()->json([
-            'type' => 'success',
-            'data' => $PurchaseOrder
-        ], 200);
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => new PurchaseOrderResource($PurchaseOrder)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     public function showPO(Request $request, $po_number)
