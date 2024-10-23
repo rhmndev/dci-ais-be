@@ -404,16 +404,12 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    public function listNeedSigned(Request $request)
+    public function listNeedSigned(Request $request, $approvalType)
     {
-        $request->validate([
-            'type'
-        ]);
-
         try {
             $PurchaseOrder = "";
 
-            switch ($request->type) {
+            switch ($approvalType) {
                 case "knowed":
                     $PurchaseOrder = PurchaseOrder::whereNull('purchase_knowed_by')
                         ->orWhere(function ($query) {
@@ -448,7 +444,6 @@ class PurchaseOrderController extends Controller
                         'data' => "Type not found!"
                     ]);
             }
-
 
             return response()->json([
                 'type' => 'success',
