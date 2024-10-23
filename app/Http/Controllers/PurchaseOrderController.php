@@ -414,7 +414,8 @@ class PurchaseOrderController extends Controller
                     $PurchaseOrder = PurchaseOrder::whereNull('purchase_knowed_by')
                         ->orWhere(function ($query) {
                             $query->where('purchase_knowed_by', '!=', null)
-                                ->where('purchase_knowed_by', '=', '');
+                                ->where('purchase_knowed_by', '=', '')
+                                ->where('is_checked', '=', 1);
                         })
                         ->get();
                     break;
@@ -432,7 +433,9 @@ class PurchaseOrderController extends Controller
                     $PurchaseOrder = PurchaseOrder::whereNull('purchase_agreement_by')
                         ->orWhere(function ($query) {
                             $query->where('purchase_agreement_by', '!=', null)
-                                ->where('purchase_agreement_by', '=', '');
+                                ->where('purchase_agreement_by', '=', '')
+                                ->where('is_knowed', '=', 1)
+                                ->where('is_checked', '=', 1);
                         })
                         ->get();
                     break;
