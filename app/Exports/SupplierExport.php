@@ -7,7 +7,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
 
-class SupplierExport implements FromCollection
+class SupplierExport implements FromCollection, WithHeadings
 {
     protected $suppliers;
 
@@ -44,7 +44,6 @@ class SupplierExport implements FromCollection
             'Email',
             'Contact',
             'Currency',
-            // Add other headings as needed
         ];
     }
 }
