@@ -137,6 +137,8 @@ class PurchaseOrderController extends Controller
         try {
             $PurchaseOrder = PurchaseOrder::findOrFail($id);
 
+            $this->markAsSeen($PurchaseOrder->po_number);
+
             return response()->json([
                 'type' => 'success',
                 'message' => '',
@@ -307,18 +309,19 @@ class PurchaseOrderController extends Controller
             ]);
         }
     }
-    public function downloadPDFForSupplier($po_number)
+    public function downloadPDFForSupplier($po_id)
     {
-        $res_po = Crypt::decryptString($po_number);
+        // $res_po = Crypt::decryptString($po_number);
+        $res_po = PurchaseOrder::findOrFail($po_id);
         try {
-            $this->downloadPDF($res_po);
+            $this->downloadPDF($res_po->po_number);
 
-            $this->markAsDownloaded($res_po);
+            $this->markAsDownloaded($res_po->po_number);
 
             return response()->json([
                 'type' => 'success',
                 'message' => 'PDF downloaded successfully',
-                'data' => ['po_number' => $res_po]
+                'data' => ['po_number' => $res_po->po_number]
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
