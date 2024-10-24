@@ -33,6 +33,9 @@ class PurchaseOrder extends Model
         'status',
         'is_send_email_to_supplier',
         'notes',
+        'notes_from_checker',
+        'notes_from_knower',
+        'notes_from_approver',
         'created_by',
         'updated_by',
     ];
