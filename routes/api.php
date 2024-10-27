@@ -47,6 +47,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Master Supplier
         Route::get('/supplier', 'SupplierController@index');
         Route::get('/supplier/{id}', 'SupplierController@show');
+        Route::get('/supplier/g/{code}', 'SupplierController@showByCode');
         Route::get('/supplierlist', 'SupplierController@list');
         Route::get('/suppliersync', 'SupplierController@SyncSAP');
         Route::post('/supplier', 'SupplierController@store');
@@ -186,6 +187,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/knowed/{id}/unconfirm', 'PurchaseOrderController@signedAsKnowedUnconfirmed');
         Route::post('/purchase-order/s/checked/{id}/unconfirm', 'PurchaseOrderController@signedAsCheckedUnconfirmed');
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
+
+        Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');

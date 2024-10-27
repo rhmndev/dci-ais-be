@@ -332,18 +332,12 @@ class PurchaseOrderController extends Controller
             return view('purchase_orders.qr-label', [
                 'po' => $po,
                 'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
-            ]);
-
-            return response()->json([
-                'type' => 'success',
-                'message' => 'QR Printed successfully',
-                'data' => ['po_number' => $res_po->po_number, 'res' => $res]
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Error print QR Label: ' . $th->getMessage(),
-                'data' => null
+                'data' => $res_po->po_number
             ], 500);
         }
     }

@@ -11,22 +11,17 @@ class PurchaseOrder extends Model
         'po_number',
         'user',
         'user_npk',
-        'order_date',
         'delivery_email',
-        'delivery_date',
         'delivery_address',
         'supplier_id',
         'supplier_code',
         'total_item_quantity',
         'total_amount',
         'purchase_checked_by',
-        'checked_at',
         'is_checked',
         'purchase_knowed_by',
-        'knowed_at',
         'is_knowed',
         'purchase_agreement_by',
-        'approved_at',
         'is_approved',
         'tax',
         'tax_type',
@@ -39,6 +34,14 @@ class PurchaseOrder extends Model
         'qr_uuid',
         'created_by',
         'updated_by',
+    ];
+
+    protected $dates = [
+        'order_date',
+        'delivery_date',
+        'checked_at',
+        'knowed_at',
+        'approved_at',
     ];
 
     public function getAllData($keyword, $columns, $sort, $order)

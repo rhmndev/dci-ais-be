@@ -136,6 +136,16 @@ class SupplierController extends Controller
         ]);
     }
 
+    public function showByCode(Request $request, $code)
+    {
+        $Supplier = Supplier::where('code', $code)->first();
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $Supplier
+        ]);
+    }
+
     public function import(Request $request)
     {
         $data = array();
