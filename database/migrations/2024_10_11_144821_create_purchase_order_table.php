@@ -46,6 +46,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->longText('notes_from_checker')->nullable();
             $table->longText('notes_from_knower')->nullable();
             $table->longText('notes_from_approver')->nullable();
+            $table->string('qr_uuid')->nullable();
             $table->string('created_by');
             $table->string('updated_by');
             $table->timestamps();

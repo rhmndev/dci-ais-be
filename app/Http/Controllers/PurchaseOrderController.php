@@ -12,6 +12,8 @@ use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 use Barryvdh\DomPDF\Facade as PDF;
 
 class PurchaseOrderController extends Controller
@@ -309,6 +311,42 @@ class PurchaseOrderController extends Controller
             ]);
         }
     }
+    public function printLabelQRForSupplier($po_id)
+    {
+        $res_po = PurchaseOrder::findOrFail($po_id);
+        try {
+            // $res = $this->printQrLabel($res_po->po_number);
+            $po = PurchaseOrder::where('po_number', $res_po->po_number)->firstOrFail();
+
+            // Create the QR code instance
+            $qrCode = QrCode::create($po->po_number);
+            $qrCode->setSize(300); // Set QR code size
+
+            // Create the writer to output as PNG
+            $writer = new PngWriter();
+
+            // Generate the QR code image data
+            $qrCodeData = $writer->write($qrCode);
+
+            // Pass the QR code image data to your view
+            return view('purchase_orders.qr-label', [
+                'po' => $po,
+                'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
+            ]);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'QR Printed successfully',
+                'data' => ['po_number' => $res_po->po_number, 'res' => $res]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error print QR Label: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
     public function downloadPDFForSupplier($po_id)
     {
         // $res_po = Crypt::decryptString($po_number);
@@ -330,6 +368,27 @@ class PurchaseOrderController extends Controller
                 'data' => null
             ], 500);
         }
+    }
+
+    public function printQrLabel($poNumber)
+    {
+        $po = PurchaseOrder::where('po_number', $poNumber)->firstOrFail();
+
+        // Create the QR code instance
+        $qrCode = QrCode::create($po->po_number);
+        $qrCode->setSize(300); // Set QR code size
+
+        // Create the writer to output as PNG
+        $writer = new PngWriter();
+
+        // Generate the QR code image data
+        $qrCodeData = $writer->write($qrCode);
+
+        // Pass the QR code image data to your view
+        return view('purchase_orders.qr-label', [
+            'po' => $po,
+            'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
+        ]);
     }
 
     public function downloadPDF($po_number)

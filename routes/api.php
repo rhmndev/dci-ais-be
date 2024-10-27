@@ -223,6 +223,7 @@ Route::get('/readqrcode', 'InspectionController@qrDecode');
 
 Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
 Route::get('/d/{po_id}/download', 'PurchaseOrderController@downloadPDFForSupplier');
+Route::get('/d/{po_id}/print-qr-label', 'PurchaseOrderController@printLabelQRForSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');

@@ -36,6 +36,7 @@ class PurchaseOrder extends Model
         'notes_from_checker',
         'notes_from_knower',
         'notes_from_approver',
+        'qr_uuid',
         'created_by',
         'updated_by',
     ];

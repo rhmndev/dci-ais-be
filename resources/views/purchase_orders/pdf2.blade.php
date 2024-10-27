@@ -221,8 +221,10 @@
                 @if($purchaseOrder->is_checked)
                   <h4>SIGNED</h4>
                   <small>{{date('d.m.Y', strtotime($purchaseOrder->checked_at))}}</small><br>
-                  <small>{{$purchaseOrder->user_checked['full_name']}}</small><br>
-                  <small>{{$purchaseOrder->user_checked['department']}}</small>
+                  <small>DWA</small><br>
+                  <small>Dept.Head</small>
+                  {{-- <small>{{$purchaseOrder->user_checked['full_name']}}</small><br>
+                  <small>{{$purchaseOrder->user_checked['department']}}</small> --}}
                 @else
                 <br>
                 <br>
@@ -233,8 +235,10 @@
                 @if($purchaseOrder->is_knowed)
                   <h4>SIGNED</h4>
                   <small>{{date('d.m.Y', strtotime($purchaseOrder->knowed_at))}}</small><br>
-                  <small>{{$purchaseOrder->user_knowed['full_name']}}</small><br>
-                  <small>{{$purchaseOrder->user_knowed['department']}}</small>
+                  <small>EKO</small><br>
+                  <small>DIRECTOR</small>
+                  {{-- <small>{{$purchaseOrder->user_knowed['full_name']}}</small><br>
+                  <small>{{$purchaseOrder->user_knowed['department']}}</small> --}}
                 @else
 
                 @endif
@@ -243,8 +247,10 @@
                 @if($purchaseOrder->is_approved)
                 <h4>SIGNED</h4>
                 <small>{{date('d.m.Y', strtotime($purchaseOrder->approved_at))}}</small><br>
-                <small>{{$purchaseOrder->user_approved['full_name']}}</small><br>
-                <small>{{$purchaseOrder->user_approved['department']}}</small>
+                <small>EKO</small><br>
+                <small>PRESDIR</small>
+                {{-- <small>{{$purchaseOrder->user_approved['full_name']}}</small><br>
+                <small>{{$purchaseOrder->user_approved['department']}}</small> --}}
                 @endif
               </td>
           </tr>
