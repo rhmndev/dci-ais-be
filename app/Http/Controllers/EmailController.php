@@ -258,7 +258,7 @@ class EmailController extends Controller
                     'deliveryDate' => $POData->delivery_date,
                     'totalAmount' => $POData->total_amount,
                     'orderNumber' => $noPO,
-                    'purchaseOrderLink' => env('VENDOR_URL') . '/?view=' . Crypt::encryptString($noPO),
+                    'purchaseOrderLink' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
                     // 'cc' => ['fachriansyahmni@gmail.com', 'fachriansyah.10119065@mahasiswa.unikom.ac.id'],
                     // 'bcc' => $bccTo,
                 ];

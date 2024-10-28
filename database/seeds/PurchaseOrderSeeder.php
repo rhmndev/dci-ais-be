@@ -21,7 +21,8 @@ class PurchaseOrderSeeder extends Seeder
         PurchaseOrder::truncate();
         PurchaseOrderItem::truncate();
         $faker = Faker::create();
-        for ($i = 0; $i < 1000; $i++) {
+        $totalData = 1000;
+        for ($i = 0; $i < $totalData; $i++) {
             $type = $faker->randomElement(['pending', 'unapproved', 'approved']);
             switch ($type) {
                 case 'unapproved':
@@ -95,6 +96,9 @@ class PurchaseOrderSeeder extends Seeder
             ]);
 
             $this->createPurchaseOrderItems($purchaseOrder, $faker);
+
+            $percentage = ($i + 1) / $totalData * 100;
+            $this->command->info("Inserted " . ($i + 1) . " of " . $totalData . " data. (" . number_format($percentage, 2) . "%)");
         }
     }
 

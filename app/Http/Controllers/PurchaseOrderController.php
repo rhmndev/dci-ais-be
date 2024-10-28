@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use MongoDB\BSON\UTCDateTime;
+use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
 
 class PurchaseOrderController extends Controller
@@ -195,7 +197,7 @@ class PurchaseOrderController extends Controller
                     'po_id' => $po_id,
                     'po_number' => $po_number,
                     'seen' => 1,
-                    'last_seen_at' => new \MongoDB\BSON\UTCDateTime(),
+                    'last_seen_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                     'downloaded' => 0,
                     'last_downloaded_at' => ''
                 ]);
@@ -230,9 +232,9 @@ class PurchaseOrderController extends Controller
                     'po_id' => $purchaseOrderActivity,
                     'po_number' => $po_number,
                     'seen' => 0,
-                    'last_seen_at' => '',
+                    'last_seen_at' => null,
                     'downloaded' => 1,
-                    'last_downloaded_at' => new \MongoDB\BSON\UTCDateTime()
+                    'last_downloaded_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3))
                 ]);
             }
 
