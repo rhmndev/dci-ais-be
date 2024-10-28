@@ -315,13 +315,18 @@ class PurchaseOrderController extends Controller
     }
     public function printLabelQRForSupplier($po_id)
     {
-        $res_po = PurchaseOrder::findOrFail($po_id);
         try {
+            $res_po = PurchaseOrder::findOrFail($po_id);
             // $res = $this->printQrLabel($res_po->po_number);
-            $po = PurchaseOrder::where('po_number', $res_po->po_number)->firstOrFail();
+            // $po = PurchaseOrder::where('po_number', $res_po->po_number)->firstOrFail();
 
             // Create the QR code instance
-            $qrCode = QrCode::create($po->po_number);
+            $qrCode = QrCode::create($res_po->po_number);
+            return response()->json([
+                'type' => 'success',
+                'message' => "asdasdasd",
+                'data' => $qrCode
+            ], 500);
             $qrCode->setSize(300); // Set QR code size
 
             // Create the writer to output as PNG
@@ -332,7 +337,7 @@ class PurchaseOrderController extends Controller
 
             // Pass the QR code image data to your view
             return view('purchase_orders.qr-label', [
-                'po' => $po,
+                'po' => $res_po,
                 'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
             ], 200);
         } catch (\Throwable $th) {
@@ -478,6 +483,8 @@ class PurchaseOrderController extends Controller
             ], 500);
         }
     }
+
+    public function createTravelDocumentPO(Request $request) {}
 
     public function listNeedSigned(Request $request, $approvalType)
     {

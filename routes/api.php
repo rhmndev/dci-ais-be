@@ -195,7 +195,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         // Email Area
         Route::get('/email-settings', 'EmailController@index');
         Route::post('/email-settings', 'EmailController@store');
-        Route::post('/email-settings/g/templates', 'EmailController@showTemplate');
+        Route::get('/email-settings/g/templates', 'EmailController@showTemplate');
+        Route::put('/email-settings/u/templates/{id}', 'EmailController@updateTemplate');
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
 });
