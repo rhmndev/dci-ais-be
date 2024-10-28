@@ -73,6 +73,9 @@
 </head>
 
 <body>
+    @if($purchaseOrder->status == "unapproved")
+    <div class="watermark">UNAPPROVED</div>
+    @endif
   {{-- <div class="watermark">{{$purchaseOrder->status}}</div> --}}
 
   <table class="w-full" style="border: 0">
@@ -217,9 +220,11 @@
               <td class="text-center">
                 @if($purchaseOrder->is_checked)
                   <h4>SIGNED</h4>
-                  <small>{{$purchaseOrder->checked_at}}</small><br>
-                  {{-- <small>{{$purchaseOrder->user_checked->full_name}}</small><br> --}}
-                  {{-- <small>{{$purchaseOrder->user_checked->department}}</small> --}}
+                  <small>{{date('d.m.Y', strtotime($purchaseOrder->checked_at))}}</small><br>
+                  <small>DWA</small><br>
+                  <small>Dept.Head</small>
+                  {{-- <small>{{$purchaseOrder->user_checked['full_name']}}</small><br>
+                  <small>{{$purchaseOrder->user_checked['department']}}</small> --}}
                 @else
                 <br>
                 <br>
@@ -229,9 +234,11 @@
               <td class="text-center">
                 @if($purchaseOrder->is_knowed)
                   <h4>SIGNED</h4>
-                  <small>{{$purchaseOrder->knowed_at}}</small><br>
-                  {{-- <small>{{$purchaseOrder->user_knowed->full_name}}</small><br>
-                  <small>{{$purchaseOrder->user_knowed->department}}</small> --}}
+                  <small>{{date('d.m.Y', strtotime($purchaseOrder->knowed_at))}}</small><br>
+                  <small>EKO</small><br>
+                  <small>DIRECTOR</small>
+                  {{-- <small>{{$purchaseOrder->user_knowed['full_name']}}</small><br>
+                  <small>{{$purchaseOrder->user_knowed['department']}}</small> --}}
                 @else
 
                 @endif
@@ -239,16 +246,18 @@
               <td class="text-center">
                 @if($purchaseOrder->is_approved)
                 <h4>SIGNED</h4>
-                <small>{{$purchaseOrder->approved_at}}</small><br>
-                {{-- <small>{{$purchaseOrder->user_approved->full_name}}</small><br>
-                <small>{{$purchaseOrder->user_approved->department}}</small> --}}
+                <small>{{date('d.m.Y', strtotime($purchaseOrder->approved_at))}}</small><br>
+                <small>EKO</small><br>
+                <small>PRESDIR</small>
+                {{-- <small>{{$purchaseOrder->user_approved['full_name']}}</small><br>
+                <small>{{$purchaseOrder->user_approved['department']}}</small> --}}
                 @endif
               </td>
           </tr>
         </tfoot>
     </table>
 
-    <small>Dicetak: </small>
+    <small>Dicetak: {{ date('d.m.Y H:i:s') }}</small>
 
 </body>
 

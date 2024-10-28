@@ -47,6 +47,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         #region Master Supplier
         Route::get('/supplier', 'SupplierController@index');
         Route::get('/supplier/{id}', 'SupplierController@show');
+        Route::get('/supplier/g/{code}', 'SupplierController@showByCode');
         Route::get('/supplierlist', 'SupplierController@list');
         Route::get('/suppliersync', 'SupplierController@SyncSAP');
         Route::post('/supplier', 'SupplierController@store');
@@ -179,7 +180,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-orders/mark-as-seen/{po_number}', 'PurchaseOrderController@markAsSeen');
         Route::post('/purchase-orders/mark-as-downloaded/{po_number}', 'PurchaseOrderController@markAsDownloaded');
 
-        Route::post('/purchase-order/list-need-signed', 'PurchaseOrderController@listNeedSigned');
+        Route::get('/purchase-order/a/{approvalType}', 'PurchaseOrderController@listNeedSigned');
         Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');
         Route::post('/purchase-order/s/checked/{id}/confirm', 'PurchaseOrderController@signedAsChecked');
         Route::post('/purchase-order/s/approved/{id}/confirm', 'PurchaseOrderController@signedAsApproved');
@@ -187,9 +188,14 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/checked/{id}/unconfirm', 'PurchaseOrderController@signedAsCheckedUnconfirmed');
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
+        Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
+
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
         // Email Area
+        Route::get('/email-settings', 'EmailController@index');
+        Route::post('/email-settings', 'EmailController@store');
+        Route::post('/email-settings/g/templates', 'EmailController@showTemplate');
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
 });
@@ -219,7 +225,8 @@ Route::get('/qr-get-data', 'QrController@getData');
 Route::get('/readqrcode', 'InspectionController@qrDecode');
 
 Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
-Route::get('/d/{po_number}/download', 'PurchaseOrderController@downloadPDFForSupplier');
+Route::get('/d/{po_id}/download', 'PurchaseOrderController@downloadPDFForSupplier');
+Route::get('/d/{po_id}/print-qr-label', 'PurchaseOrderController@printLabelQRForSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');

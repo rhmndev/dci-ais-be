@@ -12,6 +12,10 @@ use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use MongoDB\BSON\UTCDateTime;
+use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
 
 class PurchaseOrderController extends Controller
@@ -134,12 +138,23 @@ class PurchaseOrderController extends Controller
 
     public function show(Request $request, $id)
     {
-        $PurchaseOrder = PurchaseOrder::findOrFail($id);
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
 
-        return response()->json([
-            'type' => 'success',
-            'data' => $PurchaseOrder
-        ], 200);
+            $this->markAsSeen($PurchaseOrder->po_number);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => new PurchaseOrderResource($PurchaseOrder)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     public function showPO(Request $request, $po_number)
@@ -182,7 +197,7 @@ class PurchaseOrderController extends Controller
                     'po_id' => $po_id,
                     'po_number' => $po_number,
                     'seen' => 1,
-                    'last_seen_at' => new \MongoDB\BSON\UTCDateTime(),
+                    'last_seen_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                     'downloaded' => 0,
                     'last_downloaded_at' => ''
                 ]);
@@ -217,9 +232,9 @@ class PurchaseOrderController extends Controller
                     'po_id' => $purchaseOrderActivity,
                     'po_number' => $po_number,
                     'seen' => 0,
-                    'last_seen_at' => '',
+                    'last_seen_at' => null,
                     'downloaded' => 1,
-                    'last_downloaded_at' => new \MongoDB\BSON\UTCDateTime()
+                    'last_downloaded_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3))
                 ]);
             }
 
@@ -298,18 +313,49 @@ class PurchaseOrderController extends Controller
             ]);
         }
     }
-    public function downloadPDFForSupplier($po_number)
+    public function printLabelQRForSupplier($po_id)
     {
-        $res_po = Crypt::decryptString($po_number);
+        $res_po = PurchaseOrder::findOrFail($po_id);
         try {
-            $this->downloadPDF($res_po);
+            // $res = $this->printQrLabel($res_po->po_number);
+            $po = PurchaseOrder::where('po_number', $res_po->po_number)->firstOrFail();
 
-            $this->markAsDownloaded($res_po);
+            // Create the QR code instance
+            $qrCode = QrCode::create($po->po_number);
+            $qrCode->setSize(300); // Set QR code size
+
+            // Create the writer to output as PNG
+            $writer = new PngWriter();
+
+            // Generate the QR code image data
+            $qrCodeData = $writer->write($qrCode);
+
+            // Pass the QR code image data to your view
+            return view('purchase_orders.qr-label', [
+                'po' => $po,
+                'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error print QR Label: ' . $th->getMessage(),
+                'data' => $res_po->po_number
+            ], 500);
+        }
+    }
+    public function downloadPDFForSupplier($po_id)
+    {
+        // $res_po = Crypt::decryptString($po_number);
+        $res_po = PurchaseOrder::findOrFail($po_id);
+        try {
+            $this->downloadPDF($res_po->po_number);
+
+            $this->markAsDownloaded($res_po->po_number);
 
             return response()->json([
                 'type' => 'success',
                 'message' => 'PDF downloaded successfully',
-                'data' => ['po_number' => $res_po]
+                'data' => ['po_number' => $res_po->po_number]
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -320,10 +366,39 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function printQrLabel($poNumber)
+    {
+        $po = PurchaseOrder::where('po_number', $poNumber)->firstOrFail();
+
+        // Create the QR code instance
+        $qrCode = QrCode::create($po->po_number);
+        $qrCode->setSize(300); // Set QR code size
+
+        // Create the writer to output as PNG
+        $writer = new PngWriter();
+
+        // Generate the QR code image data
+        $qrCodeData = $writer->write($qrCode);
+
+        // Pass the QR code image data to your view
+        return view('purchase_orders.qr-label', [
+            'po' => $po,
+            'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
+        ]);
+    }
+
     public function downloadPDF($po_number)
     {
         try {
             $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+
+            // if ($purchaseOrder) {
+            //     return response()->json([
+            //         'type' => 'success',
+            //         'message' => 'Purchase ',
+            //         'data' => new PurchaseOrderResource($purchaseOrder)
+            //     ], 404);
+            // }
 
             if (!$purchaseOrder) {
                 return response()->json([
@@ -404,21 +479,18 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    public function listNeedSigned(Request $request)
+    public function listNeedSigned(Request $request, $approvalType)
     {
-        $request->validate([
-            'type'
-        ]);
-
         try {
             $PurchaseOrder = "";
 
-            switch ($request->type) {
+            switch ($approvalType) {
                 case "knowed":
                     $PurchaseOrder = PurchaseOrder::whereNull('purchase_knowed_by')
                         ->orWhere(function ($query) {
                             $query->where('purchase_knowed_by', '!=', null)
-                                ->where('purchase_knowed_by', '=', '');
+                                ->where('purchase_knowed_by', '=', '')
+                                ->where('is_checked', '=', 1);
                         })
                         ->get();
                     break;
@@ -436,7 +508,9 @@ class PurchaseOrderController extends Controller
                     $PurchaseOrder = PurchaseOrder::whereNull('purchase_agreement_by')
                         ->orWhere(function ($query) {
                             $query->where('purchase_agreement_by', '!=', null)
-                                ->where('purchase_agreement_by', '=', '');
+                                ->where('purchase_agreement_by', '=', '')
+                                ->where('is_knowed', '=', 1)
+                                ->where('is_checked', '=', 1);
                         })
                         ->get();
                     break;
@@ -448,7 +522,6 @@ class PurchaseOrderController extends Controller
                         'data' => "Type not found!"
                     ]);
             }
-
 
             return response()->json([
                 'type' => 'success',

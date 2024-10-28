@@ -15,6 +15,119 @@ use Illuminate\Support\Facades\Storage;
 
 class EmailController extends Controller
 {
+    public function show(Request $request, $id)
+    {
+        $EmailTemplate = EmailTemplate::findOrFail($id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $EmailTemplate
+        ]);
+    }
+
+    public function showTemplate(Request $request)
+    {
+        $request->validate([
+            'template_type' => 'required|string',
+        ]);
+
+        try {
+            $EmailTemplate = EmailTemplate::where('template_type', $request->template_type)->first();
+
+            return response()->json([
+                'type' => 'success',
+                'data' =>  $EmailTemplate
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'template_type' => 'required|string',
+            'subject' => 'required|string',
+            'body' => 'required|string',
+            'is_active' => 'required|boolean',
+        ]);
+
+        try {
+            $EmailTemplate = EmailTemplate::findOrFail($id);
+
+            $EmailTemplate->template_type = $request->template_type;
+            $EmailTemplate->subject = $request->subject;
+            $EmailTemplate->body = $request->body;
+            $EmailTemplate->is_active = $request->is_active;
+
+            $EmailTemplate->updated_by = auth()->user()->username;
+
+            $EmailTemplate->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Data updated successfully!',
+                'data' => NULL,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
+    }
+
+    public function store(Request $request)
+    {
+
+        $request->validate([
+            'template_type' => 'required|string',
+            'subject' => 'required|string',
+            'body' => 'required|string',
+            'is_active' => 'required|boolean',
+        ]);
+
+        try {
+
+            $EmailTemplate = EmailTemplate::firstOrNew(['template_type' => $request->template_type]);
+            $EmailTemplate->template_type = $request->template_type;
+            $EmailTemplate->subject = $request->subject;
+            $EmailTemplate->body = $request->body;
+            $EmailTemplate->is_active = $request->is_active;
+
+            $EmailTemplate->created_by = auth()->user()->username;
+            $EmailTemplate->updated_by = auth()->user()->username;
+
+            $EmailTemplate->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Data saved successfully!',
+                'data' => NULL,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
+    }
+
     public function sendTestEmail(Request $request)
     {
         $noPO = "PO-91648";
@@ -145,7 +258,7 @@ class EmailController extends Controller
                     'deliveryDate' => $POData->delivery_date,
                     'totalAmount' => $POData->total_amount,
                     'orderNumber' => $noPO,
-                    'purchaseOrderLink' => env('VENDOR_URL') . '/?view=' . Crypt::encryptString($noPO),
+                    'purchaseOrderLink' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
                     // 'cc' => ['fachriansyahmni@gmail.com', 'fachriansyah.10119065@mahasiswa.unikom.ac.id'],
                     // 'bcc' => $bccTo,
                 ];

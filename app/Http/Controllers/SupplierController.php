@@ -7,7 +7,7 @@ use App\Imports\SuppliersImport;
 use App\Supplier;
 use Carbon\Carbon;
 use Excel;
-use App\Exports\SuppliersExport;
+use App\Exports\SupplierExport;
 use App\Role;
 use App\User;
 
@@ -136,6 +136,16 @@ class SupplierController extends Controller
         ]);
     }
 
+    public function showByCode(Request $request, $code)
+    {
+        $Supplier = Supplier::where('code', $code)->first();
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $Supplier
+        ]);
+    }
+
     public function import(Request $request)
     {
         $data = array();
@@ -240,29 +250,8 @@ class SupplierController extends Controller
 
     public function export(Request $request)
     {
-        $request->validate([
-            'columns' => 'required',
-            'sort' => 'required|string',
-            'order' => 'string',
-        ]);
+        $suppliers = Supplier::get();
 
-        $keyword = ($request->keyword != null) ? $request->keyword : '';
-        $order = ($request->order != null) ? $request->order : 'ascend';
-
-        $suppliers = Supplier::where(function ($query) use ($keyword, $request) {
-            if (!empty($keyword)) {
-                foreach ($request->columns as $index => $column) {
-                    if ($index == 0) {
-                        $query->where($column, 'like', '%' . $keyword . '%');
-                    } else {
-                        $query->orWhere($column, 'like', '%' . $keyword . '%');
-                    }
-                }
-            }
-        })
-            ->orderBy($request->sort, $order == 'ascend' ? 'asc' : 'desc')
-            ->get();
-
-        return Excel::download(new SuppliersExport($suppliers), 'suppliers.xlsx');
+        return Excel::download(new SupplierExport($suppliers), 'suppliers.xlsx');
     }
 }
