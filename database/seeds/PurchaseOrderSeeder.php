@@ -21,7 +21,7 @@ class PurchaseOrderSeeder extends Seeder
         PurchaseOrder::truncate();
         PurchaseOrderItem::truncate();
         $faker = Faker::create();
-        $totalData = 1000;
+        $totalData = 10;
         for ($i = 0; $i < $totalData; $i++) {
             $type = $faker->randomElement(['pending', 'unapproved', 'approved']);
             switch ($type) {

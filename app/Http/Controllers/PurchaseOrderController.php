@@ -600,7 +600,7 @@ class PurchaseOrderController extends Controller
             EmailController::sendEmailPurchaseOrderConfirmation($request, $PurchaseOrder->po_number);
 
             $msg = $PurchaseOrder->po_number . ' sudah di approved dan PO sudah dikirim ke supplier.';
-            $receipt_number = 'whatsapp:+12345';
+            $receipt_number = 'whatsapp:+6285156376462';
             WhatsAppController::sendWhatsAppMessage($request, $receipt_number, $msg);
 
             return response()->json([
