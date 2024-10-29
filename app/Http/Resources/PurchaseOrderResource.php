@@ -14,6 +14,7 @@ class PurchaseOrderResource extends JsonResource
      */
     public function toArray($request)
     {
+        $this->slock;
         $this->items;
         $this->supplier;
         $this->checkedUserBy;
@@ -51,6 +52,7 @@ class PurchaseOrderResource extends JsonResource
                     return new PurchaseOrderItemsResource($item);
                 });
             }),
+            's_lock' => new SLockResource($this->whenLoaded('s_lock')),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'is_send_email_to_supplier' => $this->is_send_email_to_supplier,
             'qr_uuid' => $this->qr_uuid,

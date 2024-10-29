@@ -15,6 +15,8 @@ class PurchaseOrder extends Model
         'delivery_address',
         'supplier_id',
         'supplier_code',
+        's_locks_code',
+        'p_gr_code',
         'total_item_quantity',
         'total_amount',
         'purchase_checked_by',
@@ -146,5 +148,20 @@ class PurchaseOrder extends Model
     public function approvedUserBy()
     {
         return $this->hasOne(User::class, 'npk', 'purchase_agreement_by');
+    }
+
+    public function slock()
+    {
+        return $this->hasOne(SLock::class, 'code', 's_locks_code');
+    }
+
+    public function travelDocument()
+    {
+        return $this->hasMany(TravelDocument::class, 'po_number', 'po_number');
+    }
+
+    public function pgr()
+    {
+        return $this->hasOne(PGR::class, 'code', 'p_gr_code');
     }
 }

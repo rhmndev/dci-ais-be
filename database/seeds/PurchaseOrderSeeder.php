@@ -3,6 +3,7 @@
 use App\Material;
 use App\PurchaseOrder;
 use App\PurchaseOrderItem;
+use App\SLock;
 use App\Supplier;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
@@ -69,8 +70,9 @@ class PurchaseOrderSeeder extends Seeder
                 'delivery_email' => $faker->companyEmail,
                 'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                 'delivery_address' => $faker->address(),
-                'supplier_id' => $faker->uuid(), // Assuming supplier_id is a UUID
-                'supplier_code' => $faker->randomElement(Supplier::pluck('code')->toArray()), // Assuming supplier_id is a UUID
+                'supplier_id' => $faker->uuid(),
+                'supplier_code' => $faker->randomElement(Supplier::pluck('code')->toArray()),
+                's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 1000, 10000),
                 'purchase_currency_type' => "IDR",

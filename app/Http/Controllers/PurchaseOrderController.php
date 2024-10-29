@@ -484,8 +484,6 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    public function createTravelDocumentPO(Request $request) {}
-
     public function listNeedSigned(Request $request, $approvalType)
     {
         try {

@@ -199,6 +199,16 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::put('/email-settings/u/templates/{id}', 'EmailController@updateTemplate');
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
+
+        Route::group(['prefix' => 'travel-documents'], function () {
+                Route::post('/by-po', 'TravelDocumentController@byPO');
+                Route::post('/create/{poId}', 'TravelDocumentController@create');
+                // Route::get('/{id}/download', 'TravelDocumentController@download');
+        });
+});
+
+Route::group(['prefix' => 'travel-documents'], function () {
+        Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
 });
 
 Route::post('/login', 'AuthController@login');

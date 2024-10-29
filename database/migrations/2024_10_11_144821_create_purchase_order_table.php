@@ -25,6 +25,8 @@ class CreatePurchaseOrderTable extends Migration
             $table->string('delivery_address');
             $table->string('supplier_id');
             $table->string('supplier_code');
+            $table->string('s_locks_code');
+            $table->string('p_gr_code');
             $table->decimal('total_item_quantity');
             $table->decimal('total_amount');
             $table->string('purchase_currency_type');
