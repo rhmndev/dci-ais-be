@@ -91,14 +91,17 @@
                       <h3><b>NO :</b></h3>
                   </td>
                   <td style="border: 0px">
-                      SJ202410010002
+                      {{$travelDocument->no}}
                   </td>
-                  <td style="border: 0px; text-align: right;">
-                    <img src="{{ public_path('/img/sample_qr_sj.png') }}"alt="QR Code" style="width: 60px;">
+                  <td style="border: 0px; text-align: right;" rowspan="1">
+                    {{-- <img src="{{ public_path('/img/sample_qr_sj.png') }}"alt="QR Code" style="width: 80px;"> --}}
+                    @isset($travelDocument->qr_path)
+                    <img src="{{ public_path('storage/'.$travelDocument->qr_path) }}" alt="QR Code" style="width: 80px;">
+                    @endisset
                   </td>
               </tr>
               <tr style="border: 0px">
-                  <td colspan="3" class="pl-2" style="border: 0px">
+                  <td colspan="2" class="pl-2" style="border: 0px; padding-bottom: 10px;">
                       <h1><strong>Delivery Order</strong></h1>
                   </td>
               </tr> 

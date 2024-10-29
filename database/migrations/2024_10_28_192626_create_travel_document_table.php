@@ -26,6 +26,7 @@ class CreateTravelDocumentTable extends Migration
             $table->string('vehicle_number')->nullable();
             $table->string('notes')->nullable();
             $table->string('status');
+            $table->longText('qr_path');
             $table->string('created_by');
             $table->string('updated_by');
             $table->timestamps();

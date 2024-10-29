@@ -17,6 +17,7 @@ class TravelDocument extends Model
         'vehicle_number',
         'notes',
         'status',
+        'qr_path',
         'created_by',
         'updated_by',
     ];

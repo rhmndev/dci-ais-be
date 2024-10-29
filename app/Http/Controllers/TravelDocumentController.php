@@ -11,6 +11,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\Storage;
 
 class TravelDocumentController extends Controller
 {
@@ -84,6 +85,8 @@ class TravelDocumentController extends Controller
 
             $travelDocument->save();
 
+            $travelDocument->qr_path = $this->generateAndStoreQRCode($travelDocument->no);
+            $travelDocument->save();
 
             foreach ($items as $item) {
                 $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
@@ -102,6 +105,26 @@ class TravelDocumentController extends Controller
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
         }
+    }
+
+    private function generateAndStoreQRCode($travelDocumentNumber)
+    {
+        // Generate the QR code
+        $qrCode = QrCode::create($travelDocumentNumber);
+        $qrCode->setSize(300);
+
+        // Create the writer
+        $writer = new PngWriter();
+        $qrCodeData = $writer->write($qrCode);
+
+        // Generate a unique filename for the QR code
+        $fileName = 'qrcodes/travel_document_' . $travelDocumentNumber . '_' . uniqid() . '.png';
+
+        // Store the QR code image in the storage folder
+        Storage::disk('public')->put($fileName, $qrCodeData->getString());
+
+        // Return the path to the stored QR code
+        return $fileName;
     }
 
     public function download($id)
