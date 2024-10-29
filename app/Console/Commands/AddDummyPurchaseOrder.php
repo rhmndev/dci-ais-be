@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Material;
+use App\PurchaseOrder;
+use App\PurchaseOrderItem;
+use App\SLock;
+use App\Supplier;
+use Illuminate\Console\Command;
+use Faker\Factory as Faker;
+use MongoDB\BSON\UTCDateTime;
+use Carbon\Carbon;
+
+class AddDummyPurchaseOrder extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'purchase-order:add-dummy';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Add a new dummy purchase order every minute';
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function handle()
+    {
+        $faker = Faker::create();
+
+        $purchaseOrder = PurchaseOrder::create([
+            'po_number' => $faker->unique()->regexify('PO-[0-9]{5}'),
+            'user' => 'Admin',
+            'user_npk' => '39748',
+            'order_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
+            'delivery_email' => $faker->companyEmail,
+            'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
+            'delivery_address' => $faker->address(),
+            'supplier_id' => $faker->uuid(),
+            // 'supplier_code' => $faker->randomElement(Supplier::pluck('code')->toArray()),
+            'supplier_code' => $faker->randomElement(["771623"]),
+            's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
+            'total_item_quantity' => $faker->randomFloat(2, 1, 100),
+            'total_amount' => $faker->randomFloat(2, 1000, 10000),
+            'purchase_currency_type' => 'IDR',
+            'purchase_checked_by' => '99999112',
+            'checked_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
+            'purchase_knowed_by' => '9981111',
+            'knowed_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
+            'purchase_agreement_by' => '',
+            'approved_at' => null,
+            'tax' => $faker->randomFloat(2, 100, 10000),
+            'tax_type' => $faker->randomElement(['PPN']),
+            'status' => 'pending',
+            'is_send_email_to_supplier' => 0,
+            'is_checked' => true,
+            'is_knowed' => true,
+            'is_approved' => false,
+            'notes' => '',
+            'notes_from_checker' => '',
+            'notes_from_knower' => '',
+            'notes_from_approver' => '',
+            'created_by' => 'system',
+            'updated_by' => 'system',
+        ]);
+
+        $this->createPurchaseOrderItems($purchaseOrder, $faker);
+
+        $this->info('New dummy purchase order added!');
+        return 0;
+    }
+
+    private function createPurchaseOrderItems(PurchaseOrder $purchaseOrder, $faker)
+    {
+        $numberOfItems = $faker->numberBetween(1, 5); // Create 1 to 5 items per order
+        $materialIds = Material::pluck('_id')->take(10)->toArray();
+        for ($j = 0; $j < $numberOfItems; $j++) {
+            PurchaseOrderItem::create([
+                'purchase_order_id' => $purchaseOrder->_id,
+                'material_id' => $faker->randomElement($materialIds), // Replace with your material ID generation logic
+                'quantity' => $faker->randomNumber(2), // Random 2-digit quantity
+                'unit_type' => $faker->randomElement(['pcs', 'pce', 'kg', 'L']), // Random unit type
+                'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
+                'unit_price_type' => $faker->randomElement(['IDR']), // Random unit type
+                'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
+            ]);
+        }
+    }
+}

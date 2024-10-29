@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        \App\Console\Commands\AddDummyPurchaseOrder::class,
     ];
 
     /**
@@ -28,6 +28,7 @@ class Kernel extends ConsoleKernel
         //          ->hourly();
         $schedule->command('purchase-order:calculate-analytics')
             ->monthly();
+        $schedule->command('purchase-order:add-dummy')->everyMinute();
     }
 
     /**

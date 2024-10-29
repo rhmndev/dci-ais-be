@@ -52,6 +52,10 @@ class TravelDocumentController extends Controller
 
     public function create(Request $request, $poId)
     {
+        $request->validate([
+            'items' => 'required|array', // 'items' must be an array
+            'items.*.po_item_id' => 'required|string' // Each item must have a 'po_item_id'
+        ]);
         try {
             $purchaseOrder = PurchaseOrder::findOrFail($poId);
 
@@ -71,11 +75,11 @@ class TravelDocumentController extends Controller
 
             $travelDocument->save();
 
-            // foreach ($purchaseOrder->items as $poItem) {
-            //     $travelDocument->items()->create([
-            //         'po_item_id' => $poItem->_id,
-            //     ]);
-            // }
+            foreach ($purchaseOrder->items as $poItem) {
+                $travelDocument->items()->create([
+                    'po_item_id' => $poItem->_id,
+                ]);
+            }
 
             return response()->json([
                 'type' => 'success',

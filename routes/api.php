@@ -44,6 +44,17 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/vendorimport', 'VendorController@import');
         #endregion
 
+        #region Master Storage Location
+        Route::get('/storage-locations', 'StorageLocationController@index');
+        Route::get('/storage-locations/{id}', 'StorageLocationController@show');
+        Route::get('/storage-locations-list', 'StorageLocationController@list');
+        Route::get('/storage-locations-sync', 'StorageLocationController@SyncSAP');
+        Route::post('/storage-locations', 'StorageLocationController@store');
+        Route::post('/storage-locations/{id}', 'StorageLocationController@store');
+        Route::delete('/storage-locations/{id}', 'StorageLocationController@destroy');
+        Route::post('/storage-locations-import', 'StorageLocationController@import');
+        #endregion
+
         #region Master Supplier
         Route::get('/supplier', 'SupplierController@index');
         Route::get('/supplier/{id}', 'SupplierController@show');
