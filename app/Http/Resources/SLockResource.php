@@ -14,6 +14,10 @@ class SLockResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+            '_id' => $this->_id,
+            'code' => $this->code,
+            'description' => $this->description,
+        ];
     }
 }

@@ -52,7 +52,7 @@ class PurchaseOrder extends Model
         'approved_at',
     ];
 
-    public function getAllData($keyword, $columns, $sort, $order)
+    public function getAllData($keyword, $columns, $sort, $order, $status)
     {
 
         $query = PurchaseOrder::query();
@@ -71,6 +71,10 @@ class PurchaseOrder extends Model
             }
         }
 
+        // if ($status !== null) {
+        //     $query->where('status', $status);
+        // }
+
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
         $data = $query->get();
@@ -78,7 +82,7 @@ class PurchaseOrder extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $status)
     {
 
         $query = PurchaseOrder::query();
@@ -97,6 +101,10 @@ class PurchaseOrder extends Model
                 }
             }
         }
+
+        // if ($status !== null) {
+        //     $query->where('status', $status);
+        // }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 

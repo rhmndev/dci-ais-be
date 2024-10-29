@@ -27,6 +27,7 @@ class PurchaseOrderController extends Controller
             'perpage' => 'required|numeric',
             'page' => 'required|numeric',
             'sort' => 'required|string',
+            'status' => 'nullable|string',
             'order' => 'string',
         ]);
 
@@ -34,13 +35,14 @@ class PurchaseOrderController extends Controller
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
+        $status = ($request->status != null) ? $request->status : '';
 
         try {
 
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
-            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order);
-            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
+            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status);
+            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status);
 
             if ($user->supplier) {
                 $resultAlls = $PurchaseOrder->where('supplier_code', $user->supplier->code)
@@ -317,16 +319,8 @@ class PurchaseOrderController extends Controller
     {
         try {
             $res_po = PurchaseOrder::findOrFail($po_id);
-            // $res = $this->printQrLabel($res_po->po_number);
-            // $po = PurchaseOrder::where('po_number', $res_po->po_number)->firstOrFail();
 
-            // Create the QR code instance
             $qrCode = QrCode::create($res_po->po_number);
-            return response()->json([
-                'type' => 'success',
-                'message' => "asdasdasd",
-                'data' => $qrCode
-            ], 500);
             $qrCode->setSize(300); // Set QR code size
 
             // Create the writer to output as PNG
@@ -339,7 +333,7 @@ class PurchaseOrderController extends Controller
             return view('purchase_orders.qr-label', [
                 'po' => $res_po,
                 'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
-            ], 200);
+            ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',

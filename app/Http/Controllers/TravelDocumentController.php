@@ -59,7 +59,16 @@ class TravelDocumentController extends Controller
         try {
             $purchaseOrder = PurchaseOrder::findOrFail($poId);
 
-            // Validation (e.g., ensure PO exists and has 'approved' status)
+            // adding check duplicate po_item_id selected inside travel document item
+            $items = $request->has('items') ? $request->items : [];
+
+            if (count($items) == 0) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Items are required',
+                    'data' => NULL,
+                ], 400);
+            }
 
             $travelDocument = new TravelDocument([
                 'no' => $this->generateTravelDocumentNumber(), // Implement this function
@@ -75,10 +84,14 @@ class TravelDocumentController extends Controller
 
             $travelDocument->save();
 
-            foreach ($purchaseOrder->items as $poItem) {
-                $travelDocument->items()->create([
-                    'po_item_id' => $poItem->_id,
-                ]);
+
+            foreach ($items as $item) {
+                $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
+                if ($poItem) {
+                    $travelDocument->items()->create([
+                        'po_item_id' => $item['po_item_id'],
+                    ]);
+                }
             }
 
             return response()->json([

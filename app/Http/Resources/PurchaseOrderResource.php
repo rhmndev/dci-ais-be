@@ -52,7 +52,8 @@ class PurchaseOrderResource extends JsonResource
                     return new PurchaseOrderItemsResource($item);
                 });
             }),
-            's_lock' => new SLockResource($this->whenLoaded('s_lock')),
+            's_locks_code' => $this->s_locks_code,
+            's_lock' => new SLockResource($this->whenLoaded('slock')),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'is_send_email_to_supplier' => $this->is_send_email_to_supplier,
             'qr_uuid' => $this->qr_uuid,

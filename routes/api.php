@@ -200,6 +200,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
+        Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
@@ -215,13 +216,9 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/by-po', 'TravelDocumentController@byPO');
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
+                Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
         });
 });
-
-Route::group(['prefix' => 'travel-documents'], function () {
-        Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
-});
-
 Route::post('/login', 'AuthController@login');
 Route::post('/resetpassword', 'AuthController@resetpassword');
 Route::get('/resetpassword/{token}', 'AuthController@show');

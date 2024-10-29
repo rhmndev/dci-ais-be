@@ -21,6 +21,7 @@ class PurchaseOrderItemsResource extends JsonResource
             'unit_type' => $this->unit_type,
             'unit_price' => $this->unit_price,
             'unit_price_type' => $this->unit_price_type,
+            'total_price' => $this->unit_price * $this->quantity,
         ];
     }
 }

@@ -6,6 +6,8 @@ use Jenssegers\Mongodb\Eloquent\Model;
 
 class SLock extends Model
 {
+    protected $table = 's_locks';
+
     protected $fillable = [
         'code',
         'description',

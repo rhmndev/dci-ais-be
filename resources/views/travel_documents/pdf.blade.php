@@ -172,11 +172,11 @@
                     <td>{{ $item->poItem->material->code ?? 'code_item'}} - {{$item->poItem->material->description ?? 'description_item'}}</td>
                     <td style="text-align:center;">{{ $item->poItem->quantity }}</td>
                     <td style="text-align:center;">{{ $item->poItem->unit_type }}</td>
-                    <td style="text-align:left;">@currency($item->poItem->unit_price)</td> 
-                    <td style="text-align:left;">@currency($item->total)</td> 
+                    <td style="text-align:left;">@currency($item->poItem->unit_price ?? 0)</td> 
+                    <td style="text-align:left;">@currency($item->poItem->total_price ?? 0)</td> 
                     <td>&nbsp;</td> 
                   </tr>
-                  @php $total += $item->total; @endphp 
+                  @php $total += $item->poItem->total; @endphp 
                   @endforeach
                   @for ($i = $no; $i <= 10; $i++) 
                   <tr style="border-top: none; @if ($i == 15) border-bottom: 1px solid #ddd; @else border-bottom: none; @endif">
@@ -193,7 +193,7 @@
                 <tfoot>
                   <tr>
                     <td colspan="5" style="text-align:right;">total:</td>
-                    <td>@currency($total)</td> 
+                    <td>@currency($travelDocument->purchaseOrder->total_amount ?? 0)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   <tr>

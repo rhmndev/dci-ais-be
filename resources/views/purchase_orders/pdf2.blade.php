@@ -78,9 +78,9 @@
     @endif
   {{-- <div class="watermark">{{$purchaseOrder->status}}</div> --}}
 
-  <table class="w-full" style="border: 0">
-    <tr style="border: 0">
-        <td class="w-half" style="border: 0">
+  <table class="w-full" style="border: 0px">
+    <tr style="border: 0px">
+        <td class="w-half" style="border: 0px">
           <img src="{{ public_path('/img/logo.png') }}">
             <br>
             <small>Jl.Tekno Industri kawasan Industri Jababeka VIII No.1 Blok A3, Cikarang Kota, Kec. Cikarang Utara,
@@ -88,7 +88,7 @@
             <small>Ph: 62 231 123 123</small><br>
             <small>NPWP : 01.1234.1234.123</small>
         </td>
-        <td class="w-half" style="border: 0">
+        <td class="w-half" style="border: 0px">
           <table class="table-compact">
               <tr>
                   <td class="text-center bg-light">
@@ -111,42 +111,42 @@
   </table>
 
   <table class="table table-borderless table-compact">
-    <tr style="border: 0">
-      <td style="border: 0">
-        <table class="table table-borderless table-compact">
-          <tr>
-              <td>Kepada</td>
-              <td>:</td>
-              <td>{{ $purchaseOrder->supplier->name }}</td>
+    <tr style="border: 0px">
+      <td style="border: 0px">
+        <table class="table table-borderless table-compact" style="border: 0px">
+          <tr style="border: 0px">
+              <td style="border: 0px">Kepada</td>
+              <td style="border: 0px">:</td>
+              <td style="border: 0px">{{ $purchaseOrder->supplier->name }}</td>
           </tr>
-          <tr>
-              <td>Alamat</td>
-              <td>:</td>
-              <td>{{ $purchaseOrder->supplier->address }}</td>
+          <tr style="border: 0px">
+              <td style="border: 0px">Alamat</td>
+              <td style="border: 0px">:</td>
+              <td style="border: 0px">{{ $purchaseOrder->supplier->address }}</td>
           </tr>
-          <tr>
-              <td>Kota</td>
-              <td>:</td>
-              <td>{{ $purchaseOrder->supplier->city }}</td>
+          <tr style="border: 0px">
+              <td style="border: 0px">Kota</td>
+              <td style="border: 0px">:</td>
+              <td style="border: 0px">{{ $purchaseOrder->supplier->city }}</td>
           </tr>
-          <tr>
+          <tr style="border: 0px">
               <td>Telepon</td>
               <td>:</td>
               <td>{{ $purchaseOrder->supplier->phone }}</td>
           </tr>
-          <tr>
+          <tr style="border: 0px">
               <td>Fax</td>
               <td>:</td>
               <td>{{ $purchaseOrder->supplier->fax }}</td>
           </tr>
-          <tr>
+          <tr style="border: 0px">
               <td>Email</td>
               <td>:</td>
               <td>{{ $purchaseOrder->supplier->email }}</td>
           </tr>
         </table>
       </td>
-      <td style="border: 0">
+      <td style="border: 0px;">
         <table class="table table-borderless table-compact">
           <tr>
               <td>Mata Uang</td>
@@ -158,7 +158,7 @@
           </tr>
           <tr>
               <td>Dikirim ke Gudang</td>
-              <td>: MT01 - Maintenance</td>
+              <td>: {{ $purchaseOrder->s_locks_code }} - {{ $purchaseOrder->slock->description }}</td>
           </tr>
           <tr>
               <td>User</td>
@@ -168,7 +168,7 @@
       </td>
     </tr>
   </table>
-
+<br>
     <table class="table-compact">
         <thead>
           <tr>
