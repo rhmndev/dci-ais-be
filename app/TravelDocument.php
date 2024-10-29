@@ -33,7 +33,7 @@ class TravelDocument extends Model
 
     public function items()
     {
-        return $this->hasMany(TravelDocumentItem::class, 'travel_document_id', 'id');
+        return $this->hasMany(TravelDocumentItem::class, 'travel_document_id', '_id');
     }
 
     public function supplier()

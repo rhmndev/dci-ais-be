@@ -397,14 +397,6 @@ class PurchaseOrderController extends Controller
         try {
             $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
 
-            // if ($purchaseOrder) {
-            //     return response()->json([
-            //         'type' => 'success',
-            //         'message' => 'Purchase ',
-            //         'data' => new PurchaseOrderResource($purchaseOrder)
-            //     ], 404);
-            // }
-
             if (!$purchaseOrder) {
                 return response()->json([
                     'type' => 'error',

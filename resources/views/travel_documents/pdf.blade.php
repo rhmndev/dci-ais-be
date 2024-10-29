@@ -133,7 +133,7 @@
                   <table>
                     <tr>
                         <td>Delivery Date:</td>
-                        <td>{{ $travelDocument->date }}</td> 
+                        <td>{{ $travelDocument->purchaseOrder->delivery_date ?? '-' }}</td> 
                     </tr>
                     <tr>
                         <td>PO Number:</td>
@@ -141,7 +141,7 @@
                     </tr>
                     <tr>
                         <td>PO Date:</td>
-                        <td>{{ $travelDocument->po_date }}</td>
+                        <td>{{ $travelDocument->purchaseOrder->order_date ?? '-'}}</td>
                     </tr>
                     <!-- Add more details as needed -->
                 </table>
@@ -156,11 +156,11 @@
                 <thead>
                     <tr>
                         <th style="width: 10px;">No</th>
-                        <th>Item Description</th>
-                        <th>Qty</th>
-                        <th>Unit</th>
-                        <th>Price</th>
-                        <th>Total</th>
+                        <th style="width: 520px;">Item Description</th>
+                        <th style="width: 20px;">Qty</th>
+                        <th style="width: 20px;">Unit</th>
+                        <th style="width: 120px;">Price</th>
+                        <th style="width: 120px;">Total</th>
                         <th style="width: 10px;">Note</th>
                     </tr>
                 </thead>
@@ -169,11 +169,11 @@
                   @foreach ($travelDocument->items as $item)
                   <tr style="border-top: none; border-bottom: none;">
                     <td>{{ $no++ }}</td>
-                    <td>{{ $item->description }}</td>
-                    <td>{{ $item->quantity }}</td>
-                    <td>{{ $item->unit }}</td>
-                    <td>{{ $item->unit_price }}</td> 
-                    <td>{{ $item->total }}</td> 
+                    <td>{{ $item->poItem->material->code ?? 'code_item'}} - {{$item->poItem->material->description ?? 'description_item'}}</td>
+                    <td style="text-align:center;">{{ $item->poItem->quantity }}</td>
+                    <td style="text-align:center;">{{ $item->poItem->unit_type }}</td>
+                    <td style="text-align:left;">@currency($item->poItem->unit_price)</td> 
+                    <td style="text-align:left;">@currency($item->total)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   @php $total += $item->total; @endphp 
@@ -193,7 +193,7 @@
                 <tfoot>
                   <tr>
                     <td colspan="5" style="text-align:right;">total:</td>
-                    <td>{{ $total }}</td> 
+                    <td>@currency($total)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   <tr>
@@ -207,13 +207,13 @@
           <tr>
             <td style="border: none; padding: 0; text-align: center;">
               <div class="signature">
-                <p>Delivered By:</p>
+                <p>Made By:</p>
                 <br>
                 <br>
                 <p>(.......................................)</p> 
               </div>
             </td>
-            <td style="border: none; padding: 0; text-align: center;">
+            <td style="border: none; padding: 0; text-align: left;">
               <div class="signature">
                 <p>Delivered By:</p>
                 <br>

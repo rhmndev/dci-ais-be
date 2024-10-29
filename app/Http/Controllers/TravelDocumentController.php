@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\TravelDocumentResource;
 use Illuminate\Http\Request;
 use App\PurchaseOrder;
 use App\TravelDocument;
@@ -16,12 +17,12 @@ class TravelDocumentController extends Controller
     public function byPO(Request $request)
     {
         $request->validate([
-            'po_number' => 'required|string',
+            'po_id' => 'required|string',
         ]);
 
-        $po_number = $request->po_number;
+        $po_id = $request->po_id;
         try {
-            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            $purchaseOrder = PurchaseOrder::findOrFail($po_id);
 
             if (!$purchaseOrder) {
                 return response()->json([
@@ -30,13 +31,15 @@ class TravelDocumentController extends Controller
                     'data' => NULL,
                 ], 404);
             }
-
-            $travelDocuments = TravelDocument::where('po_number', $po_number)->get();
+            $po_number = $purchaseOrder->po_number;
+            $travelDocuments = TravelDocument::with('purchaseOrder')->with(['items' => function ($query) {
+                $query->with('poItem');
+            }])->where('po_number', $po_number)->get();
 
             return response()->json([
                 'type' => 'success',
                 'message' => 'Travel documents fetched successfully.',
-                'data' => $travelDocuments
+                'data' => TravelDocumentResource::collection($travelDocuments),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

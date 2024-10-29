@@ -13,7 +13,7 @@ class TravelDocumentItem extends Model
 
     public function travelDocument()
     {
-        return $this->belongsTo(TravelDocument::class);
+        return $this->belongsTo(TravelDocument::class, 'travel_document_id', '_id');
     }
 
     public function poItem()
