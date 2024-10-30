@@ -36,22 +36,12 @@ class PurchaseOrderController extends Controller
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
         $status = ($request->status != null) ? $request->status : '';
-
         try {
 
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
             $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status);
             $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status);
-
-            if ($user->supplier) {
-                $resultAlls = $PurchaseOrder->where('supplier_code', $user->supplier->code)
-                    ->get();
-                $results = $PurchaseOrder->where('supplier_code', $user->supplier->code)
-                    ->skip($request->perpage * ($request->page - 1))
-                    ->take($request->perpage)
-                    ->get();
-            }
 
             return response()->json([
                 'type' => 'success',
@@ -576,7 +566,7 @@ class PurchaseOrderController extends Controller
             ]);
         }
     }
-    public function signedAsApproved($id)
+    public function signedAsApproved(Request $request, $id)
     {
         try {
             $PurchaseOrder = PurchaseOrder::findOrFail($id);
@@ -586,6 +576,13 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder->is_approved = 1;
             $PurchaseOrder->status = "approved";
             $PurchaseOrder->save();
+
+            // Send an email notification
+            EmailController::sendEmailPurchaseOrderConfirmation($request, $PurchaseOrder->po_number);
+
+            $msg = $PurchaseOrder->po_number . ' sudah di approved dan PO sudah dikirim ke supplier.';
+            $receipt_number = 'whatsapp:+6285156376462';
+            WhatsAppController::sendWhatsAppMessage($request, $receipt_number, $msg);
 
             return response()->json([
                 'type' => 'success',

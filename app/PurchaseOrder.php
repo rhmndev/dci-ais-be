@@ -71,9 +71,9 @@ class PurchaseOrder extends Model
             }
         }
 
-        // if ($status !== null) {
-        //     $query->where('status', $status);
-        // }
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
+        }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
@@ -102,9 +102,9 @@ class PurchaseOrder extends Model
             }
         }
 
-        // if ($status !== null) {
-        //     $query->where('status', $status);
-        // }
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
+        }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 

@@ -28,6 +28,7 @@ class Kernel extends ConsoleKernel
         //          ->hourly();
         $schedule->command('purchase-order:calculate-analytics')
             ->monthly();
+        $schedule->command('purchase-order:send-reminder')->everyMinute();
         $schedule->command('purchase-order:add-dummy')->everyMinute();
     }
 
