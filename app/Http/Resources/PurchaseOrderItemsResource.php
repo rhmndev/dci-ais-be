@@ -14,6 +14,8 @@ class PurchaseOrderItemsResource extends JsonResource
      */
     public function toArray($request)
     {
+        $this->travelDocumentItem;
+
         return [
             '_id' => $this->_id,
             'material' => new MaterialResource($this->whenLoaded('material')),
@@ -22,6 +24,9 @@ class PurchaseOrderItemsResource extends JsonResource
             'unit_price' => $this->unit_price,
             'unit_price_type' => $this->unit_price_type,
             'total_price' => $this->unit_price * $this->quantity,
+            'travel_document_items_count' => $this->whenLoaded('travelDocumentItem', function () {
+                return $this->travelDocumentItem->count();
+            }),
         ];
     }
 }

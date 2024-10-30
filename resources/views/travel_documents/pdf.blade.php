@@ -176,7 +176,7 @@
                     <td style="text-align:center;">{{ $item->poItem->quantity }}</td>
                     <td style="text-align:center;">{{ $item->poItem->unit_type }}</td>
                     <td style="text-align:left;">@currency($item->poItem->unit_price ?? 0)</td> 
-                    <td style="text-align:left;">@currency($item->poItem->total_price ?? 0)</td> 
+                    <td style="text-align:left;">@currency($item->poItem->unit_price * $item->poItem->quantity)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   @php $total += $item->poItem->total; @endphp 

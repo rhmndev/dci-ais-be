@@ -25,4 +25,9 @@ class PurchaseOrderItem extends Model
     {
         return $this->hasOne(Material::class, '_id', 'material_id');
     }
+
+    public function travelDocumentItem()
+    {
+        return $this->hasMany(TravelDocumentItem::class, 'po_item_id', '_id');
+    }
 }
