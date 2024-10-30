@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call(LineNumberSeeder::class);
         $this->call(SupplierSeeder::class);
         $this->call(EmailTemplateSeeder::class);
+        $this->call(SLockSeeder::class);
         $this->call(PurchaseOrderSeeder::class);
     }
 }

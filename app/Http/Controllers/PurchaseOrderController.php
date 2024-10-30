@@ -27,6 +27,7 @@ class PurchaseOrderController extends Controller
             'perpage' => 'required|numeric',
             'page' => 'required|numeric',
             'sort' => 'required|string',
+            'status' => 'nullable|string',
             'order' => 'string',
         ]);
 
@@ -34,22 +35,13 @@ class PurchaseOrderController extends Controller
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
-
+        $status = ($request->status != null) ? $request->status : '';
         try {
 
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
-            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order);
-            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
-
-            if ($user->supplier) {
-                $resultAlls = $PurchaseOrder->where('supplier_code', $user->supplier->code)
-                    ->get();
-                $results = $PurchaseOrder->where('supplier_code', $user->supplier->code)
-                    ->skip($request->perpage * ($request->page - 1))
-                    ->take($request->perpage)
-                    ->get();
-            }
+            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status);
+            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status);
 
             return response()->json([
                 'type' => 'success',
@@ -315,13 +307,10 @@ class PurchaseOrderController extends Controller
     }
     public function printLabelQRForSupplier($po_id)
     {
-        $res_po = PurchaseOrder::findOrFail($po_id);
         try {
-            // $res = $this->printQrLabel($res_po->po_number);
-            $po = PurchaseOrder::where('po_number', $res_po->po_number)->firstOrFail();
+            $res_po = PurchaseOrder::findOrFail($po_id);
 
-            // Create the QR code instance
-            $qrCode = QrCode::create($po->po_number);
+            $qrCode = QrCode::create($res_po->po_number);
             $qrCode->setSize(300); // Set QR code size
 
             // Create the writer to output as PNG
@@ -332,9 +321,9 @@ class PurchaseOrderController extends Controller
 
             // Pass the QR code image data to your view
             return view('purchase_orders.qr-label', [
-                'po' => $po,
+                'po' => $res_po,
                 'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
-            ], 200);
+            ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
@@ -391,14 +380,6 @@ class PurchaseOrderController extends Controller
     {
         try {
             $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
-
-            // if ($purchaseOrder) {
-            //     return response()->json([
-            //         'type' => 'success',
-            //         'message' => 'Purchase ',
-            //         'data' => new PurchaseOrderResource($purchaseOrder)
-            //     ], 404);
-            // }
 
             if (!$purchaseOrder) {
                 return response()->json([

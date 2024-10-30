@@ -6,6 +6,10 @@ use App\Http\Controllers\WhatsAppController;
 use Illuminate\Console\Command;
 use App\Jobs\SendWhatsAppReminder;
 use App\PurchaseOrder;
+use App\User;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PurchaseOrderReminder;
+
 
 class SendPurchaseOrderReminders extends Command
 {
@@ -51,7 +55,13 @@ class SendPurchaseOrderReminders extends Command
             // SendWhatsAppReminder::dispatch($purchaseOrder);
             if (!$purchaseOrder->is_knowed || !$purchaseOrder->is_checked || !$purchaseOrder->is_approved) {
                 $message = "Purchase Order {$purchaseOrder->po_number} needs to be assigned. Please check the system.";
-                $recipientNumber = 'whatsapp:+62123123123'; // Replace with the recipient's phone number
+
+                // foreach ($unassignedPurchaseOrders as $purchaseOrder) {
+                // Send email reminder for pending status
+                $this->sendPendingEmailReminder($purchaseOrder);
+                // }
+
+                $recipientNumber = '6285156376462'; // Replace with the recipient's phone number
 
                 // Send the WhatsApp message
                 WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
@@ -60,5 +70,20 @@ class SendPurchaseOrderReminders extends Command
 
         // $this->info($resp);
         $this->info('Purchase order reminders sent successfully.');
+    }
+
+    /**
+     * Send email reminder for pending purchase order.
+     *
+     * @param  \App\PurchaseOrder  $purchaseOrder
+     * @return void
+     */
+    private function sendPendingEmailReminder(PurchaseOrder $purchaseOrder)
+    {
+        // Find the recipient's email address (e.g., from the User model)
+        $recipientEmail = 'fachriansyah.10119065@mahasiswa.unikom.ac.id'; // Replace with actual email retrieval logic
+
+        // Send the email reminder
+        Mail::to($recipientEmail)->send(new PurchaseOrderReminder($purchaseOrder));
     }
 }

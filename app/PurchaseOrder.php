@@ -15,8 +15,11 @@ class PurchaseOrder extends Model
         'delivery_address',
         'supplier_id',
         'supplier_code',
+        's_locks_code',
+        'p_gr_code',
         'total_item_quantity',
         'total_amount',
+        'purchase_currency_type',
         'purchase_checked_by',
         'is_checked',
         'purchase_knowed_by',
@@ -31,6 +34,11 @@ class PurchaseOrder extends Model
         'notes_from_checker',
         'notes_from_knower',
         'notes_from_approver',
+        'order_date',
+        'delivery_date',
+        'checked_at',
+        'knowed_at',
+        'approved_at',
         'qr_uuid',
         'created_by',
         'updated_by',
@@ -44,7 +52,7 @@ class PurchaseOrder extends Model
         'approved_at',
     ];
 
-    public function getAllData($keyword, $columns, $sort, $order)
+    public function getAllData($keyword, $columns, $sort, $order, $status)
     {
 
         $query = PurchaseOrder::query();
@@ -63,6 +71,10 @@ class PurchaseOrder extends Model
             }
         }
 
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
+        }
+
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
         $data = $query->get();
@@ -70,7 +82,7 @@ class PurchaseOrder extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $status)
     {
 
         $query = PurchaseOrder::query();
@@ -88,6 +100,10 @@ class PurchaseOrder extends Model
                     $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
                 }
             }
+        }
+
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
@@ -127,7 +143,6 @@ class PurchaseOrder extends Model
         return $this->hasMany(PurchaseOrderItem::class, 'purchase_order_id');
     }
 
-
     public function purchaseOrderActivity()
     {
         return $this->hasOne(PurchaseOrderActivities::class, 'po_number', 'po_number');
@@ -146,5 +161,20 @@ class PurchaseOrder extends Model
     public function approvedUserBy()
     {
         return $this->hasOne(User::class, 'npk', 'purchase_agreement_by');
+    }
+
+    public function slock()
+    {
+        return $this->hasOne(SLock::class, 'code', 's_locks_code');
+    }
+
+    public function travelDocument()
+    {
+        return $this->hasMany(TravelDocument::class, 'po_number', 'po_number');
+    }
+
+    public function pgr()
+    {
+        return $this->hasOne(PGR::class, 'code', 'p_gr_code');
     }
 }

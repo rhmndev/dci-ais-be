@@ -44,6 +44,17 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/vendorimport', 'VendorController@import');
         #endregion
 
+        #region Master Storage Location
+        Route::get('/storage-locations', 'StorageLocationController@index');
+        Route::get('/storage-locations/{id}', 'StorageLocationController@show');
+        Route::get('/storage-locations-list', 'StorageLocationController@list');
+        Route::get('/storage-locations-sync', 'StorageLocationController@SyncSAP');
+        Route::post('/storage-locations', 'StorageLocationController@store');
+        Route::post('/storage-locations/{id}', 'StorageLocationController@store');
+        Route::delete('/storage-locations/{id}', 'StorageLocationController@destroy');
+        Route::post('/storage-locations-import', 'StorageLocationController@import');
+        #endregion
+
         #region Master Supplier
         Route::get('/supplier', 'SupplierController@index');
         Route::get('/supplier/{id}', 'SupplierController@show');
@@ -189,17 +200,25 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
+        Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
         // Email Area
         Route::get('/email-settings', 'EmailController@index');
         Route::post('/email-settings', 'EmailController@store');
-        Route::post('/email-settings/g/templates', 'EmailController@showTemplate');
+        Route::get('/email-settings/g/templates', 'EmailController@showTemplate');
+        Route::put('/email-settings/u/templates/{id}', 'EmailController@updateTemplate');
         Route::post('/{po_number}/send-email', 'EmailController@sendEmailPurchaseOrderConfirmation');
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
-});
 
+        Route::group(['prefix' => 'travel-documents'], function () {
+                Route::post('/by-po', 'TravelDocumentController@byPO');
+                Route::post('/create/{poId}', 'TravelDocumentController@create');
+                // Route::get('/{id}/download', 'TravelDocumentController@download');
+                Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
+        });
+});
 Route::post('/login', 'AuthController@login');
 Route::post('/resetpassword', 'AuthController@resetpassword');
 Route::get('/resetpassword/{token}', 'AuthController@show');

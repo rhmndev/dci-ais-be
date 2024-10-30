@@ -43,7 +43,7 @@ class EmailController extends Controller
             return response()->json([
 
                 'type' => 'failed',
-                'message' => 'Err: ' . $e . '.',
+                'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
 
             ], 400);
@@ -82,6 +82,40 @@ class EmailController extends Controller
 
                 'type' => 'failed',
                 'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
+    }
+
+    public function updateTemplate(Request $request, $id)
+    {
+        $request->validate([
+            'subject' => 'required|string',
+            'body' => 'required|string',
+        ]);
+
+        try {
+            $EmailTemplate = EmailTemplate::findOrFail($id);
+
+            $EmailTemplate->subject = $request->subject;
+            $EmailTemplate->body = $request->body;
+
+            $EmailTemplate->updated_by = auth()->user()->username;
+
+            $EmailTemplate->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Data updated successfully!',
+                'data' => NULL,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
 
             ], 400);
@@ -237,6 +271,10 @@ class EmailController extends Controller
             $ccTo = $request->input('cc') ? explode(',', $request->input('cc')) : [];
             $bccTo = $request->input('bcc') ? explode(',', $request->input('bcc')) : [];
 
+            if (!$request->has('body')) {
+            } else {
+            }
+
             $template = EmailTemplate::where('template_type', 'purchase_order_to_vendor')
                 ->where('is_active', true)
                 ->first();
@@ -246,7 +284,8 @@ class EmailController extends Controller
             }
 
             $POData = PurchaseOrder::where('po_number', $noPO)->first();
-            $emailTo = $POData->delivery_email;
+            $deliveryEmail = $request->input('to') ? $request->to : $POData->delivery_email;
+            $emailTo = $deliveryEmail;
 
             // check if POData not signed
             if (isset($POData->is_knowed) && isset($POData->is_checked) && isset($POData->is_approved) && $POData->is_knowed == 1 && $POData->is_checked == 1 && $POData->is_approved == 1) {
@@ -262,12 +301,6 @@ class EmailController extends Controller
                     // 'cc' => ['fachriansyahmni@gmail.com', 'fachriansyah.10119065@mahasiswa.unikom.ac.id'],
                     // 'bcc' => $bccTo,
                 ];
-
-                // return response()->json([
-                //     'type' => 'success',
-                //     // 'data' =>  new PurchaseOrderResource($POData),
-                //     'data2' => $data['cc']
-                // ], 200);
 
                 $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => new PurchaseOrderResource($POData)]);
                 $pdfContent = $pdf->output(); // Get the PDF content
