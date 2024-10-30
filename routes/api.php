@@ -107,12 +107,12 @@ Route::group(['middleware' => ['auth:api']], function () {
         #endregion
 
         #region Master Inspection
-        // Route::get('/line-number', 'LineNumberController@index');
-        // Route::get('/line-number/{id}', 'LineNumberController@show');
-        // Route::post('/line-number', 'LineNumberController@store');
+        Route::get('/line-number', 'LineNumberController@index');
+        Route::get('/line-number/{id}', 'LineNumberController@show');
+        Route::post('/line-number', 'LineNumberController@store');
         Route::get('/line-number-list', 'LineNumberController@list');
-        // Route::post('/line-number/{id}', 'LineNumberController@store');
-        // Route::delete('/line-number/{id}', 'LineNumberController@destroy');
+        Route::post('/line-number/{id}', 'LineNumberController@store');
+        Route::delete('/line-number/{id}', 'LineNumberController@destroy');
         #endregion Master Inspection
 
         #region Master Inspection

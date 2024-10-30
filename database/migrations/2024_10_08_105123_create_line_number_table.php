@@ -16,7 +16,9 @@ class CreateLineNumberTable extends Migration
         Schema::dropIfExists('line_number');
         Schema::create('line_number', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('code')->unique();
             $table->string('name');
+            $table->longText('qr_path');
             $table->boolean('is_active')->default(1);
             $table->timestamps();
         });

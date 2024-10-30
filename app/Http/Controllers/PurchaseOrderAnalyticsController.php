@@ -34,6 +34,11 @@ class PurchaseOrderAnalyticsController extends Controller
             $result = PurchaseOrder::raw(function ($collection) {
                 return $collection->aggregate([
                     [
+                        '$match' => [
+                            'purchase_currency_type' => 'IDR' // Filter by currency code
+                        ]
+                    ],
+                    [
                         '$group' => [
                             '_id' => [
                                 'storageLocationCode' => '$s_locks_code',
@@ -71,7 +76,12 @@ class PurchaseOrderAnalyticsController extends Controller
                             'month_year' => [ // Combine month and year
                                 '$dateToString' => [
                                     'format' => '%Y-%m',
-                                    'date' => '$order_date'
+                                    'date' => [
+                                        '$dateFromParts' => [
+                                            'year' => '$_id.year',
+                                            'month' => '$_id.month'
+                                        ]
+                                    ]
                                 ]
                             ],
                             'totalAmount' => 1,

@@ -98,6 +98,9 @@ class EmailController extends Controller
         try {
             $EmailTemplate = EmailTemplate::findOrFail($id);
 
+            $EmailTemplate->from = $request->from;
+            $EmailTemplate->cc = $request->cc;
+            $EmailTemplate->bcc = $request->bcc;
             $EmailTemplate->subject = $request->subject;
             $EmailTemplate->body = $request->body;
 
@@ -268,9 +271,11 @@ class EmailController extends Controller
     {
         $noPO = $po_number;
         try {
-            $ccTo = $request->input('cc') ? explode(',', $request->input('cc')) : [];
-            $bccTo = $request->input('bcc') ? explode(',', $request->input('bcc')) : [];
+            $ccTo = $request->has('cc') ? explode(',', $request->cc) : [];
+            $bccTo = $request->has('bcc') ? explode(',', $request->bcc) : [];
 
+            $ccTo = array_filter($ccTo);
+            $bccTo = array_filter($bccTo);
             if (!$request->has('body')) {
             } else {
             }
@@ -298,16 +303,15 @@ class EmailController extends Controller
                     'totalAmount' => $POData->total_amount,
                     'orderNumber' => $noPO,
                     'purchaseOrderLink' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
-                    // 'cc' => ['fachriansyahmni@gmail.com', 'fachriansyah.10119065@mahasiswa.unikom.ac.id'],
+                    // 'cc' => $ccTo,
                     // 'bcc' => $bccTo,
                 ];
+                // $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => new PurchaseOrderResource($POData)]);
+                // $pdfContent = $pdf->output(); // Get the PDF content
 
-                $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => new PurchaseOrderResource($POData)]);
-                $pdfContent = $pdf->output(); // Get the PDF content
-
-                // 2. Store the PDF temporarily (optional but recommended)
-                $pdfPath = 'temp/' . $noPO . '.pdf';
-                Storage::put($pdfPath, $pdfContent);
+                // // 2. Store the PDF temporarily (optional but recommended)
+                // $pdfPath = 'temp/' . $noPO . '.pdf';
+                // Storage::put($pdfPath, $pdfContent);
 
                 $bodyEmail = new DynamicEmail($template, $data);
 
@@ -321,9 +325,17 @@ class EmailController extends Controller
                     // ],
                 ];
 
+                $Mailing = Mail::to($emailTo);
 
-                Mail::to($emailTo) // Get email from the request
-                    ->send(new DynamicEmail($template, $data, $attachments));
+                if (!empty($ccTo)) {
+                    $Mailing = $Mailing->cc($ccTo);
+                }
+
+                if (!empty($bccTo)) {
+                    $Mailing = $Mailing->bcc($bccTo);
+                }
+
+                $Mailing->send(new DynamicEmail($template, $data, $attachments));
 
                 EmailLog::create([
                     'recipient' => $emailTo,
