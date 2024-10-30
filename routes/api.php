@@ -186,6 +186,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
         Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
         Route::get('/purchase-orders/d/{po_number}', 'PurchaseOrderController@showPO');
+        Route::post('/purchase-orders/c/{po_number}/generate-qr', 'PurchaseOrderController@generateAndStoreQRCode');
         Route::get('/purchase-orders/a/list', 'PurchaseOrderActivitiesController@getPOActivity');
         Route::get('/purchase-orders/a/{po_number}', 'PurchaseOrderActivitiesController@getActivityByPO');
         Route::post('/purchase-orders/mark-as-seen/{po_number}', 'PurchaseOrderController@markAsSeen');

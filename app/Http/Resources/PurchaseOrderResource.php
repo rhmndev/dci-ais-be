@@ -57,13 +57,15 @@ class PurchaseOrderResource extends JsonResource
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'is_send_email_to_supplier' => $this->is_send_email_to_supplier,
             'qr_uuid' => $this->qr_uuid,
-            'qr_data' => '',
+            'qr_data' => $this->whenLoaded('qrCode'),
             'notes' => $this->notes,
             'notes_from_checker' => $this->notes_from_checker,
             'notes_from_knower' => $this->notes_from_knower,
             'notes_from_approver' => $this->notes_from_approver,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

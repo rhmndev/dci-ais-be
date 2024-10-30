@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Mail\PurchaseOrderCreated;
 use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
+use App\Qr;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Endroid\QrCode\QrCode;
@@ -17,6 +18,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseOrderController extends Controller
 {
@@ -374,6 +376,23 @@ class PurchaseOrderController extends Controller
             'po' => $po,
             'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
         ]);
+    }
+
+    public function generateAndStoreQRCode($poNumber)
+    {
+        $filename = '';
+        try {
+            $po = PurchaseOrder::where('po_number', $poNumber)->firstOrFail();
+            $qr = Qr::GenerateQR('purchase_order', $poNumber);
+            $filename = $qr->path;
+            $po->qr_uuid = $qr->uuid;
+            $po->save();
+        } catch (\Throwable $th) {
+            //throw $th;
+
+        }
+
+        return $filename;
     }
 
     public function downloadPDF($po_number)

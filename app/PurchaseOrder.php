@@ -177,4 +177,9 @@ class PurchaseOrder extends Model
     {
         return $this->hasOne(PGR::class, 'code', 'p_gr_code');
     }
+
+    public function qrCode()
+    {
+        return $this->hasOne(Qr::class, 'uuid', 'qr_uuid');
+    }
 }

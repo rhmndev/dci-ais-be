@@ -57,4 +57,9 @@ class Qr extends Model
             return false;
         }
     }
+
+    public function purchaseOrder()
+    {
+        return $this->hasOne(PurchaseOrder::class, 'qr_uuid', 'uuid');
+    }
 }
