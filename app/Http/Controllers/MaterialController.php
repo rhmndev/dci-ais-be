@@ -10,14 +10,16 @@ use App\Settings;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Image;
+use App\Exports\MaterialsExport;
 use Excel;
+// use Maatwebsite\Excel\Facades\Excel;
 
 class MaterialController extends Controller
 {
     //
     public function index(Request $request)
     {
-        
+
         $request->validate([
             'columns' => 'required',
             'perpage' => 'required|numeric',
@@ -30,7 +32,7 @@ class MaterialController extends Controller
         $order = ($request->order != null) ? $request->order : 'ascend';
 
         try {
-    
+
             $Material = new Material;
             $data = array();
 
@@ -42,17 +44,15 @@ class MaterialController extends Controller
                 'data' => $results,
                 'total' => count($resultAlls)
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -68,7 +68,7 @@ class MaterialController extends Controller
 
     public function store(Request $request)
     {
-        
+
         $request->validate([
             'code' => 'required|string',
             'description' => 'required|string',
@@ -80,32 +80,31 @@ class MaterialController extends Controller
         try {
 
             $Material = Material::firstOrNew(['code' => $request->code]);
-        
+
             $Material->code = $this->stringtoupper($request->code);
             $Material->description = $this->stringtoupper($request->description);
             $Material->type = $this->stringtoupper($request->type);
             $Material->unit = $this->stringtoupper($request->unit);
-            
+
             if ($request->photo != null && $request->hasFile('photo')) {
-        
-                if (Storage::disk('public')->exists('/images/material/'.$Material->photo)) {
-                    Storage::disk('public')->delete('/images/material/'.$Material->photo);
+
+                if (Storage::disk('public')->exists('/images/material/' . $Material->photo)) {
+                    Storage::disk('public')->delete('/images/material/' . $Material->photo);
                 }
 
                 $image      = $request->file('photo');
-                $fileName   = $Material->code.'.' . $image->getClientOriginalExtension();
-    
+                $fileName   = $Material->code . '.' . $image->getClientOriginalExtension();
+
                 $img = Image::make($image->getRealPath());
                 $img->resize(250, 250, function ($constraint) {
-                    $constraint->aspectRatio();                 
+                    $constraint->aspectRatio();
                 });
-    
+
                 $img->stream(); // <-- Key point
-                
-                Storage::disk('public')->put('/images/material'.'/'.$fileName, $img, 'public');
+
+                Storage::disk('public')->put('/images/material' . '/' . $fileName, $img, 'public');
 
                 $Material->photo = $fileName;
-                
             }
 
             $Material->created_by = auth()->user()->username;
@@ -118,17 +117,15 @@ class MaterialController extends Controller
                 'message' => 'Data saved successfully!',
                 'data' => NULL,
             ], 200);
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 
@@ -159,7 +156,7 @@ class MaterialController extends Controller
             ]);
             $results = json_decode($json->getBody())->d->results;
 
-            if (count($results) > 0){
+            if (count($results) > 0) {
 
                 foreach ($results as $result) {
 
@@ -177,56 +174,49 @@ class MaterialController extends Controller
                     $Material->updated_by = auth()->user()->username;
                     $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                     $Material->save();
-
                 }
 
                 return response()->json([
-        
+
                     "result" => true,
                     "msg_type" => 'success',
-                    "message" => 'Sync SAP Success. '.count($results).' data synced',
-        
-                ], 200);
+                    "message" => 'Sync SAP Success. ' . count($results) . ' data synced',
 
+                ], 200);
             } else {
 
                 return response()->json([
-        
+
                     "result" => false,
                     "msg_type" => 'failed',
                     "message" => 'Data not found',
-        
+
                 ], 400);
-
             }
-
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
-            ], 400);
+                "message" => 'err: ' . $e,
 
+            ], 400);
         }
-        
     }
 
     public function import(Request $request)
     {
         $data = array();
-        
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
         ]);
-            
+
         try {
 
             if ($files = $request->file('file')) {
-                
+
                 //store file into document folder
                 $Excels = Excel::toArray(new MaterialsImport, $files);
                 $Excels = $Excels[0];
@@ -234,7 +224,7 @@ class MaterialController extends Controller
 
                 foreach ($Excels as $Excel) {
 
-                    if ($Excel['code'] != null){
+                    if ($Excel['code'] != null) {
 
                         //store your file into database
                         $Material = Material::firstOrNew(['code' => $Excel['code']]);
@@ -249,41 +239,36 @@ class MaterialController extends Controller
                         $Material->updated_by = auth()->user()->username;
                         $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $Material->save();
-
                     }
-
                 }
-    
+
                 return response()->json([
-        
+
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data stored successfully!',
                     // "message" => $data,
-        
+
                 ], 200);
             }
-
         } catch (\Exception $e) {
 
             return response()->json([
-    
+
                 "result" => false,
                 "msg_type" => 'error',
-                "message" => 'err: '.$e,
-    
+                "message" => 'err: ' . $e,
+
             ], 400);
-
         }
-
     }
 
     public function destroy($id)
     {
         $Material = Material::find($id);
-        
-        if (Storage::disk('public')->exists('/images/material/'.$Material->photo)) {
-            Storage::disk('public')->delete('/images/material/'.$Material->photo);
+
+        if (Storage::disk('public')->exists('/images/material/' . $Material->photo)) {
+            Storage::disk('public')->delete('/images/material/' . $Material->photo);
         }
 
         $Material->delete();
@@ -296,10 +281,40 @@ class MaterialController extends Controller
 
     private function stringtoupper($string)
     {
-        if ($string != ''){
+        if ($string != '') {
             $string = strtolower($string);
             $string = strtoupper($string);
         }
         return $string;
+    }
+
+    public function export(Request $request)
+    {
+        try {
+            $fileName = 'materials_' . date('YmdHis') . '.xlsx';
+
+            return Excel::download(new MaterialsExport($request), $fileName);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 500);
+        }
+    }
+
+    public function list(Request $request)
+    {
+        $materials = Material::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)
+            ->get();
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $materials
+        ], 200);
     }
 }

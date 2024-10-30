@@ -81,7 +81,7 @@ class PartComponentController extends Controller
             'name' => 'required',
             'number' => 'required|string',
             'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
-            'description' => 'string'
+            'description' => 'nullable|string'
         ]);
 
         try {
@@ -159,5 +159,19 @@ class PartComponentController extends Controller
             $string = strtoupper($string);
         }
         return $string;
+    }
+
+    public function list(Request $request)
+    {
+        $PartComponent = PartComponent::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)->get();
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $PartComponent
+        ], 200);
     }
 }

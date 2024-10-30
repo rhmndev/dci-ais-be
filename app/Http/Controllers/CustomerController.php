@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Customer;
+use App\Imports\CustomerImport;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Excel;
 
 class CustomerController extends Controller
 {
@@ -59,30 +62,16 @@ class CustomerController extends Controller
 
     public function list(Request $request)
     {
+        $Customer = Customer::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->get();
 
-        $keyword = ($request->keyword != null) ? $request->keyword : '';
-        $data = array();
-
-        try {
-
-            $Customer = new Customer;
-            $results = $Customer->getList($keyword);
-
-            return response()->json([
-                'type' => 'success',
-                'message' => 'Success.',
-                'data' => $results,
-            ], 200);
-        } catch (\Exception $e) {
-
-            return response()->json([
-
-                'type' => 'failed',
-                'message' => 'Err: ' . $e . '.',
-                'data' => NULL,
-
-            ], 400);
-        }
+        return response()->json([
+            'type' => 'success',
+            'data' => $Customer
+        ], 200);
     }
 
     public function store(Request $request)
@@ -130,6 +119,66 @@ class CustomerController extends Controller
         }
     }
 
+    public function import(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        try {
+
+            if ($files = $request->file('file')) {
+
+                //store file into document folder
+                $Excels = Excel::toArray(new CustomerImport, $files);
+                $Excels = $Excels[0];
+                // $Excels = json_decode(json_encode($Excels[0]), true);
+
+                foreach ($Excels as $Excel) {
+
+                    if ($Excel['code'] != null) {
+
+                        //store your file into database
+                        $Customer = Customer::firstOrNew(['code' => $Excel['code']]);
+                        $Customer->code = $this->stringtoupper(strval($Excel['code']));
+                        $Customer->name = $this->stringtoupper($Excel['name']);
+                        $Customer->code_name = $this->stringtoupper($Excel['codename']);
+                        $Customer->address = $Excel['address'];
+                        $Customer->phone = $Excel['phone'];
+                        $Customer->contact = $Excel['contact'];
+                        $Customer->email = $Excel['email'];
+
+                        $Customer->created_by = auth()->user()->username;
+                        $Customer->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Customer->updated_by = auth()->user()->username;
+                        $Customer->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                        $Customer->save();
+                    }
+                }
+
+                return response()->json([
+
+                    "result" => true,
+                    "msg_type" => 'Success',
+                    "message" => 'Data stored successfully!',
+                    // "message" => $data,
+
+                ], 200);
+            }
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $e,
+
+            ], 400);
+        }
+    }
+
     public function destroy($id)
     {
         $Customer = Customer::find($id);
@@ -139,6 +188,27 @@ class CustomerController extends Controller
         return response()->json([
             'type' => 'success',
             'message' => 'Data deleted successfully'
+        ], 200);
+    }
+
+    private function stringtoupper($string)
+    {
+        if ($string != '') {
+            $string = strtolower($string);
+            $string = strtoupper($string);
+        }
+        return $string;
+    }
+
+    public function listParts($id)
+    {
+        $Customer = Customer::findOrFail($id);
+
+        $parts = isset($Customer->partcomponents) ? $Customer->partcomponents : [];
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $parts
         ], 200);
     }
 }

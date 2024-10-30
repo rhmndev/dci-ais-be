@@ -19,7 +19,7 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Admin',
                 'description' => 'Administrator',
-                'permissions' => $permissions->map(function($perm){
+                'permissions' => $permissions->map(function ($perm) {
                     return [
                         'permission_id' => $perm->id,
                         'allow' => true
@@ -31,19 +31,48 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Vendor',
                 'description' => 'Vendor',
-                'permissions' => $permissions->map(function($perm){
-                    if ( $perm->url == 'dashboard' || $perm->url == 'transaction' || $perm->url == 'receiving-vendor' ){
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard' || $perm->url == 'transaction' || $perm->url == 'receiving-vendor') {
 
                         return [
                             'permission_id' => $perm->id,
                             'allow' => true
                         ];
-
                     }
                 })->toArray(),
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
-            ]
+            ],
+            [
+                'name' => 'Supplier',
+                'description' => 'Supplier',
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                'name' => 'Purchasing',
+                'description' => 'Purchasing',
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'purchase-order' || $perm->url == 'OrderApproval' || $perm->url == 'MonitoringPO') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {
@@ -55,7 +84,6 @@ class RoleSeeder extends Seeder
             $role->created_by = $data['created_by'];
             $role->updated_by = $data['updated_by'];
             $role->save();
-
         }
     }
 }
