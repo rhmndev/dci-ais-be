@@ -136,7 +136,7 @@
                   <table>
                     <tr>
                         <td>Delivery Date:</td>
-                        <td>{{ $travelDocument->purchaseOrder->delivery_date ?? date('d-m-Y', strtotime($travelDocument->purchaseOrder->delivery_date)) :'-' }}</td> 
+                        <td>{{ $travelDocument->purchaseOrder->delivery_date ? date('d-m-Y', strtotime($travelDocument->purchaseOrder->delivery_date)) : '-' }}</td> 
                     </tr>
                     <tr>
                         <td>PO Number:</td>
