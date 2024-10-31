@@ -29,6 +29,7 @@ class PurchaseOrder extends Model
         'tax',
         'tax_type',
         'status',
+        'po_status',
         'is_send_email_to_supplier',
         'notes',
         'notes_from_checker',

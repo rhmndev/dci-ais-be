@@ -214,6 +214,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
 
         Route::group(['prefix' => 'travel-documents'], function () {
+                Route::get('/{id}', 'TravelDocumentController@show');
+                // Route::post('/{id}', 'TravelDocumentController@update');
                 Route::post('/by-po', 'TravelDocumentController@byPO');
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');

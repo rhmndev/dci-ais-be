@@ -15,6 +15,15 @@ use Illuminate\Support\Facades\Storage;
 
 class TravelDocumentController extends Controller
 {
+    public function show(Request $request, $id)
+    {
+        $TravelDocument = TravelDocument::findOrFail($id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $TravelDocument
+        ]);
+    }
     public function byPO(Request $request)
     {
         $request->validate([
@@ -55,7 +64,8 @@ class TravelDocumentController extends Controller
     {
         $request->validate([
             'items' => 'required|array', // 'items' must be an array
-            'items.*.po_item_id' => 'required|string' // Each item must have a 'po_item_id'
+            'items.*.po_item_id' => 'required|string', // Each item must have a 'po_item_id'
+            'items.*.qty' => 'required'
         ]);
         try {
             $purchaseOrder = PurchaseOrder::findOrFail($poId);
@@ -93,7 +103,20 @@ class TravelDocumentController extends Controller
                 if ($poItem) {
                     $travelDocument->items()->create([
                         'po_item_id' => $item['po_item_id'],
+                        'qty' => $item['qty'],
                     ]);
+
+                    // generate qr for each travel document item
+                    $qrCode = QrCode::create($item['po_item_id']);
+                    $qrCode->setSize(150);
+                    $writer = new PngWriter();
+                    $qrCodeData = $writer->write($qrCode);
+                    $fileName = 'qrcodes/travel_document_item_' . $item['po_item_id'] . '_' . uniqid() . '.png';
+                    Storage::disk('public')->put($fileName, $qrCodeData->getString());
+                    $travelDocument->items()->updateOrCreate(
+                        ['po_item_id' => $item['po_item_id']],
+                        ['qr_path' => $fileName]
+                    );
                 }
             }
 

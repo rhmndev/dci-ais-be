@@ -43,6 +43,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->string('tax')->nullable();
             $table->string('tax_type')->nullable();
             $table->string('status')->default('pending');
+            $table->string('po_status');
             $table->boolean('is_send_email_to_supplier')->default(false);
             $table->longText('notes')->nullable();
             $table->longText('notes_from_checker')->nullable();

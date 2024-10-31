@@ -9,6 +9,8 @@ class TravelDocumentItem extends Model
     protected $fillable = [
         'travel_document_id',
         'po_item_id',
+        'qty',
+        'qr_path',
     ];
 
     public function travelDocument()

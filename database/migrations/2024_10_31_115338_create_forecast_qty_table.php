@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTravelDocumentItemsTable extends Migration
+class CreateForecastQtyTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,10 @@ class CreateTravelDocumentItemsTable extends Migration
      */
     public function up()
     {
-        Schema::create('travel_document_items', function (Blueprint $table) {
+        Schema::create('forecast_qty', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('travel_document_id');
-            $table->string('po_item_id');
-            $table->string('qty');
-            $table->string('qr_path');
+            $table->string('name');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -30,6 +28,6 @@ class CreateTravelDocumentItemsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('travel_document_items');
+        Schema::dropIfExists('forecast_qty');
     }
 }
