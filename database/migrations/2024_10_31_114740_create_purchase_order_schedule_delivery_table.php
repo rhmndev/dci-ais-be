@@ -18,6 +18,8 @@ class CreatePurchaseOrderScheduleDeliveryTable extends Migration
             $table->string('po_number');
             $table->string('description')->nullable();
             $table->longText('file_path');
+            $table->boolean('show_to_supplier')->default(false);
+            $table->boolean('is_send_email_to_supplier')->default(false);
             $table->string('created_by');
             $table->string('updated_by');
             $table->timestamps();
