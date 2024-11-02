@@ -171,12 +171,12 @@
                   @php $total = 0; $no = 1;$totalItems = count($travelDocument->items); @endphp 
                   @foreach ($travelDocument->items as $item)
                   <tr style="border-top: none; border-bottom: none;">
-                    <td>{{ $no++ }}</td>
+                    <td  style="text-align:center;">{{ $no++ }}</td>
                     <td>{{ $item->poItem->material->code ?? 'code_item'}} - {{$item->poItem->material->description ?? 'description_item'}}</td>
                     <td style="text-align:center;">{{ $item->poItem->quantity }}</td>
                     <td style="text-align:center;">{{ $item->poItem->unit_type }}</td>
-                    <td style="text-align:left;">@currency($item->poItem->unit_price ?? 0)</td> 
-                    <td style="text-align:left;">@currency($item->poItem->unit_price * $item->poItem->quantity)</td> 
+                    <td style="text-align:right;">@currency($item->poItem->unit_price ?? 0)</td> 
+                    <td style="text-align:right;">@currency($item->poItem->unit_price * $item->poItem->quantity)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   @php $total += $item->poItem->total; @endphp 
@@ -196,7 +196,7 @@
                 <tfoot>
                   <tr>
                     <td colspan="5" style="text-align:right;">total:</td>
-                    <td>@currency($travelDocument->purchaseOrder->total_amount ?? 0)</td> 
+                    <td style="text-align:right;">@currency($travelDocument->purchaseOrder->total_amount ?? 0)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   <tr>
@@ -213,15 +213,15 @@
                 <p>Made By:</p>
                 <br>
                 <br>
-                <p>(.......................................)</p> 
+                <p>{{$travelDocument->created_by ?? ''}}</p> 
               </div>
             </td>
-            <td style="border: none; padding: 0; text-align: left;">
+            <td style="border: none; padding: 0; text-align: center;">
               <div class="signature">
                 <p>Delivered By:</p>
                 <br>
                 <br>
-                <p>(.......................................)</p> 
+                <p>{{$travelDocument->delivered_by}}</p> 
               </div>
             </td>
             <td style="border: none; padding: 0; text-align: center;">

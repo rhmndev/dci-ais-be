@@ -17,8 +17,11 @@ class CreateTravelDocumentItemsTable extends Migration
             $table->bigIncrements('id');
             $table->string('travel_document_id');
             $table->string('po_item_id');
+            $table->string('lot_production_number');
             $table->string('qty');
+            $table->string('qr_tdi_no');
             $table->string('qr_path');
+            $table->string('verified_by');
             $table->timestamps();
         });
     }

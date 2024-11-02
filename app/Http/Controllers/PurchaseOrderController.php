@@ -2,23 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\ForecastQty;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
+use App\Mail\PurchaseOrderCreated;
 use App\Http\Resources\PurchaseOrderResource;
 use App\PurchaseOrder;
 use App\Supplier;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use App\Mail\PurchaseOrderCreated;
 use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
+use App\PurchaseOrderScheduleDelivery;
 use App\Qr;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Crypt;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
-use Illuminate\Support\Facades\Storage;
 
 class PurchaseOrderController extends Controller
 {
@@ -165,6 +168,78 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => '',
                 'data' => new PurchaseOrderResource($PurchaseOrder)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    public function uploadScheduleDelivery(Request $request, $po_number)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|mimes:xlsx,csv,xls',
+                'description' => 'nullable|string',
+                'show_to_supplier' => 'required|boolean',
+                'is_send_email_to_supplier' => 'required|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => $validator->errors()->first(),
+                    'data' => null
+                ], 422);
+            }
+
+            $file = $request->file('file');
+            $originalFileName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+            $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
+            $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
+            $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
+
+            // Create and save the schedule delivery record
+            $scheduleDelivery = new PurchaseOrderScheduleDelivery([
+                'po_number' => $po_number,
+                'filename' => $fileName,
+                'description' => $request->description,
+                'file_path' => $filePath,
+                'show_to_supplier' => $request->show_to_supplier ?? 0,
+                'is_send_email_to_supplier' => $request->is_send_email_to_supplier ?? 0,
+                'created_by' => auth()->user()->npk,
+                'updated_by' => auth()->user()->npk,
+            ]);
+            $scheduleDelivery->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Schedule delivery uploaded successfully',
+                'data' => $scheduleDelivery,
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error uploading schedule delivery: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    public function showScheduleDeliveries(Request $request, $po_number)
+    {
+        try {
+            $PurchaseOrderScheduleDeliveries = PurchaseOrder::where('po_number', $po_number)->first()->scheduleDeliveries;
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrderScheduleDeliveries
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -399,6 +474,7 @@ class PurchaseOrderController extends Controller
     {
         try {
             $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            $forecastQties = ForecastQty::where('is_active', 1)->get();
 
             if (!$purchaseOrder) {
                 return response()->json([
@@ -417,7 +493,7 @@ class PurchaseOrderController extends Controller
                 ], 404);
             }
 
-            $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => new PurchaseOrderResource($purchaseOrder)]);
+            $pdf = PDF::loadView('purchase_orders.pdf2', ['forecastQties' => $forecastQties, 'purchaseOrder' => new PurchaseOrderResource($purchaseOrder)]);
             return $pdf->download('' . $purchaseOrder->po_number . '.pdf');
         } catch (\Throwable $th) {
             return response()->json([

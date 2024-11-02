@@ -186,6 +186,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
         Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
         Route::get('/purchase-orders/d/{po_number}', 'PurchaseOrderController@showPO');
+        Route::get('/purchase-orders/d/{po_number}/schedule-deliveries', 'PurchaseOrderController@showScheduleDeliveries');
+        Route::post('/purchase-orders/c/{po_number}/upload-schedule-delivery', 'PurchaseOrderController@uploadScheduleDelivery');
         Route::post('/purchase-orders/c/{po_number}/generate-qr', 'PurchaseOrderController@generateAndStoreQRCode');
         Route::get('/purchase-orders/a/list', 'PurchaseOrderActivitiesController@getPOActivity');
         Route::get('/purchase-orders/a/{po_number}', 'PurchaseOrderActivitiesController@getActivityByPO');
@@ -199,6 +201,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/knowed/{id}/unconfirm', 'PurchaseOrderController@signedAsKnowedUnconfirmed');
         Route::post('/purchase-order/s/checked/{id}/unconfirm', 'PurchaseOrderController@signedAsCheckedUnconfirmed');
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
+
+        Route::get('/schedule-deliveries', 'ScheduleDeliveryController@index');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
         Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
@@ -220,6 +224,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
                 Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
+                Route::get('/{id}/download-items-label', 'TravelDocumentController@downloadItemsLabel');
+                Route::get('/items/{itemId}/download-label', 'TravelDocumentController@downloadLabel');
         });
 });
 Route::post('/login', 'AuthController@login');

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreatePurchaseOrderScheduleDeliveryTable extends Migration
+class CreatePurchaseOrderScheduleDeliveriesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,10 @@ class CreatePurchaseOrderScheduleDeliveryTable extends Migration
      */
     public function up()
     {
-        Schema::create('purchase_order_schedule_delivery', function (Blueprint $table) {
+        Schema::create('purchase_order_schedule_deliveries', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('po_number');
+            $table->string('filename');
             $table->string('description')->nullable();
             $table->longText('file_path');
             $table->boolean('show_to_supplier')->default(false);
@@ -33,6 +34,6 @@ class CreatePurchaseOrderScheduleDeliveryTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('purchase_order_schedule_delivery');
+        Schema::dropIfExists('purchase_order_schedule_deliveries');
     }
 }

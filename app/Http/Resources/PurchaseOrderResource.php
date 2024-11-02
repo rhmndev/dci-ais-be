@@ -43,6 +43,7 @@ class PurchaseOrderResource extends JsonResource
             'purchase_agreement_by' => $this->purchase_agreement_by,
             'approved_at' => $this->approved_at,
             'is_approved' => $this->is_approved,
+            'user' => $this->user,
             'user_checked' => new PurchaseOrderUserResource($this->whenLoaded('checkedUserBy')),
             'user_knowed' => new PurchaseOrderUserResource($this->whenLoaded('knowedUserBy')),
             'user_approved' => new PurchaseOrderUserResource($this->whenLoaded('approvedUserBy')),

@@ -183,4 +183,9 @@ class PurchaseOrder extends Model
     {
         return $this->hasOne(Qr::class, 'uuid', 'qr_uuid');
     }
+
+    public function scheduleDeliveries()
+    {
+        return $this->hasMany(PurchaseOrderScheduleDelivery::class, 'po_number', 'po_number');
+    }
 }

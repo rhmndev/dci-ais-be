@@ -14,9 +14,9 @@ class ForecastQtySeeder extends Seeder
     {
         ForecastQty::truncate();
         $datas = [
-            ['name' => 'n + 1', 'is_active' => true],
-            ['name' => 'n + 2', 'is_active' => true],
-            ['name' => 'n + 3', 'is_active' => true],
+            ['name' => 'n + 1', 'order' => 0, 'is_active' => true],
+            ['name' => 'n + 2', 'order' => 1, 'is_active' => true],
+            ['name' => 'n + 3', 'order' => 2, 'is_active' => true],
         ];
 
         foreach ($datas as $data) {

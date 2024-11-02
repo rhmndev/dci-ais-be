@@ -62,7 +62,22 @@ class RoleSeeder extends Seeder
                 'name' => 'Purchasing',
                 'description' => 'Purchasing',
                 'permissions' => $permissions->map(function ($perm) {
-                    if ($perm->url == 'purchase-order' || $perm->url == 'OrderApproval' || $perm->url == 'MonitoringPO') {
+                    if ($perm->url == 'dashboard' || $perm->url == 'purchase-order' || $perm->url == 'OrderApproval' || $perm->url == 'MonitoringPO' || $perm->url == 'delivery-schedule') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                'name' => 'Warehouse',
+                'description' => 'Warehouse',
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard' || $perm->url == 'delivery-schedule' || $perm->url == 'receiving-checkpoint') {
 
                         return [
                             'permission_id' => $perm->id,

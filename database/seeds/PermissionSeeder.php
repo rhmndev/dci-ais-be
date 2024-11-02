@@ -144,11 +144,20 @@ class PermissionSeeder extends Seeder
 						"changed_by" => "seeder",
 					],
 					[
+						"name" => "Receiving Checkpoint",
+						"description" => null,
+						"url" => "receiving-checkpoint",
+						"icon" => null,
+						"order_number" => 3,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
 						"name" => "Reporting Inspection",
 						"description" => null,
 						"url" => "inspeksilaporan",
 						"icon" => null,
-						"order_number" => 3,
+						"order_number" => 4,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					]
@@ -200,11 +209,20 @@ class PermissionSeeder extends Seeder
 						"changed_by" => "seeder",
 					],
 					[
+						"name" => "Delivery Schedule",
+						"description" => null,
+						"url" => "delivery-schedule",
+						"icon" => null,
+						"order_number" => 5,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
 						"name" => "Settings",
 						"description" => null,
 						"url" => "purchase-order-settings",
 						"icon" => null,
-						"order_number" => 5,
+						"order_number" => 6,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					]

@@ -18,19 +18,19 @@ class AuthController extends Controller
             'username' => 'required|exists:users',
             'password' => 'required|min:6'
         ]);
-        
+
         $token = Str::random(25);
         $user = User::where('username', $request->username)->first();
-        
+
         if (Hash::check($request->password, $user->password)) {
-            
+
             $user->forceFill([
                 'api_token' => hash('sha256', $token)
             ])->save();
 
 
             $permissions = Permission::whereNull('parent_id')->orderBy('order_number')->get();
-            $permission_allowed = $permissions->map(function($permission) use ($user){
+            $permission_allowed = $permissions->map(function ($permission) use ($user) {
 
                 $permission_allowed = collect($user->role->permissions)->where('allow', true);
 
@@ -41,7 +41,7 @@ class AuthController extends Controller
                         'name' => $permission->name,
                         'url' => $permission->url,
                         'icon' => $permission->icon,
-                        'children' => $permission->children->map(function($child) use ($user){
+                        'children' => $permission->children->map(function ($child) use ($user) {
                             $permission_allowed = collect($user->role->permissions)->where('allow', true);
                             if ($permission_allowed->pluck('permission_id')->contains($child->id)) {
                                 return [
@@ -55,8 +55,8 @@ class AuthController extends Controller
                 }
             });
 
-            $user->photo_url = asset('storage/images/users/'.$user->photo);
-            
+            $user->photo_url = asset('storage/images/users/' . $user->photo);
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Login successfully!',
@@ -65,8 +65,7 @@ class AuthController extends Controller
                 'permissions' => $permission_allowed->toArray(),
                 'redirect' => Permission::find($user->role->permissions->where('allow', true)->first()->permission_id)->url
             ], 200);
-
-        }   else {
+        } else {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Please check your email or password!',
@@ -94,8 +93,8 @@ class AuthController extends Controller
 
         $notification_text = '';
 
-        if ($request->token == null){
-        
+        if ($request->token == null) {
+
             $request->validate([
                 'email' => 'required|email|exists:users,email',
             ]);
@@ -103,9 +102,8 @@ class AuthController extends Controller
             $notification_text = 'Send email success.';
 
             $User = User::where('email', $request->email)->firstOrFail();
-
         } else {
-        
+
             $request->validate([
                 'email' => 'required|email|exists:users,email',
                 'token' => 'required|exists:users,reset_token',
@@ -121,14 +119,12 @@ class AuthController extends Controller
 
             $token = Str::random(10);
 
-            if ($request->token == null){
+            if ($request->token == null) {
 
                 Mail::to($request->email)->send(new UserMail($token));
-                
             } else {
 
                 $User->password = Hash::make($request->password);
-
             }
 
             $User->reset_token = $token;
@@ -142,17 +138,15 @@ class AuthController extends Controller
                 'message' => $notification_text,
                 'data' => NULL,
             ], 200);
-
         } catch (\Exception $e) {
-    
-            return response()->json([
-    
-                'type' => 'failed',
-                'message' => 'Err: '.$e.'.',
-                'data' => NULL,
-    
-            ], 400);
 
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
         }
     }
 }

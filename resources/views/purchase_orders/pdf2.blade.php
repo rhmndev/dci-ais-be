@@ -76,6 +76,10 @@
     @if($purchaseOrder->status == "unapproved")
     <div class="watermark">UNAPPROVED</div>
     @endif
+
+    @php
+    $totalForecast = 3;
+    @endphp
   {{-- <div class="watermark">{{$purchaseOrder->status}}</div> --}}
 
   <table class="w-full" style="border: 0px">
@@ -178,6 +182,7 @@
             <th class="text-center">Unit</th>
             <th class="text-center">Price</th>
             <th class="text-center">Amount</th>
+            <th colspan="{{$totalForecast}}" class="text-center">Forecast QTY</th>
         </tr>
         </thead>
         <tbody>
@@ -190,6 +195,11 @@
               <td class="text-center">{{ $item->unit_type }}</td>
               <td class="text-center">@currency($item->unit_price)</td> 
               <td>@currency($item->unit_price_amount)</td> 
+              @foreach ($forecastQties as $forecastItem)
+                <td class="text-center">
+                    0
+                </td>
+              @endforeach
           </tr>
           @endforeach
           <tr>

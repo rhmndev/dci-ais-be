@@ -8,6 +8,7 @@ class ForecastQty extends Model
 {
     protected $fillable = [
         'name',
+        'order',
         'is_active'
     ];
 }

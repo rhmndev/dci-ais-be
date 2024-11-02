@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateForecastQtyTable extends Migration
+class CreateForecastQtiesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,10 @@ class CreateForecastQtyTable extends Migration
      */
     public function up()
     {
-        Schema::create('forecast_qty', function (Blueprint $table) {
+        Schema::create('forecast_qties', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
+            $table->integer('order');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -28,6 +29,6 @@ class CreateForecastQtyTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('forecast_qty');
+        Schema::dropIfExists('forecast_qties');
     }
 }

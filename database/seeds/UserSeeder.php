@@ -54,6 +54,18 @@ class UserSeeder extends Seeder
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ],
+            [
+                'username' => 'warehouse',
+                'full_name' => 'warehouse ppic',
+                'department' => 'warehouse',
+                'phone_number' => '+6281234567892',
+                'npk' => '999978',
+                'email' => 'warehouse@example.com',
+                'password' => Hash::make('password'),
+                'type' => 4,
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {

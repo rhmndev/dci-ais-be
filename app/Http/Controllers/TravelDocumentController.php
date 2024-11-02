@@ -6,6 +6,7 @@ use App\Http\Resources\TravelDocumentResource;
 use Illuminate\Http\Request;
 use App\PurchaseOrder;
 use App\TravelDocument;
+use App\TravelDocumentItem;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
@@ -176,6 +177,23 @@ class TravelDocumentController extends Controller
         } else {
             return 'SJ' . $year . $month . $day . '001';
         }
+    }
+
+    public function downloadItemsLabel(Request $request, $id)
+    {
+        $travelDocument = TravelDocument::with('items')->findOrFail($id);
+
+        $pdf = PDF::loadView('travel_documents.item-pdf', ['travelDocument' => $travelDocument, 'is_all' => true])
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('Label-Surat-Jalan-' . $travelDocument->no . '.pdf');
+    }
+
+    public function downloadLabel($itemId)
+    {
+        $item = TravelDocumentItem::with('travelDocument.supplier', 'poItem.material')->findOrFail($itemId);
+
+        $pdf = PDF::loadView('travel_documents.item-pdf', ['item' => $item, 'is_all' => false])->setPaper('a4', 'landscape');;
+        return $pdf->download('Label-Item-' . $item->po_item_id . '.pdf');
     }
 
     public function downloadToPdf($travelDocumentId)

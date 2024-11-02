@@ -36,6 +36,9 @@ class TravelDocumentResource extends JsonResource
                         'po_item_id' => $item->po_item_id,
                         'material' => new MaterialResource($item->poItem->material),
                         'poItem' => new PurchaseOrderItemsResource($item->poItem),
+                        'lot_production_number' => $item->lot_production_number,
+                        'qr_uuid' => $item->qr_uuid,
+                        'qr_path' => $item->qr_path,
                     ];
                 });
             }),
