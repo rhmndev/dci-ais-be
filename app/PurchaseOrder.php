@@ -133,6 +133,52 @@ class PurchaseOrder extends Model
         return $data;
     }
 
+    public function getBySupplierCodeData($keyword, $columns, $sort, $order, $status, $supplier_code)
+    {
+        $query = PurchaseOrder::where('supplier_code', $supplier_code);
+
+        if (!empty($keyword)) {
+            foreach ($columns as $index => $column) {
+                if ($index == 0) {
+                    $query = $query->where($column, 'like', '%' . $keyword . '%');
+                } else {
+                    $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
+                }
+            }
+        }
+
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
+
+        return $query->get();
+    }
+
+    public function getBySupplierCodeDataPagination($keyword, $columns, $perpage, $page, $sort, $order, $status, $supplier_code)
+    {
+        $query = PurchaseOrder::where('supplier_code', $supplier_code);
+
+        if (!empty($keyword)) {
+            foreach ($columns as $index => $column) {
+                if ($index == 0) {
+                    $query = $query->where($column, 'like', '%' . $keyword . '%');
+                } else {
+                    $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
+                }
+            }
+        }
+
+        if ($status != '') {
+            $query->where('status', $status);
+        }
+
+        $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
+
+        return $query->skip(($page - 1) * $perpage)->take($perpage)->get();
+    }
+
     // Define the relationship to Supplier
     public function supplier()
     {

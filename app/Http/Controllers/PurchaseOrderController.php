@@ -42,7 +42,6 @@ class PurchaseOrderController extends Controller
         $order = ($request->order != null) ? $request->order : 'ascend';
         $status = ($request->status != null) ? $request->status : '';
         try {
-
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
             $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status);
@@ -62,6 +61,87 @@ class PurchaseOrderController extends Controller
                 'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
 
+            ], 400);
+        }
+    }
+
+    public function getBySupplierLoggedUser(Request $request)
+    {
+        $request->validate([
+            'columns' => 'required',
+            'perpage' => 'required|numeric',
+            'page' => 'required|numeric',
+            'sort' => 'required|string',
+            'status' => 'nullable|string',
+            'order' => 'string',
+        ]);
+        try {
+            $user = auth()->user();
+            if ($user->role_name == 'supplier' || $user->role_name == 'Supplier') {
+                $supplier_code = $user->vendor_code;
+
+                $keyword = ($request->keyword != null) ? $request->keyword : '';
+                $order = ($request->order != null) ? $request->order : 'ascend';
+                $status = ($request->status != null) ? $request->status : 'approved';
+
+                $PurchaseOrder = new PurchaseOrder;
+                $data = array();
+                $resultAlls = $PurchaseOrder->getBySupplierCodeData($keyword, $request->columns, $request->sort, $order, $status, $supplier_code);
+                $results = $PurchaseOrder->getBySupplierCodeDataPagination($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $supplier_code);
+
+                return response()->json([
+                    'type' => 'success',
+                    'data' => PurchaseOrderResource::collection($results),
+                    'dataAll' => $resultAlls,
+                    'total' => count($resultAlls),
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User is not a supplier.',
+                    'data' => $user,
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
+    public function showByCodeSupplier(Request $request, $supplier_code)
+    {
+        $request->validate([
+            'columns' => 'required',
+            'perpage' => 'required|numeric',
+            'page' => 'required|numeric',
+            'sort' => 'required|string',
+            'status' => 'nullable|string',
+            'order' => 'string',
+        ]);
+        try {
+            $keyword = ($request->keyword != null) ? $request->keyword : '';
+            $order = ($request->order != null) ? $request->order : 'ascend';
+            $status = ($request->status != null) ? $request->status : '';
+
+            $PurchaseOrder = new PurchaseOrder;
+            $data = array();
+            $resultAlls = $PurchaseOrder->getBySupplierCodeData($keyword, $request->columns, $request->sort, $order, $status, $supplier_code);
+            $results = $PurchaseOrder->getBySupplierCodeDataPagination($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $supplier_code);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => PurchaseOrderResource::collection($results),
+                'dataAll' => $resultAlls,
+                'total' => count($resultAlls),
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $th->getMessage(),
             ], 400);
         }
     }

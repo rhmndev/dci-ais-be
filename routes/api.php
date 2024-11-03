@@ -182,6 +182,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         #endregion
 
         Route::get('/purchase-orders', 'PurchaseOrderController@index');
+        Route::get('/po-supplier', 'PurchaseOrderController@getBySupplierLoggedUser');
+        Route::get('/purchase-orders/supplier/{supplier_code}', 'PurchaseOrderController@showByCodeSupplier');
         Route::get('/purchase-orders/{id}', 'PurchaseOrderController@show');
         Route::post('/purchase-orders', 'PurchaseOrderController@store');
         Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
