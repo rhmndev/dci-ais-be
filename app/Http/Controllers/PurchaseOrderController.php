@@ -420,6 +420,24 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function getScheduleDeliveriesByPoId(Request $request, $id)
+    {
+        try {
+            $ScheduleDelivery = PurchaseOrder::with('scheduleDeliveries')->where('_id', $id)->first()->scheduleDeliveries;
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $ScheduleDelivery
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function getListScheduleDelivered()
     {
         try {

@@ -192,6 +192,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/d/{po_number}', 'PurchaseOrderController@showPO');
         Route::get('/purchase-orders/d/{po_number}/schedule-deliveries', 'PurchaseOrderController@showScheduleDeliveries');
         Route::post('/purchase-orders/c/{po_number}/upload-schedule-delivery', 'PurchaseOrderController@uploadScheduleDelivery');
+        Route::post('/purchase-orders/g/{id}/schedule-deliveries-by-po', 'PurchaseOrderController@getScheduleDeliveriesByPoId');
         Route::post('/purchase-orders/c/{po_number}/generate-qr', 'PurchaseOrderController@generateAndStoreQRCode');
         Route::get('/purchase-orders/a/list', 'PurchaseOrderActivitiesController@getPOActivity');
         Route::get('/purchase-orders/a/{po_number}', 'PurchaseOrderActivitiesController@getActivityByPO');
