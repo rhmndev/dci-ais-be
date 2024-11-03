@@ -399,6 +399,49 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function listNeedScheduleDeliveries()
+    {
+        try {
+            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries')->where('status', 'approved')
+                ->whereDoesntHave('scheduleDeliveries')
+                ->orderBy('approved_at', 'asc')
+                ->get();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $purchaseOrders
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getListScheduleDelivered()
+    {
+        try {
+            $purchaseOrders = PurchaseOrder::where('status', 'approved')
+                ->whereHas('scheduleDeliveries', function ($query) {
+                    $query->where('show_to_supplier', 1);
+                })
+                ->get();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $purchaseOrders
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function getDashboardData()
     {
         return response()->json([
