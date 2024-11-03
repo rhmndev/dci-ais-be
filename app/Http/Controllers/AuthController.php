@@ -31,7 +31,6 @@ class AuthController extends Controller
 
             $permissions = Permission::whereNull('parent_id')->orderBy('order_number')->get();
             $permission_allowed = $permissions->map(function ($permission) use ($user) {
-
                 $permission_allowed = collect($user->role->permissions)->where('allow', true);
 
                 if ($permission_allowed->pluck('permission_id')->contains($permission->id)) {
@@ -54,6 +53,7 @@ class AuthController extends Controller
                     ];
                 }
             });
+
 
             $user->photo_url = asset('storage/images/users/' . $user->photo);
 

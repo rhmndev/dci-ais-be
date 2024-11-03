@@ -25,6 +25,15 @@ class TravelDocumentController extends Controller
             'data' =>  $TravelDocument
         ]);
     }
+    public function showItem($id)
+    {
+        $TravelDocumentItem = TravelDocumentItem::findOrFail($id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $TravelDocumentItem
+        ]);
+    }
     public function byPO(Request $request)
     {
         $request->validate([
@@ -64,9 +73,16 @@ class TravelDocumentController extends Controller
     public function create(Request $request, $poId)
     {
         $request->validate([
+            'order_delivery_date' => 'required',
             'items' => 'required|array', // 'items' must be an array
+            'shipping_address' => 'required|string',
             'items.*.po_item_id' => 'required|string', // Each item must have a 'po_item_id'
-            'items.*.qty' => 'required'
+            'items.*.qty' => 'required',
+            'items.*.lot_production_number' => 'required',
+            'driver_name' => 'required|string',
+            'vehicle_number' => 'nullable|string',
+            'made_by_user' => 'required|string',
+            'notes' => 'nullable|string',
         ]);
         try {
             $purchaseOrder = PurchaseOrder::findOrFail($poId);
@@ -85,6 +101,8 @@ class TravelDocumentController extends Controller
             $travelDocument = new TravelDocument([
                 'no' => $this->generateTravelDocumentNumber(), // Implement this function
                 'po_number' => $purchaseOrder->po_number,
+                'order_delivery_date' => $request->order_delivery_date,
+                'made_by_user' => $request->made_by_user,
                 'po_date' => $purchaseOrder->order_date,
                 'supplier_code' => $purchaseOrder->supplier_code,
                 'shipping_address' => $request->shipping_address,
@@ -102,17 +120,19 @@ class TravelDocumentController extends Controller
             foreach ($items as $item) {
                 $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
                 if ($poItem) {
-                    $travelDocument->items()->create([
+                    $travelDocumentItem = $travelDocument->items()->create([
                         'po_item_id' => $item['po_item_id'],
                         'qty' => $item['qty'],
+                        'lot_production_number' => $item['lot_production_number'],
+                        'verified_by' => $request->made_by_user
                     ]);
 
                     // generate qr for each travel document item
-                    $qrCode = QrCode::create($item['po_item_id']);
+                    $qrCode = QrCode::create($travelDocumentItem->_id);
                     $qrCode->setSize(150);
                     $writer = new PngWriter();
                     $qrCodeData = $writer->write($qrCode);
-                    $fileName = 'qrcodes/travel_document_item_' . $item['po_item_id'] . '_' . uniqid() . '.png';
+                    $fileName = 'qrcodes/travel_document_item_' . $travelDocumentItem->_id . '_' . uniqid() . '.png';
                     Storage::disk('public')->put($fileName, $qrCodeData->getString());
                     $travelDocument->items()->updateOrCreate(
                         ['po_item_id' => $item['po_item_id']],
@@ -128,6 +148,33 @@ class TravelDocumentController extends Controller
             ], 201);
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
+        }
+    }
+
+    public function getDeliveryOrders($no)
+    {
+        try {
+            $travelDocument = TravelDocument::with('purchaseOrder', 'items.poItem.material')->where('no', $no)->first();
+
+            if (!$travelDocument) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Travel document not found.',
+                    'data' => NULL,
+                ], 404);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Travel document fetched successfully.',
+                'data' => new TravelDocumentResource($travelDocument),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
         }
     }
 

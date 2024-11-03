@@ -13,6 +13,8 @@ class TravelDocument extends Model
         'po_number',
         'supplier_code',
         'shipping_address',
+        'order_delivery_date',
+        'made_by_user',
         'driver_name',
         'vehicle_number',
         'notes',

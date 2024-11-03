@@ -24,6 +24,9 @@ class PurchaseOrderItemsResource extends JsonResource
             'unit_price' => $this->unit_price,
             'unit_price_type' => $this->unit_price_type,
             'total_price' => $this->unit_price * $this->quantity,
+            'travel_document_items_qty_delivered' => $this->whenLoaded('travelDocumentItem', function () {
+                return $this->travelDocumentItem->sum('qty'); // Sum the 'qty' values from related travelDocumentItem
+            }),
             'travel_document_items_count' => $this->whenLoaded('travelDocumentItem', function () {
                 return $this->travelDocumentItem->count();
             }),

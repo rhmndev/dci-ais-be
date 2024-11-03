@@ -14,16 +14,22 @@
             border: 1px solid #000;
             padding: 10px;
             margin: 5px; /* Adjust margin for spacing */
-            display: inline-block;
+            float: left;
             page-break-inside: avoid; /* Avoid page break inside label container */
         }
 
-        .label-container:after {
+        .label-container:nth-child(even)::after { 
+            content: "";
+            clear: both;
+            display: table; 
+        }
+
+        /* .label-container:after {
             content: '';
             display: block;
             border-top: 2px dashed #000;
             margin-top: 10px;
-        }
+        } */
 
         .logo {
             display: block; /* Allow the logo to occupy full width */

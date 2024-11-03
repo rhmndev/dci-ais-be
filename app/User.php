@@ -19,7 +19,7 @@ class User extends Authenticable
 
     public function role()
     {
-        return $this->belongsTo('App\Role');
+        return $this->belongsTo('App\Role', 'role_name', 'name');
     }
 
     public function getList($keyword)

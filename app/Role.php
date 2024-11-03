@@ -30,6 +30,25 @@ class Role extends Model
             }
         }
 
+        switch ($type) {
+            case 0:
+                $query = $query->where('name', 'Admin');
+                break;
+            case 1:
+                $query = $query->where('name', 'Vendor');
+                break;
+            case 3:
+                $query = $query->where('name', 'Purchasing');
+                break;
+            case 4:
+                $query = $query->where('name', 'Warehouse');
+                break;
+
+            default:
+                $query = $query->where('name', 'Supplier');
+                break;
+        }
+
         return $query->first();
     }
 

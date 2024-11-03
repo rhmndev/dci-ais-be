@@ -136,7 +136,7 @@
                   <table>
                     <tr>
                         <td>Delivery Date:</td>
-                        <td>{{ $travelDocument->purchaseOrder->delivery_date ? date('d-m-Y', strtotime($travelDocument->purchaseOrder->delivery_date)) : '-' }}</td> 
+                        <td>{{ $travelDocument->order_delivery_date ? date('d-m-Y', strtotime($travelDocument->order_delivery_date)) : '-' }}</td> 
                     </tr>
                     <tr>
                         <td>PO Number:</td>
@@ -173,13 +173,13 @@
                   <tr style="border-top: none; border-bottom: none;">
                     <td  style="text-align:center;">{{ $no++ }}</td>
                     <td>{{ $item->poItem->material->code ?? 'code_item'}} - {{$item->poItem->material->description ?? 'description_item'}}</td>
-                    <td style="text-align:center;">{{ $item->poItem->quantity }}</td>
+                    <td style="text-align:center;">{{ $item->qty }}</td>
                     <td style="text-align:center;">{{ $item->poItem->unit_type }}</td>
                     <td style="text-align:right;">@currency($item->poItem->unit_price ?? 0)</td> 
-                    <td style="text-align:right;">@currency($item->poItem->unit_price * $item->poItem->quantity)</td> 
+                    <td style="text-align:right;">@currency($item->poItem->unit_price * $item->qty)</td> 
                     <td>&nbsp;</td> 
                   </tr>
-                  @php $total += $item->poItem->total; @endphp 
+                  @php $total += $item->poItem->unit_price * $item->qty; @endphp 
                   @endforeach
                   @for ($i = $no; $i <= 10; $i++) 
                   <tr style="border-top: none; @if ($i == 15) border-bottom: 1px solid #ddd; @else border-bottom: none; @endif">
@@ -196,7 +196,7 @@
                 <tfoot>
                   <tr>
                     <td colspan="5" style="text-align:right;">total:</td>
-                    <td style="text-align:right;">@currency($travelDocument->purchaseOrder->total_amount ?? 0)</td> 
+                    <td style="text-align:right;">@currency($total ?? 0)</td> 
                     <td>&nbsp;</td> 
                   </tr>
                   <tr>
@@ -213,7 +213,7 @@
                 <p>Made By:</p>
                 <br>
                 <br>
-                <p>{{$travelDocument->created_by ?? ''}}</p> 
+                <p>{{$travelDocument->made_by_user ?? ''}}</p> 
               </div>
             </td>
             <td style="border: none; padding: 0; text-align: center;">
@@ -221,7 +221,7 @@
                 <p>Delivered By:</p>
                 <br>
                 <br>
-                <p>{{$travelDocument->delivered_by}}</p> 
+                <p>{{$travelDocument->driver_name}}</p> 
               </div>
             </td>
             <td style="border: none; padding: 0; text-align: center;">

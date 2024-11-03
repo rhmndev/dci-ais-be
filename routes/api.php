@@ -154,6 +154,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/receiveGR', 'GoodReceivingController@update');
         #endregion
 
+        Route::get('/shipping-addresses', 'ShippingAddressController@index');
+
         #region Template
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');
@@ -219,7 +221,9 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'travel-documents'], function () {
                 Route::get('/{id}', 'TravelDocumentController@show');
+                Route::get('/item/{id}', 'TravelDocumentController@showItem');
                 // Route::post('/{id}', 'TravelDocumentController@update');
+                Route::get('/delivery-orders/g/{no}', 'TravelDocumentController@getDeliveryOrders');
                 Route::post('/by-po', 'TravelDocumentController@byPO');
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
