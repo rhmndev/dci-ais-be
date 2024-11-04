@@ -253,4 +253,79 @@ class TravelDocumentController extends Controller
 
         return $pdf->download('Surat-Jalan-.pdf');
     }
+
+    public function confirmScan(Request $request, $TdId)
+    {
+        try {
+            $travelDocument = TravelDocument::findOrFail($TdId);
+
+            if ($travelDocument->is_scanned) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Travel Document already scanned.',
+                    'data' => NULL,
+                ], 400);
+            }
+
+            $travelDocumentItems = $travelDocument->items;
+
+            foreach ($travelDocumentItems as $item) {
+                $item->is_scanned = true;
+                $item->scanned_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+                $item->scanned_by = auth()->user() ? auth()->user()->npk : '';
+                $item->save();
+            }
+
+            $travelDocument->status = "completed";
+            $travelDocument->is_scanned = true;
+            $travelDocument->scanned_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+            $travelDocument->scanned_by = $request->scanned_by;
+            $travelDocument->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Travel Document scanned successfully.',
+                'data' => $travelDocument,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
+    public function confirmScanItem(Request $request, $TdiId)
+    {
+        try {
+            $travelDocumentItem = TravelDocumentItem::findOrFail($TdiId);
+
+            if ($travelDocumentItem->is_scanned) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Item already scanned.',
+                    'data' => NULL,
+                ], 400);
+            }
+
+            $travelDocumentItem->is_scanned = true;
+            $travelDocumentItem->scanned_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+            $travelDocumentItem->scanned_by = $request->scanned_by;
+            $travelDocumentItem->notes = $request->has('notes') ? $request->notes : '';
+            $travelDocumentItem->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Item scanned successfully.',
+                'data' => $travelDocumentItem,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
 }

@@ -22,6 +22,9 @@ class TravelDocument extends Model
         'qr_path',
         'created_by',
         'updated_by',
+        'is_scanned',
+        'scanned_by',
+        'scanned_at',
     ];
 
     protected $dates = [

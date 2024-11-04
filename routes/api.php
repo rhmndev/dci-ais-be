@@ -210,6 +210,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
         Route::get('/schedule-deliveries', 'ScheduleDeliveryController@index');
+        Route::get('/schedule-deliveries/download/{id}', 'ScheduleDeliveryController@downloadScheduleDelivery');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
         Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
@@ -235,6 +236,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
                 Route::get('/{id}/download-items-label', 'TravelDocumentController@downloadItemsLabel');
                 Route::get('/items/{itemId}/download-label', 'TravelDocumentController@downloadLabel');
+                Route::post('/delivery-orders/u/{TdId}/confirm', 'TravelDocumentController@confirmScan');
         });
 });
 Route::post('/login', 'AuthController@login');

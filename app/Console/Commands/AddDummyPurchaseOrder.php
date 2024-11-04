@@ -20,7 +20,7 @@ class AddDummyPurchaseOrder extends Command
      * @var string
      */
     protected $signature = 'purchase-order:add-dummy {numberOfOrders? : The number of dummy orders to create (default: 1)}
-    {status? : The status of the purchase order (pending, approved, unapproved) (default: approved)}';
+    {status? : The status of the purchase order (pending, approved, unapproved) (default: approved)} {supplier_code? : The number of supplier code}';
 
     /**
      * The console command description.
@@ -47,6 +47,7 @@ class AddDummyPurchaseOrder extends Command
     public function handle()
     {
         $numberOfOrders = $this->argument('numberOfOrders') ?: 1;
+        $supplier_code = $this->argument('supplier_code') ?: "";
         $status = $this->argument('status') ?: 'approved';
         $validStatuses = ['pending', 'approved', 'unapproved'];
         if (!in_array($status, $validStatuses)) {
@@ -91,7 +92,7 @@ class AddDummyPurchaseOrder extends Command
                 'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                 'delivery_address' => $faker->address(),
                 'supplier_id' => $faker->uuid(),
-                'supplier_code' => $faker->randomElement(Supplier::pluck('code')->toArray()),
+                'supplier_code' => $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray()),
                 's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 1000, 10000),

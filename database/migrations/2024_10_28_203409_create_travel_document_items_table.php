@@ -22,6 +22,10 @@ class CreateTravelDocumentItemsTable extends Migration
             $table->string('qr_tdi_no');
             $table->string('qr_path');
             $table->string('verified_by');
+            $table->boolean('is_scanned')->default(0);
+            $table->date('scanned_at')->nullable();
+            $table->string('scanned_by')->nullable();
+            $table->string('notes')->nullable();
             $table->timestamps();
         });
     }

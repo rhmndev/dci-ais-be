@@ -7,105 +7,112 @@
             font-family: sans-serif;
             margin: 0;
         }
-
         .label-container {
-            width: 49%; /* Two labels per row */
-            height: auto;
+            /* width: 150mm; */
+            page-break-after: always; /* Page break after each table */
+            /* padding: 5px; */
+        }
+        
+        .label-table {
+            width: 120mm;
+            border: 1px solid #000;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .label-table tr:first-child {
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+        
+        .label-table tr :first-child{
+            border:none;
+        }
+        .label-table tr td {
+            padding: 2px;
+            border-top: 1px dotted #000;
+            border-bottom: 1px dotted #000;
+        }
+        .label-row {
+            display: table-row; /* Ensure each label acts like a table row */
+        }
+
+        .label-cell {
+            display: table-cell; /* Ensure each label part acts like a cell */
+            width: 50%; /* Two labels per row */
             border: 1px solid #000;
             padding: 10px;
-            margin: 5px; /* Adjust margin for spacing */
-            float: left;
-            page-break-inside: avoid; /* Avoid page break inside label container */
+            margin: 5px;
+            vertical-align: top; /* Align content to the top of the cell */
         }
-
-        .label-container:nth-child(even)::after { 
-            content: "";
-            clear: both;
-            display: table; 
-        }
-
-        /* .label-container:after {
-            content: '';
-            display: block;
-            border-top: 2px dashed #000;
-            margin-top: 10px;
-        } */
 
         .logo {
-            display: block; /* Allow the logo to occupy full width */
-            margin: 0 auto 10px; /* Center the logo */
+            display: block;
+            margin: 0 auto 10px;
             width: 100px;
-        }
-
-        .label-table {
-            width: 100%;
-            border-collapse: collapse;
         }
 
         .label-table td {
             padding: 5px;
         }
 
-        .label-table td:first-child {
-            font-weight: bold;
-        }
-
-        .label-container:nth-child(4n) {
-            page-break-after: always; /* Force page break after every 4th label */
-        }
     </style>
 </head>
 <body>
     @if ($is_all)
-    @foreach ($travelDocument->items as $tdItem)    
-    <div class="label-container">
-        <table class="label-table">
-            <tr>
-                <td style="text-align: center;"> 
-                    <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
-                </td>
-                <td style="text-align: right;"> 
-                    @isset($tdItem->qr_path)
-                    <img src="{{ public_path('storage/'.$tdItem->qr_path) }}" alt="QR Code Item" style="width: 80px;" class="qrimage">
-                    @endisset
-                </td>
-            </tr>
-            <tr>
-                <td>Supplier:</td>
-                <td>{{ $tdItem->travelDocument->supplier->name ?? 'SUPPLIER_NAME' }}</td>
-            </tr>
-            <tr>
-                <td>Part Name:</td>
-                <td>{{ $tdItem->poItem->material->description ?? 'ITEM_NAME' }}</td>
-            </tr>
-            <tr>
-                <td>Part Number:</td>
-                <td>{{ $tdItem->poItem->material->code ?? 'ITEM_NUMBER' }}</td>
-            </tr>
-            <tr>
-                <td>Qty:</td>
-                <td>{{ $tdItem->qty ?? 'QTY' }} {{ $tdItem->poItem->material->unit ?? 'UNIT' }}</td>
-            </tr>
-            <tr>
-                <td>Lot Production:</td>
-                <td>{{ $tdItem->lot_production_number ?? 'LOT_PRODUCTION' }}</td>
-            </tr>
-            <tr>
-                <td>Verified By:</td>
-                <td>{{ $tdItem->verified_by ?? 'VERIFIED_BY' }}</td>
-            </tr>
-            <tr>
-                <td>Date:</td>
-                <td>{{ $tdItem->created_at ? $tdItem->created_at->format('Y-m-d') : 'DATE' }}</td>
-            </tr>
-        </table>
-    </div>
-    @endforeach
+    <table class="label-container">
+        @for ($i = 0; $i < count($travelDocument->items); $i++)
+        <tr>
+            <td>
+                <table class="label-table">
+                    <tr>
+                        <td style="text-align: center;"> 
+                            <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
+                        </td>
+                        <td style="text-align: right;"> 
+                            @isset($travelDocument->items[$i]->qr_path)
+                            <img src="{{ public_path('storage/'.$travelDocument->items[$i]->qr_path) }}" alt="QR Code Item" style="width: 80px;" class="qrimage">
+                            @endisset
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Supplier:</td>
+                        <td>{{ $travelDocument->items[$i]->travelDocument->supplier->name ?? 'SUPPLIER_NAME' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Part Name:</td>
+                        <td>{{ $travelDocument->items[$i]->poItem->material->description ?? 'ITEM_NAME' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Part Number:</td>
+                        <td>{{ $travelDocument->items[$i]->poItem->material->code ?? 'ITEM_NUMBER' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Qty:</td>
+                        <td>{{ $travelDocument->items[$i]->qty ?? 'QTY' }} {{ $travelDocument->items[$i]->poItem->material->unit ?? 'UNIT' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Lot Production:</td>
+                        <td>{{ $travelDocument->items[$i]->lot_production_number ?? 'LOT_PRODUCTION' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Verified By:</td>
+                        <td>{{ $travelDocument->items[$i]->verified_by ?? 'VERIFIED_BY' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Date:</td>
+                        <td>{{ $travelDocument->items[$i]->created_at ? $travelDocument->items[$i]->created_at->format('Y-m-d') : 'DATE' }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        @endfor
+    </table>
     @else
     <div class="label-container">
         <table class="label-table">
             <tr>
-                <td style="text-align: center;"> 
+                <td style="text-align: center; padding:5px;"> 
                     <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
                 </td>
                 <td style="text-align: right;"> 
