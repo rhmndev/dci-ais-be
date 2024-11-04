@@ -402,7 +402,7 @@ class PurchaseOrderController extends Controller
     public function listNeedScheduleDeliveries()
     {
         try {
-            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries')->where('status', 'approved')
+            $purchaseOrders = PurchaseOrder::with('supplier', 'scheduleDeliveries')->where('status', 'approved')
                 ->whereDoesntHave('scheduleDeliveries')
                 ->orderBy('approved_at', 'asc')
                 ->get();
@@ -443,7 +443,7 @@ class PurchaseOrderController extends Controller
         try {
             $purchaseOrders = PurchaseOrder::where('status', 'approved')
                 ->whereHas('scheduleDeliveries', function ($query) {
-                    $query->where('show_to_supplier', 1);
+                    // $query->where('show_to_supplier', 1);
                 })
                 ->get();
 

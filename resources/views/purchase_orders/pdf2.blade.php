@@ -195,15 +195,18 @@
               <td class="text-center">{{ $item->unit_type }}</td>
               <td class="text-center">@currency($item->unit_price)</td> 
               <td>@currency($item->unit_price_amount)</td> 
-              @foreach ($forecastQties as $forecastItem)
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+              {{-- @foreach ($forecastQties as $forecastItem)
                 <td class="text-center">
                     0
                 </td>
-              @endforeach
+              @endforeach --}}
           </tr>
           @endforeach
           <tr>
-              <td rowspan="10" colspan="2">
+              <td rowspan="10" colspan="3">
                 <strong>Catatan: </strong>
               </td>
           </tr>

@@ -32,6 +32,7 @@ class PurchaseOrderResource extends JsonResource
             'subtotal' => $this->subtotal,
             'total_amount' => $this->total_amount,
             'status' => $this->status,
+            'po_status' => $this->po_status ?? 'In Progress',
             'purchase_currency_type' => $this->purchase_currency_type,
             'purchase_type' => $this->purchase_type,
             'purchase_checked_by' => $this->purchase_checked_by,

@@ -106,6 +106,7 @@ class AddDummyPurchaseOrder extends Command
                 'tax' => $faker->randomFloat(2, 100, 10000),
                 'tax_type' => $faker->randomElement(['PPN']),
                 'status' => $status,
+                'po_status' => 'In Progress',
                 'is_send_email_to_supplier' => 0,
                 'is_checked' => $is_checked,
                 'is_knowed' => $is_knowed,
