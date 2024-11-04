@@ -63,6 +63,6 @@ class Customer extends Model
 
     public function partcomponents()
     {
-        return $this->embedsMany(PartComponent::class);
+        return $this->hasMany(PartComponent::class);
     }
 }

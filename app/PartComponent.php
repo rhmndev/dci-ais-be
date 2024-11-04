@@ -6,7 +6,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 
 class PartComponent extends Model
 {
-    protected $fillable = ['customer_id', 'name', 'number'];
+    protected $fillable = ['customer_id', 'part_id', 'name', 'number'];
 
     public function getAllData($keyword, $columns, $sort, $order)
     {
@@ -31,6 +31,7 @@ class PartComponent extends Model
 
         $data = $query->get();
 
+        $data->customer_name = isset($data->customer) ? $data->customer->name : '';
         return $data;
     }
 
@@ -103,6 +104,6 @@ class PartComponent extends Model
 
     public function customer()
     {
-        return $this->belongsTo('App\Customer');
+        return $this->belongsTo(Customer::class, 'customer_id'); // Adjust foreign key if needed
     }
 }
