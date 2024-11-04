@@ -29,6 +29,10 @@ class TravelDocumentResource extends JsonResource
             'made_by_user' => $this->made_by_user,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'is_scanned' => $this->is_scanned,
+            'scanned_by' => $this->scanned_by,
+            'scanned_by_user' => $this->whenLoaded('scannedUserBy'),
+            'scanned_at' => $this->scanned_at,
             'purchase_order' => new PurchaseOrderResource($this->whenLoaded('purchaseOrder')),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'items' => $this->whenLoaded('items', function () {

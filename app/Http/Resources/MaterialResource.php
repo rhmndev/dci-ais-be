@@ -18,6 +18,7 @@ class MaterialResource extends JsonResource
             '_id' => $this->_id, // Assuming _id is your primary key in the supplier table
             'code' => $this->code,
             'description' => $this->description,
+            'photo' => $this->photo,
         ];
     }
 }

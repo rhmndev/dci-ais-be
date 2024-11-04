@@ -236,7 +236,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
                 Route::get('/{id}/download-items-label', 'TravelDocumentController@downloadItemsLabel');
                 Route::get('/items/{itemId}/download-label', 'TravelDocumentController@downloadLabel');
-                Route::post('/delivery-orders/u/{TdId}/confirm', 'TravelDocumentController@confirmScan');
+                Route::get('/items/{itemId}/print-label', 'TravelDocumentController@printLabel');
+                Route::post('/u/{TdId}/confirm', 'TravelDocumentController@confirmScan');
         });
 });
 Route::post('/login', 'AuthController@login');

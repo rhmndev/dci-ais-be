@@ -30,6 +30,7 @@ class TravelDocument extends Model
     protected $dates = [
         'po_date',
         'po_date_receive',
+        'scanned_at',
     ];
 
     public function purchaseOrder()
@@ -45,6 +46,11 @@ class TravelDocument extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'supplier_code', 'code');
+    }
+
+    public function scannedUserBy()
+    {
+        return $this->hasOne(User::class, 'npk', 'scanned_by');
     }
 
     private function generateTravelDocumentNumber()

@@ -18,11 +18,11 @@ class TravelDocumentController extends Controller
 {
     public function show(Request $request, $id)
     {
-        $TravelDocument = TravelDocument::findOrFail($id);
+        $TravelDocument = TravelDocument::with('items', 'supplier', 'scannedUserBy')->findOrFail($id);
 
         return response()->json([
             'type' => 'success',
-            'data' =>  $TravelDocument
+            'data' =>  new TravelDocumentResource($TravelDocument)
         ]);
     }
     public function showItem($id)
@@ -243,6 +243,14 @@ class TravelDocumentController extends Controller
         return $pdf->download('Label-Item-' . $item->po_item_id . '.pdf');
     }
 
+    public function printLabel($itemId)
+    {
+        $item = TravelDocumentItem::with('travelDocument.supplier', 'poItem.material')->findOrFail($itemId);
+
+        $pdf = PDF::loadView('travel_documents.item-pdf', ['item' => $item, 'is_all' => false])->setPaper('a4', 'landscape');
+        return $pdf->stream('Label-Item-' . $item->po_item_id . '.pdf');
+    }
+
     public function downloadToPdf($travelDocumentId)
     {
         $travelDocument = TravelDocument::with('items')->findOrFail($travelDocumentId);
@@ -279,7 +287,9 @@ class TravelDocumentController extends Controller
             $travelDocument->status = "completed";
             $travelDocument->is_scanned = true;
             $travelDocument->scanned_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
-            $travelDocument->scanned_by = $request->scanned_by;
+
+            $travelDocument->scanned_by = auth()->user() ? auth()->user()->npk : '';;
+            $travelDocument->notes = $request->has('notes') ? $request->notes : '';
             $travelDocument->save();
 
             return response()->json([
