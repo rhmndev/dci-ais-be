@@ -55,8 +55,8 @@ class FileController extends Controller
         try {
             // 1. Validate (file type, size, expiry days if applicable)
             $request->validate([
-                'name' => 'required',
-                'type' => 'required'
+                'name' => 'required|string|max:255',
+                'type' => 'required|file|max:' . File::MAX_UPLOAD_SIZE,
             ]);
 
             // 2. Store the file (using Storage facade)
@@ -68,7 +68,7 @@ class FileController extends Controller
                 : null;
 
             // 4. Create the database record
-            File::create([
+            $file = File::create([
                 'user_id' => auth()->id(),
                 'name' => $request->file('file')->getClientOriginalName(),
                 'path' => $filePath,
@@ -78,15 +78,20 @@ class FileController extends Controller
                 'expires_at' => $expiresAt,
             ]);
 
+            $file->save();
+
+            $file->sendNotifications();
+
             return response()->json([
                 'type' => 'success',
-                'message' => 'File uploaded successfully!'
-            ]);
+                'message' => 'File uploaded successfully!',
+                'data' => $file
+            ], 201);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
                 'message' => $th->getMessage()
-            ]);
+            ], 400);
         }
     }
 }

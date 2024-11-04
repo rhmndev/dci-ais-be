@@ -16,13 +16,14 @@ class CreateFilesTable extends Migration
         Schema::dropIfExists('files');
         Schema::create('files', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('user_id');
+            $table->string('created_by');
             $table->string('name');
             $table->string('path');
             $table->string('size');
             $table->string('type');
             $table->string('ext');
-            $table->timestamp('expires_at')->nullable();
+            $table->date('expires_at')->nullable();
             $table->boolean('is_expired')->default(false);
             $table->boolean('send_notification')->default(true);
             $table->boolean('send_notification_only_me')->default(true);
