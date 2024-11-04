@@ -158,7 +158,9 @@ class PurchaseOrder extends Model
 
     public function getBySupplierCodeDataPagination($keyword, $columns, $perpage, $page, $sort, $order, $status, $supplier_code)
     {
-        $query = PurchaseOrder::where('supplier_code', $supplier_code);
+        $query = PurchaseOrder::query();
+        $query = $query->where('supplier_code', $supplier_code);
+        $skip = $perpage * ($page - 1);
 
         if (!empty($keyword)) {
             foreach ($columns as $index => $column) {
@@ -176,7 +178,9 @@ class PurchaseOrder extends Model
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
-        return $query->skip(($page - 1) * $perpage)->take($perpage)->get();
+        $data = $query->take((int)$perpage)->skip((int)$skip)->get();
+
+        return $data;
     }
 
     // Define the relationship to Supplier
