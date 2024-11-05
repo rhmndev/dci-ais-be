@@ -22,16 +22,19 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
 
-        #region Master User
-        Route::get('/user', 'UserController@index');
-        Route::get('/user/{id}', 'UserController@show');
-        Route::post('/user', 'UserController@store');
-        Route::get('/userlist', 'UserController@list');
-        Route::post('/user/{id}', 'UserController@store');
-        Route::delete('/user/{id}', 'UserController@destroy');
-        Route::post('/userimport', 'UserController@import');
-        Route::get('/user/c/permissions', 'UserController@getMyPermissions');
-        #endregion
+        Route::group(['middleware' => ['checkPermission:manage users']], function () {
+                #region Master User
+                Route::get('/user', 'UserController@index');
+                Route::get('/user/{id}', 'UserController@show');
+                Route::post('/user', 'UserController@store');
+                Route::get('/userlist', 'UserController@list');
+                Route::post('/user/{id}', 'UserController@store');
+                Route::delete('/user/{id}', 'UserController@destroy');
+                Route::post('/userimport', 'UserController@import');
+                Route::get('/user/c/permissions', 'UserController@getMyPermissions');
+                #endregion
+        });
+
 
         #region Master Vendor
         Route::get('/vendor', 'VendorController@index');

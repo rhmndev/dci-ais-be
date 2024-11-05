@@ -16,6 +16,7 @@ class CreatePurchaseOrderTable extends Migration
         Schema::dropIfExists('purchase_orders');
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('plant_number');
             $table->string('po_number')->unique();
             $table->string('user');
             $table->string('user_npk');

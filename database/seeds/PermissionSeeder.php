@@ -218,7 +218,7 @@ class PermissionSeeder extends Seeder
 						"changed_by" => "seeder",
 					],
 					[
-						"name" => "Settings",
+						"name" => "Settings PO",
 						"description" => null,
 						"url" => "purchase-order-settings",
 						"icon" => null,

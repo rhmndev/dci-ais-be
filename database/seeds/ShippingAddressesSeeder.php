@@ -3,7 +3,7 @@
 use App\ShippingAddress;
 use Illuminate\Database\Seeder;
 
-class ShippingAdressesSeeder extends Seeder
+class ShippingAddressesSeeder extends Seeder
 {
     /**
      * Run the database seeds.

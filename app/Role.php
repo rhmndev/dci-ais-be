@@ -19,17 +19,6 @@ class Role extends Model
     {
         $query = new Role;
 
-        if ($type == 1) {
-
-            $query = $query->where('name', 'Vendor');
-        } else {
-            if ($type == 0) {
-                $query = $query->where('name', 'Admin');
-            } else {
-                $query = $query->where('name', 'Purchasing');
-            }
-        }
-
         switch ($type) {
             case 0:
                 $query = $query->where('name', 'Admin');

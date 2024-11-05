@@ -14,21 +14,29 @@ class LineNumberSeeder extends Seeder
     {
         //
         LineNumber::truncate();
-        $datas = [
-            ['name' => '1'],
-            ['name' => '2'],
-            ['name' => '3'],
-            ['name' => '4'],
-            ['name' => '5'],
-            ['name' => '6'],
-            ['name' => '7'],
-            ['name' => '8'],
-            ['name' => '9'],
-            ['name' => '10']
+        $lineNumbers = [
+            [
+                'code' => 'LINE001',
+                'name' => 'Line Number 1',
+                'qr_path' => 'path/to/qr_code1.png',
+                'is_active' => true,
+            ],
+            [
+                'code' => 'LINE002',
+                'name' => 'Line Number 2',
+                'qr_path' => 'path/to/qr_code2.png',
+                'is_active' => true,
+            ],
+            [
+                'code' => 'LINE003',
+                'name' => 'Line Number 3',
+                'qr_path' => 'path/to/qr_code3.png',
+                'is_active' => true,
+            ],
         ];
 
-        foreach ($datas as $data) {
-            LineNumber::create($data);
+        foreach ($lineNumbers as $lineNumber) {
+            LineNumber::create($lineNumber);
         }
     }
 }

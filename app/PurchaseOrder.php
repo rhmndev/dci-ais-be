@@ -8,6 +8,7 @@ use App\PurchaseOrderActivities;
 class PurchaseOrder extends Model
 {
     protected $fillable = [
+        'plant_number',
         'po_number',
         'user',
         'user_npk',

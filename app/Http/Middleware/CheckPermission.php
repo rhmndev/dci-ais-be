@@ -22,7 +22,7 @@ class CheckPermission
         }
 
         foreach ($permissions as $permission) {
-            if ($user->can($permission)) {
+            if ($user->role && $user->role->permissions->contains('permission_id', $permission)) {
                 return $next($request);
             }
         }
