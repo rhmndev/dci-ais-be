@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\PurchaseOrderCreated;
 use App\Http\Resources\PurchaseOrderResource;
+use App\PoTrackingEvent;
 use App\PurchaseOrder;
 use App\Supplier;
 use App\PurchaseOrderActivities;
@@ -290,12 +291,20 @@ class PurchaseOrderController extends Controller
                 'filename' => $fileName,
                 'description' => $request->description,
                 'file_path' => $filePath,
-                'show_to_supplier' => $request->show_to_supplier ?? 0,
+                'show_to_supplier' => $request->show_to_supplier ?? false,
                 'is_send_email_to_supplier' => $request->is_send_email_to_supplier ?? 0,
                 'created_by' => auth()->user()->npk,
                 'updated_by' => auth()->user()->npk,
             ]);
             $scheduleDelivery->save();
+
+            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            EmailController::sendEmailPurchaseOrderSchedule($request, $po_number);
+
+            $msg = $purchaseOrder->po_number . ' schedule delivery has been updated.';
+            $receipt_number = 'whatsapp:+6285156376462';
+            WhatsAppController::sendWhatsAppMessage($request, $receipt_number, $msg);
+
 
             return response()->json([
                 'type' => 'success',
@@ -309,6 +318,34 @@ class PurchaseOrderController extends Controller
                 'data' => null
             ], 500);
         }
+    }
+
+    public function createTrackingEvent(Request $request, $poId)
+    {
+        $request->validate([
+            'event' => 'required|string',
+            'occurred_at' => 'nullable|date', // You might want to make this required
+            'notes' => 'nullable|string'
+        ]);
+
+        $po = PurchaseOrder::findOrFail($poId);
+
+        $event = PoTrackingEvent::create([
+            'po_id' => $po->id,
+            'event' => $request->event,
+            'occurred_at' => $request->occurred_at ? Carbon::parse($request->occurred_at) : Carbon::now(),
+            'notes' => $request->notes
+        ]);
+
+        return response()->json(['message' => 'Tracking event created!', 'event' => $event], 201);
+    }
+
+    public function getTrackingEvents($poId)
+    {
+        $po = PurchaseOrder::findOrFail($poId);
+        $events = $po->trackingEvents()->orderBy('occurred_at', 'asc')->get();
+
+        return response()->json(['events' => $events], 200);
     }
 
     public function showScheduleDeliveries(Request $request, $po_number)

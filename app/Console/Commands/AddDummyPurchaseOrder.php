@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Material;
 use App\PurchaseOrder;
 use App\PurchaseOrderItem;
+use App\ShippingAddress;
 use App\SLock;
 use App\Supplier;
 use Illuminate\Console\Command;
@@ -90,7 +91,7 @@ class AddDummyPurchaseOrder extends Command
                 'order_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                 'delivery_email' => $faker->companyEmail,
                 'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
-                'delivery_address' => $faker->address(),
+                'delivery_address' => $faker->randomElement(ShippingAddress::pluck('address')->toArray()),
                 'supplier_id' => $faker->uuid(),
                 'supplier_code' => $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray()),
                 's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
@@ -106,7 +107,7 @@ class AddDummyPurchaseOrder extends Command
                 'tax' => $faker->randomFloat(2, 100, 10000),
                 'tax_type' => $faker->randomElement(['PPN']),
                 'status' => $status,
-                'po_status' => 'In Progress',
+                'po_status' => $faker->randomElement(['In Progress']),
                 'is_send_email_to_supplier' => 0,
                 'is_checked' => $is_checked,
                 'is_knowed' => $is_knowed,

@@ -194,10 +194,10 @@
               <td class="text-center">{{ $item->quantity }}</td>
               <td class="text-center">{{ $item->unit_type }}</td>
               <td class="text-center">@currency($item->unit_price)</td> 
-              <td>@currency($item->unit_price_amount)</td> 
-              <td>0</td>
-              <td>0</td>
-              <td>0</td>
+              <td class="text-center">@currency($item->unit_price * $item->quantity)</td> 
+              <td class="text-center">0</td>
+              <td class="text-center">0</td>
+              <td class="text-center">0</td>
               {{-- @foreach ($forecastQties as $forecastItem)
                 <td class="text-center">
                     0

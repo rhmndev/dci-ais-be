@@ -262,6 +262,17 @@ class TravelDocumentController extends Controller
         return $pdf->download('Surat-Jalan-.pdf');
     }
 
+    public function viewToPdf($travelDocumentId)
+    {
+        $travelDocument = TravelDocument::with('items')->findOrFail($travelDocumentId);
+        // return response()->json(['message' => 'Error creating travel document', 'data' => $travelDocument], 500);
+
+        $pdf = PDF::loadView('travel_documents.pdf', ['travelDocument' => $travelDocument])
+            ->setPaper('a4', 'landscape'); // Set landscape orientation
+
+        return $pdf->stream('Surat-Jalan-.pdf');
+    }
+
     public function confirmScan(Request $request, $TdId)
     {
         try {

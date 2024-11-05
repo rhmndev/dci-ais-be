@@ -6,7 +6,7 @@
 <body>
     <h1>Purchase Order Reminder</h1>
 
-    <p>This is a reminder that Purchase Order {{ $purchaseOrder->po_number }} is still pending.</p>
+    <p>This is a reminder that Purchase Order {{ $purchaseOrder->po_number }}.</p>
 
     <p>Please review and take the necessary actions.</p>
 

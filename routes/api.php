@@ -209,6 +209,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-order/s/checked/{id}/unconfirm', 'PurchaseOrderController@signedAsCheckedUnconfirmed');
         Route::post('/purchase-order/s/approved/{id}/unconfirm', 'PurchaseOrderController@signedAsApprovedUnconfirmed');
 
+        Route::post('/purchase-orders/{poId}/tracking-events', 'PurchaseOrderController@createTrackingEvent');
+        Route::get('/purchase-orders/{poId}/tracking-events', 'PurchaseOrderController@getTrackingEvents');
+
         Route::get('/schedule-deliveries', 'ScheduleDeliveryController@index');
         Route::get('/schedule-deliveries/download/{id}', 'ScheduleDeliveryController@downloadScheduleDelivery');
 
@@ -234,6 +237,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
                 Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
+                Route::get('/{id}/view-to-pdf', 'TravelDocumentController@viewToPdf');
                 Route::get('/{id}/download-items-label', 'TravelDocumentController@downloadItemsLabel');
                 Route::get('/items/{itemId}/download-label', 'TravelDocumentController@downloadLabel');
                 Route::get('/items/{itemId}/print-label', 'TravelDocumentController@printLabel');

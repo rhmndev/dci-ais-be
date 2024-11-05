@@ -21,6 +21,13 @@ class PurchaseOrderResource extends JsonResource
         $this->knowedUserBy;
         $this->approvedUserBy;
 
+        $subtotal = 0;
+        if ($this->items) { // Check if items are loaded
+            foreach ($this->items as $item) {
+                $subtotal += $item->quantity * $item->unit_price;
+            }
+        }
+
         return [
             '_id' => $this->_id,
             'po_number' => $this->po_number,
@@ -29,7 +36,7 @@ class PurchaseOrderResource extends JsonResource
             'delivery_address' => $this->delivery_address,
             'total_item_quantity' => $this->total_item_quantity,
             'tax' => $this->tax,
-            'subtotal' => $this->subtotal,
+            'sub_total' => $subtotal,
             'total_amount' => $this->total_amount,
             'status' => $this->status,
             'po_status' => $this->po_status ?? 'In Progress',
