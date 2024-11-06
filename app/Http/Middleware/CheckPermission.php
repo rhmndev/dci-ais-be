@@ -21,9 +21,21 @@ class CheckPermission
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        $validPermissions = array();
+
+        if ($user->role && $user->role->permissions) {
+            foreach ($user->role->permissions as $itemPermission) {
+                if (isset($itemPermission->slug) && $itemPermission->slug != "" && $itemPermission->allow == true) {
+                    $validPermissions[] = $itemPermission->slug;
+                }
+            }
+        }
+
         foreach ($permissions as $permission) {
-            if ($user->role && $user->role->permissions->contains('permission_id', $permission)) {
-                return $next($request);
+            if ($user->role && $user->role->permissions) {
+                if (in_array($permission, $validPermissions)) {
+                    return $next($request);
+                }
             }
         }
 

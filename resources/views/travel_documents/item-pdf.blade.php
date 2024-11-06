@@ -109,48 +109,57 @@
         @endfor
     </table>
     @else
-    <div class="label-container">
-        <table class="label-table">
-            <tr>
-                <td style="text-align: center; padding:5px;"> 
-                    <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
-                </td>
-                <td style="text-align: right;"> 
-                    @isset($item->qr_path)
-                    <img src="{{ public_path('storage/'.$item->qr_path) }}" alt="QR Code Item" style="width: 80px;" class="qrimage">
-                    @endisset
-                </td>
-            </tr>
-            <tr>
-                <td>Supplier:</td>
-                <td>{{ $item->travelDocument->supplier->name ?? 'SUPPLIER_NAME' }}</td>
-            </tr>
-            <tr>
-                <td>Part Name:</td>
-                <td>{{ $item->poItem->material->description ?? 'ITEM_NAME' }}</td>
-            </tr>
-            <tr>
-                <td>Part Number:</td>
-                <td>{{ $item->poItem->material->code ?? 'ITEM_NUMBER' }}</td>
-            </tr>
-            <tr>
-                <td>Qty:</td>
-                <td>{{ $item->qty ?? 'QTY' }} {{ $item->poItem->material->unit ?? 'UNIT' }}</td>
-            </tr>
-            <tr>
-                <td>Lot Production:</td>
-                <td>{{ $item->lot_production_number ?? 'LOT_PRODUCTION' }}</td>
-            </tr>
-            <tr>
-                <td>Verified By:</td>
-                <td>{{ $item->verified_by ?? 'VERIFIED_BY' }}</td>
-            </tr>
-            <tr>
-                <td>Date:</td>
-                <td>{{ $item->created_at ? $item->created_at->format('Y-m-d') : 'DATE' }}</td>
-            </tr>
-        </table>
-    </div>
+    <table class="label-container">
+        @php
+         $totalPrint = $item->total_print_label ?? 1;   
+        @endphp
+        @for ($i = 0; $i < $totalPrint; $i++)
+        <tr>
+            <td>
+                <table class="label-table">
+                    <tr>
+                        <td style="text-align: center; padding:5px;"> 
+                            <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
+                        </td>
+                        <td style="text-align: right;"> 
+                            @isset($item->qr_path)
+                            <img src="{{ public_path('storage/'.$item->qr_path) }}" alt="QR Code Item" style="width: 80px;" class="qrimage">
+                            @endisset
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Supplier:</td>
+                        <td>{{ $item->travelDocument->supplier->name ?? 'SUPPLIER_NAME' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Part Name:</td>
+                        <td>{{ $item->poItem->material->description ?? 'ITEM_NAME' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Part Number:</td>
+                        <td>{{ $item->poItem->material->code ?? 'ITEM_NUMBER' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Qty:</td>
+                        <td>{{ $item->qty ?? 'QTY' }} {{ $item->poItem->material->unit ?? 'UNIT' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Lot Production:</td>
+                        <td>{{ $item->lot_production_number ?? 'LOT_PRODUCTION' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Verified By:</td>
+                        <td>{{ $item->verified_by ?? 'VERIFIED_BY' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Date:</td>
+                        <td>{{ $item->created_at ? $item->created_at->format('Y-m-d') : 'DATE' }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        @endfor
+    </table>
     @endif
 </body>
 </html>

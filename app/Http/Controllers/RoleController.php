@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Permission;
 use Illuminate\Http\Request;
 use App\Role;
 
@@ -59,10 +60,13 @@ class RoleController extends Controller
 
         $permissions = [];
 
-        foreach ($request->permissions as $index => $permission) {
+        foreach ($request->permissions as $permissionId => $allow) {
+            $permis_data = Permission::findOrFail($permissionId);
+
             $permissions[] = [
-                'permission_id' => $index,
-                'allow' => $permission
+                'permission_id' => $permissionId,
+                'slug' => $permis_data->slug,
+                'allow' => $allow
             ];
         }
 
@@ -75,7 +79,8 @@ class RoleController extends Controller
 
         return response()->json([
             'type' => 'success',
-            'message' => 'Data saved successfully!'
+            'message' => 'Data saved successfully!',
+            'data' => $role->permissions
         ], 201);
     }
 
@@ -108,10 +113,13 @@ class RoleController extends Controller
 
         $permissions = [];
 
-        foreach ($request->permissions as $index => $permission) {
+        foreach ($request->permissions as $permissionId => $allow) {
+            $permis_data = Permission::findOrFail($permissionId);
+
             $permissions[] = [
-                'permission_id' => $index,
-                'allow' => $permission
+                'permission_id' => $permissionId,
+                'slug' => $permis_data->slug,
+                'allow' => $allow
             ];
         }
 

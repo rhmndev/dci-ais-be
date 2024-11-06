@@ -94,6 +94,7 @@ class PermissionController extends Controller
         $permission = Permission::findOrFail($id);
 
         $permission->name = $request->name;
+        $permission->slug = $request->slug;
         $permission->description = $request->description;
         $permission->url = $request->url;
         $permission->icon = $request->icon;

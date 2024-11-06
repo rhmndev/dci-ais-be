@@ -234,6 +234,15 @@ class TravelDocumentController extends Controller
             ->setPaper('a4', 'landscape');
         return $pdf->download('Label-Surat-Jalan-' . $travelDocument->no . '.pdf');
     }
+    public function PrintItemsLabel(Request $request, $id)
+    {
+        $travelDocument = TravelDocument::with('items')->findOrFail($id);
+
+        $pdf = PDF::loadView('travel_documents.item-pdf', ['travelDocument' => $travelDocument, 'is_all' => true])
+            ->setPaper('a4', 'landscape');
+        $pdfContent = $pdf->output();
+        return response()->json(['pdf_data' => base64_encode($pdfContent)]);
+    }
 
     public function downloadLabel($itemId)
     {
@@ -247,8 +256,10 @@ class TravelDocumentController extends Controller
     {
         $item = TravelDocumentItem::with('travelDocument.supplier', 'poItem.material')->findOrFail($itemId);
 
-        $pdf = PDF::loadView('travel_documents.item-pdf', ['item' => $item, 'is_all' => false])->setPaper('a4', 'landscape');
-        return $pdf->stream('Label-Item-' . $item->po_item_id . '.pdf');
+        $pdf = PDF::loadView('travel_documents.item-pdf', ['item' => $item, 'is_all' => false])->setPaper('a4', 'landscape');;
+        $pdfContent = $pdf->output();
+        return response()->json(['pdf_data' => base64_encode($pdfContent)]);
+        // return $pdf->stream('Label-Item-' . $item->po_item_id . '.pdf', array("Attachment" => false));
     }
 
     public function downloadToPdf($travelDocumentId)
@@ -260,6 +271,18 @@ class TravelDocumentController extends Controller
             ->setPaper('a4', 'landscape'); // Set landscape orientation
 
         return $pdf->download('Surat-Jalan-.pdf');
+    }
+
+    public function printTravelDocument($travelDocumentId)
+    {
+        $travelDocument = TravelDocument::with('items')->findOrFail($travelDocumentId);
+        // return response()->json(['message' => 'Error creating travel document', 'data' => $travelDocument], 500);
+
+        $pdf = PDF::loadView('travel_documents.pdf', ['travelDocument' => $travelDocument])
+            ->setPaper('a4', 'landscape'); // Set landscape orientation
+
+        $pdfContent = $pdf->output();
+        return response()->json(['pdf_data' => base64_encode($pdfContent)]);
     }
 
     public function viewToPdf($travelDocumentId)

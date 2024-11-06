@@ -28,16 +28,63 @@ class PurchaseOrderController extends Controller
 {
     public function index(Request $request)
     {
-        $request->validate([
-            'columns' => 'required',
-            'perpage' => 'required|numeric',
-            'page' => 'required|numeric',
-            'sort' => 'required|string',
-            'status' => 'nullable|string',
-            'order' => 'string',
-        ]);
+        try {
+            $perPage = $request->input('perpage', 10);
+            $page = $request->input('page', 1);
+            $sortBy = $request->input('sort', 'order_date');
+            $sortOrder = $request->input('order', 'descend');
 
-        $user = auth()->user();
+            // $request->validate([
+            //     'columns' => 'required',
+            //     'perpage' => 'required|numeric',
+            //     'page' => 'required|numeric',
+            //     'sort' => 'required|string',
+            //     'status' => 'nullable|string',
+            //     'order' => 'string',
+            // ]);
+            $query = PurchaseOrder::query();
+
+            if ($request->has('keyword')) {
+                $keyword = $request->keyword;
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('po_number', 'like', "%$keyword%")
+                        ->orWhere('supplier_code', 'like', "%$keyword%")
+                        ->orWhereHas('supplier', function ($query) use ($keyword) {
+                            $query->where('name', 'like', "%$keyword%");
+                        });
+                });
+            }
+
+            // if ($request->has('status')) {
+            //     $query->where('status', $request->status);
+            // }
+
+            if ($request->has('startDate') && $request->has('endDate')) {
+                // $startDate = Carbon::createFromFormat('Y-m-d\TH:i:s.u\Z', $request->input('startDate'));
+                // $endDate = Carbon::createFromFormat('Y-m-d\TH:i:s.u\Z', $request->input('endDate'))->endOfDay();
+                $startDate = $request->input('startDate');
+                $endDate = $request->input('endDate');
+                // $query->whereBetween('order_date', [$startDate, $endDate]);
+                $query->whereBetween('order_date', ["2024-10-01", "2024-11-30"]);
+            }
+
+            $total = $query->count();
+            $data = $query->orderBy($sortBy, $sortOrder)
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
+                ->get();
+
+            return response()->json(['data' => PurchaseOrderResource::collection($data), 'total' => $total], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $th->getMessage() . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
+
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';

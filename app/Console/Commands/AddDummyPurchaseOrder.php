@@ -85,13 +85,14 @@ class AddDummyPurchaseOrder extends Command
 
 
             $purchaseOrder = PurchaseOrder::create([
+                'plant_number' => "1601",
                 'po_number' => $faker->unique()->regexify('PO-[0-9]{5}'),
                 'user' => 'Admin',
                 'user_npk' => '39748',
                 'order_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                 'delivery_email' => $faker->companyEmail,
                 'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
-                'delivery_address' => $faker->randomElement(ShippingAddress::pluck('address')->toArray()),
+                'delivery_address' => $faker->randomElement(ShippingAddress::pluck('full_address')->toArray()),
                 'supplier_id' => $faker->uuid(),
                 'supplier_code' => $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray()),
                 's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
@@ -135,7 +136,7 @@ class AddDummyPurchaseOrder extends Command
                 'purchase_order_id' => $purchaseOrder->_id,
                 'material_id' => $faker->randomElement($materialIds), // Replace with your material ID generation logic
                 'quantity' => $faker->randomNumber(2), // Random 2-digit quantity
-                'unit_type' => $faker->randomElement(['pcs', 'pce', 'kg', 'L']), // Random unit type
+                'unit_type' => $faker->randomElement(['pcs', 'pce']), // Random unit type
                 'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
                 'unit_price_type' => $faker->randomElement(['IDR']), // Random unit type
                 'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00

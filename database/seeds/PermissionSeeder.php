@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use App\Permission;
+use Illuminate\Support\Str;
 
 class PermissionSeeder extends Seeder
 {
@@ -269,8 +270,16 @@ class PermissionSeeder extends Seeder
 		];
 
 		foreach (collect($permissions) as $permission) {
+			$slug = Str::slug($permission['name']);
+			$counter = 1;
+			while (Permission::where('slug', $slug)->exists()) {
+				$slug = Str::slug($permission['name']) . '-' . $counter;
+				$counter++;
+			}
+
 			$data = new Permission;
 			$data->name = $permission['name'];
+			$data->slug = $slug;
 			$data->description = $permission['description'];
 			$data->url = $permission['url'];
 			$data->icon = $permission['icon'];
@@ -283,8 +292,17 @@ class PermissionSeeder extends Seeder
 
 			if (!empty($permission['children'])) {
 				foreach ($permission['children'] as $child) {
+					$childSlug = Str::slug($child['name']);
+					$childCounter = 1;
+
+					while (Permission::where('slug', $childSlug)->exists()) {
+						$childSlug = Str::slug($child['name']) . '-' . $childCounter;
+						$childCounter++;
+					}
+
 					$data2 = new Permission;
 					$data2->name = $child['name'];
+					$data2->slug = $childSlug;
 					$data2->description = $child['description'];
 					$data2->url = $child['url'];
 					$data2->icon = $child['icon'];

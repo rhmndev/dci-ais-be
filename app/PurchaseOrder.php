@@ -9,6 +9,7 @@ class PurchaseOrder extends Model
 {
     protected $fillable = [
         'plant_number',
+        'pr_number',
         'po_number',
         'user',
         'user_npk',
@@ -126,7 +127,7 @@ class PurchaseOrder extends Model
 
         // Otherwise, get data for all three statuses
         else {
-            $query->whereIn('status', ['approved', 'pending', 'unapproved']);
+            $query->whereIn('status', ['approved', 'waiting for checked', 'waiting for knowed', 'waiting for approval',  'pending', 'unapproved']);
         }
 
         $data = $query->get();

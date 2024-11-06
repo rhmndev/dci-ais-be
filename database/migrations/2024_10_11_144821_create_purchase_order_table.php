@@ -17,6 +17,7 @@ class CreatePurchaseOrderTable extends Migration
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('plant_number');
+            $table->string('pr_number');
             $table->string('po_number')->unique();
             $table->string('user');
             $table->string('user_npk');
@@ -43,7 +44,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->decimal('subtotal');
             $table->string('tax')->nullable();
             $table->string('tax_type')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('waiting for checked');
             $table->string('po_status');
             $table->boolean('is_send_email_to_supplier')->default(false);
             $table->longText('notes')->nullable();

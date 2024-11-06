@@ -30,6 +30,7 @@ class PurchaseOrderResource extends JsonResource
 
         return [
             '_id' => $this->_id,
+            'pr_number' => $this->pr_number,
             'po_number' => $this->po_number,
             'order_date' => $this->order_date,
             'delivery_date' => $this->delivery_date,

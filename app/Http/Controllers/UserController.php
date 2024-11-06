@@ -72,12 +72,13 @@ class UserController extends Controller
     {
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $type = $request->type != null ? $request->type : '';
         $data = array();
 
         try {
 
             $User = new User;
-            $results = $User->getList($keyword);
+            $results = $User->getList($keyword, $type);
 
             return response()->json([
                 'type' => 'success',

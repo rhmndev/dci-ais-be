@@ -11,7 +11,8 @@ class Permission extends Model
     ];
 
     protected $fillable = [
-        'permission_id', 
+        'permission_id',
+        'slug',
         'allow'
     ];
 

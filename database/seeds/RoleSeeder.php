@@ -22,6 +22,7 @@ class RoleSeeder extends Seeder
                 'permissions' => $permissions->map(function ($perm) {
                     return [
                         'permission_id' => $perm->id,
+                        'slug' => $perm->slug,
                         'allow' => true
                     ];
                 })->toArray(),
@@ -36,6 +37,7 @@ class RoleSeeder extends Seeder
 
                         return [
                             'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
                             'allow' => true
                         ];
                     }
@@ -51,6 +53,7 @@ class RoleSeeder extends Seeder
 
                         return [
                             'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
                             'allow' => true
                         ];
                     }
@@ -66,6 +69,7 @@ class RoleSeeder extends Seeder
 
                         return [
                             'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
                             'allow' => true
                         ];
                     }
@@ -81,6 +85,7 @@ class RoleSeeder extends Seeder
 
                         return [
                             'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
                             'allow' => true
                         ];
                     }

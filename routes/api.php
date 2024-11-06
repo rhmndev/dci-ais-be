@@ -22,7 +22,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
 
-        Route::group(['middleware' => ['checkPermission:manage users']], function () {
+        Route::group(['middleware' => ['checkPermission:user']], function () {
                 #region Master User
                 Route::get('/user', 'UserController@index');
                 Route::get('/user/{id}', 'UserController@show');
@@ -240,8 +240,10 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
                 Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');
+                Route::post('/{id}/print', 'TravelDocumentController@printTravelDocument');
                 Route::get('/{id}/view-to-pdf', 'TravelDocumentController@viewToPdf');
                 Route::get('/{id}/download-items-label', 'TravelDocumentController@downloadItemsLabel');
+                Route::get('/{id}/print-items-label', 'TravelDocumentController@PrintItemsLabel');
                 Route::get('/items/{itemId}/download-label', 'TravelDocumentController@downloadLabel');
                 Route::get('/items/{itemId}/print-label', 'TravelDocumentController@printLabel');
                 Route::post('/u/{TdId}/confirm', 'TravelDocumentController@confirmScan');

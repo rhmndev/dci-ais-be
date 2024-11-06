@@ -22,9 +22,13 @@ class User extends Authenticable
         return $this->belongsTo('App\Role', 'role_name', 'name');
     }
 
-    public function getList($keyword)
+    public function getList($keyword, $type = '')
     {
         $query = User::query();
+
+        if ($type != '') {
+            $query = $query->where('type', $type);
+        }
 
         if ($keyword != '') {
             $query = $query->where('name', 'like', '%' . $keyword . '%');

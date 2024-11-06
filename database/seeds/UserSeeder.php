@@ -50,7 +50,7 @@ class UserSeeder extends Seeder
                 'npk' => '999988',
                 'email' => 'purchasing@example.com',
                 'password' => Hash::make('password'),
-                'type' => 3,
+                'type' => 0,
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ],
@@ -62,7 +62,7 @@ class UserSeeder extends Seeder
                 'npk' => '999978',
                 'email' => 'warehouse@example.com',
                 'password' => Hash::make('password'),
-                'type' => 4,
+                'type' => 0,
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
             ],
