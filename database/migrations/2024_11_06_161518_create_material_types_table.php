@@ -16,7 +16,7 @@ class CreateMaterialTypesTable extends Migration
         Schema::create('material_types', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name')->unique();
-            $table->string('packing_qty');
+            $table->string('pack_qty');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
