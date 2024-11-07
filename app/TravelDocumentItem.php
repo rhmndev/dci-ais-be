@@ -25,4 +25,9 @@ class TravelDocumentItem extends Model
     {
         return $this->belongsTo(PurchaseOrderItem::class, 'po_item_id', '_id');
     }
+
+    public function packingItems()
+    {
+        return $this->hasMany(TravelDocumentPackingItems::class, 'travel_document_item_id', '_id');
+    }
 }

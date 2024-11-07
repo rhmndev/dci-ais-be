@@ -21,4 +21,9 @@ class TravelDocumentPackingItems extends Model
     protected $date = [
         'scanned_at'
     ];
+
+    public function travelDocumentItem()
+    {
+        return $this->belongsTo(TravelDocumentItem::class, '_id', 'travel_document_item_id');
+    }
 }

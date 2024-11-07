@@ -9,6 +9,7 @@ class PurchaseOrderSigner extends Model
     protected $fillable = [
         'type',
         'user_id',
+        'npk',
     ];
 
     public function user()

@@ -69,6 +69,49 @@ class TravelDocumentController extends Controller
             ], 400);
         }
     }
+    public function createDraftTravelDocument(Request $request, $poId)
+    {
+        $purchaseOrder = PurchaseOrder::firstOrCreate($poId);
+    }
+
+    public function generateItemLabels(Request $request, $poId)
+    {
+        $request->validate([
+            'order_delivery_date' => 'required',
+            'items' => 'required|array', // 'items' must be an array
+            'shipping_address' => 'required|string',
+            'items.*.po_item_id' => 'required|string', // Each item must have a 'po_item_id'
+            'items.*.qty' => 'required',
+            'items.*.lot_production_number' => 'required',
+            'items.*.inspector_name' => 'required|string',
+            'items.*.inspector_date' => 'required',
+            'driver_name' => 'required|string',
+            'vehicle_number' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $purchaseOrder = PurchaseOrder::findOrFail($poId);
+        $qrCodeData = [];
+
+        foreach ($items as $item) {
+            $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
+
+            for ($i = 0; $i < $numLabels; $i++) {
+                $itemNumber =  $item['po_item_id'] . '-' . $i; // Unique identifier for the label
+                $labelQty = min($packQty, $remainingQty);
+
+                // Generate QR code and store data temporarily (e.g., in session)
+                $qrCodePath = $this->generateAndStoreQRCodeForItemLabel($itemNumber);
+                $qrCodeData[] = [
+                    'item_number' => $itemNumber,
+                    'qty' => $labelQty,
+                    'qr_path' => $qrCodePath,
+                ];
+
+                // ... (update $remainingQty) ...
+            }
+        }
+    }
 
     public function create(Request $request, $poId)
     {
@@ -79,13 +122,15 @@ class TravelDocumentController extends Controller
             'items.*.po_item_id' => 'required|string', // Each item must have a 'po_item_id'
             'items.*.qty' => 'required',
             'items.*.lot_production_number' => 'required',
+            'items.*.inspector_name' => 'required|string',
+            'items.*.inspector_date' => 'required',
             'driver_name' => 'required|string',
             'vehicle_number' => 'nullable|string',
-            'made_by_user' => 'required|string',
             'notes' => 'nullable|string',
         ]);
+
         try {
-            $purchaseOrder = PurchaseOrder::findOrFail($poId);
+            $purchaseOrder = PurchaseOrder::firstOrCreate($poId);
 
             // adding check duplicate po_item_id selected inside travel document item
             $items = $request->has('items') ? $request->items : [];
@@ -99,10 +144,9 @@ class TravelDocumentController extends Controller
             }
 
             $travelDocument = new TravelDocument([
-                'no' => $this->generateTravelDocumentNumber(), // Implement this function
+                'no' => $this->generateTravelDocumentNumber(),
                 'po_number' => $purchaseOrder->po_number,
                 'order_delivery_date' => $request->order_delivery_date,
-                'made_by_user' => $request->made_by_user,
                 'po_date' => $purchaseOrder->order_date,
                 'supplier_code' => $purchaseOrder->supplier_code,
                 'shipping_address' => $request->shipping_address,
@@ -124,20 +168,29 @@ class TravelDocumentController extends Controller
                         'po_item_id' => $item['po_item_id'],
                         'qty' => $item['qty'],
                         'lot_production_number' => $item['lot_production_number'],
-                        'verified_by' => $request->made_by_user
+                        'inspector_name' => $item['inspector_name'],
+                        'inspector_date' => $item['inspector_date'],
+                        'notes' => $request->notes,
                     ]);
 
-                    // generate qr for each travel document item
-                    $qrCode = QrCode::create($travelDocumentItem->_id);
-                    $qrCode->setSize(150);
-                    $writer = new PngWriter();
-                    $qrCodeData = $writer->write($qrCode);
-                    $fileName = 'qrcodes/travel_document_item_' . $travelDocumentItem->_id . '_' . uniqid() . '.png';
-                    Storage::disk('public')->put($fileName, $qrCodeData->getString());
-                    $travelDocument->items()->updateOrCreate(
-                        ['po_item_id' => $item['po_item_id']],
-                        ['qr_path' => $fileName]
-                    );
+                    $packQty = $poItem->material->default_packing_qty ?: 100; // Default to 100 if not set
+                    $numLabels = ceil($item['qty'] / $packQty);
+
+                    $remainingQty = $item['qty'];
+
+                    for ($i = 0; $i < $numLabels; $i++) {
+                        $itemNumber = $travelDocumentItem->no . "-" . $item['po_item_id'] . '-' . $i;
+                        $labelQty = min($packQty, $remainingQty);
+
+                        $travelDocumentPackingItem = $travelDocumentItem->packingItems()->create([
+                            'td_no' => $itemNumber,
+                            'item_number' => $itemNumber,
+                            'qty' => $labelQty,
+                            'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
+                        ]);
+
+                        $remainingQty -= $labelQty;
+                    }
                 }
             }
 
@@ -149,6 +202,26 @@ class TravelDocumentController extends Controller
         } catch (\Throwable $th) {
             return response()->json(['message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
         }
+    }
+
+    private function generateAndStoreQRCodeForItemLabel($itemNumber)
+    {
+        // Generate the QR code
+        $qrCode = QrCode::create($itemNumber);
+        $qrCode->setSize(150);
+
+        // Create the writer
+        $writer = new PngWriter();
+        $qrCodeData = $writer->write($qrCode);
+
+        // Generate a unique filename for the QR code
+        $fileName = 'qrcodes/travel_document_item_label_' . $itemNumber . '_' . uniqid() . '.png';
+
+        // Store the QR code image in the storage folder
+        Storage::disk('public')->put($fileName, $qrCodeData->getString());
+
+        // Return the path to the stored QR code
+        return $fileName;
     }
 
     public function getDeliveryOrders($no)

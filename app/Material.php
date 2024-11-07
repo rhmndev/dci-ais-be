@@ -71,8 +71,8 @@ class Material extends Model
         return $query;
     }
 
-    public function TypePackingQty()
+    public function materialType()
     {
-        return $this->hasOne(MaterialTypePackingQties::class, 'material_type', 'type');
+        return $this->hasOne(MaterialType::class, 'name', 'type');
     }
 }

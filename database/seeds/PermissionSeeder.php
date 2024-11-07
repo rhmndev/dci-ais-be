@@ -109,15 +109,6 @@ class PermissionSeeder extends Seeder
 				"changed_by" => "seeder",
 			],
 			[
-				"name" => "Scan Inspection",
-				"description" => null,
-				"url" => "scaninspection",
-				"icon" => "search",
-				"order_number" => 4,
-				"created_by" => "seeder",
-				"changed_by" => "seeder",
-			],
-			[
 				"name" => "Transaction",
 				"description" => null,
 				"url" => "transaction",

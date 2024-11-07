@@ -17,6 +17,7 @@ class CreatePurchaseOrderItemTable extends Migration
         Schema::create('purchase_order_items', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('purchase_order_id');
+            $table->string('po_number');
             $table->unsignedBigInteger('material_id');
             $table->integer('quantity');
             $table->string('unit_type');

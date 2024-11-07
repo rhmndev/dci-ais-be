@@ -14,15 +14,14 @@ class MaterialResource extends JsonResource
      */
     public function toArray($request)
     {
+        $this->materialType;
         return [
             '_id' => $this->_id, // Assuming _id is your primary key in the supplier table
             'code' => $this->code,
             'description' => $this->description,
             'photo' => $this->photo,
             'type' => $this->type,
-            'packing_qty' => $this->whenLoaded('TypePackingQty'),
-            'default_total_print_label' => $this->default_total_print_label ?? 1,
-            'default_packing_qty' => $this->default_packing_qty ?? 0,
+            'default_packing_qty' => $this->whenLoaded('materialType') ? $this->materialType->pack_qty : 1,
         ];
     }
 }

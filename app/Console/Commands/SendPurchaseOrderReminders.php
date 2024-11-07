@@ -5,11 +5,13 @@ namespace App\Console\Commands;
 use App\Http\Controllers\WhatsAppController;
 use Illuminate\Console\Command;
 use App\Jobs\SendWhatsAppReminder;
+use App\Mail\PurchaseOrderEscalationReminder;
 use App\PurchaseOrder;
 use App\User;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PurchaseOrderReminder;
-
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class SendPurchaseOrderReminders extends Command
 {
@@ -44,15 +46,16 @@ class SendPurchaseOrderReminders extends Command
      */
     public function handle()
     {
+        Log::info('Starting purchase order reminder process.');
         $is_testing = $this->argument('is_testing') ?: 0;
         $send_type = $this->argument('send_type') ?: 'need_assigned';
 
         if ($is_testing) {
             $message = "";
             if ($send_type == 'need_assigned') {
-                $message = "This is a test reminder for Purchase Orders <<PO_NUMBER>> that need to be assigned. Please check the system.";
+                $message = "This is a test reminder for Purchase Orders that need to be assigned. Please check the system.";
             } else if ($send_type == 'need_assigned_hod') {
-                $message = "This is a test reminder for Purchase Orders <<PO_NUMBER>> that need to be assigned to HOD. Please check the system.";
+                $message = "This is a test reminder for Purchase Orders that need to be assigned to HOD. Please check the system.";
             }
             $PurchaseOrder = PurchaseOrder::first();
             $this->sendPendingEmailReminderTesting($PurchaseOrder);
@@ -60,33 +63,153 @@ class SendPurchaseOrderReminders extends Command
             $recipientNumber = '6285156376462'; // Replace with the recipient's phone number
             WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
         } else {
-            $unassignedPurchaseOrders = PurchaseOrder::where(function ($query) {
-                $query->where('is_knowed', false)
-                    ->orWhere('is_checked', false)
-                    ->orWhere('is_approved', false);
-            })->get();
+            $this->sendDailyEmailReminders();
+            $this->sendMinuteWhatsappReminders();
+            $this->send7DayEscalationReminders();
 
-            foreach ($unassignedPurchaseOrders as $purchaseOrder) {
-                // WhatsAppController::sendWhatsAppMessage("whatsapp:+61234567", $purchaseOrder->po_number);
-                // SendWhatsAppReminder::dispatch($purchaseOrder);
-                if (!$purchaseOrder->is_knowed || !$purchaseOrder->is_checked || !$purchaseOrder->is_approved) {
-                    $message = "Purchase Order {$purchaseOrder->po_number} needs to be assigned. Please check the system.";
+            // $unassignedPurchaseOrders = PurchaseOrder::where(function ($query) {
+            //     $query->where('is_knowed', false)
+            //         ->orWhere('is_checked', false)
+            //         ->orWhere('is_approved', false);
+            // })->get();
 
-                    // foreach ($unassignedPurchaseOrders as $purchaseOrder) {
-                    // Send email reminder for pending status
-                    $this->sendPendingEmailReminder($purchaseOrder);
-                    // }
+            // foreach ($unassignedPurchaseOrders as $purchaseOrder) {
+            //     // WhatsAppController::sendWhatsAppMessage("whatsapp:+61234567", $purchaseOrder->po_number);
+            //     // SendWhatsAppReminder::dispatch($purchaseOrder);
+            //     if (!$purchaseOrder->is_knowed || !$purchaseOrder->is_checked || !$purchaseOrder->is_approved) {
+            //         $message = "Purchase Order {$purchaseOrder->po_number} needs to be assigned. Please check the system.";
 
-                    $recipientNumber = '6285156376462'; // Replace with the recipient's phone number
+            //         // foreach ($unassignedPurchaseOrders as $purchaseOrder) {
+            //         // Send email reminder for pending status
+            //         $this->sendPendingEmailReminder($purchaseOrder);
+            //         // }
 
-                    // Send the WhatsApp message
-                    WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
-                }
-            }
+            //         $recipientNumber = '6285156376462'; // Replace with the recipient's phone number
+
+            //         // Send the WhatsApp message
+            //         WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
+            //     }
+            // }
         }
 
         // $this->info($resp);
+        Log::info('Purchase order reminders processed successfully.');
         $this->info('Purchase order reminders sent successfully.');
+    }
+
+    private function sendDailyEmailReminders()
+    {
+        Log::info('Sending daily email reminders.');
+        // Get POs needing reminders (created yesterday and status hasn't changed)
+        $purchaseOrders = PurchaseOrder::whereBetween('created_at', [
+            Carbon::create(2024, 11, 3)->startOfDay(),
+            Carbon::today()->endOfDay(),
+        ])
+            ->where(function ($query) {
+                $query->where('status', 'waiting for checking')
+                    ->orWhere('status', 'waiting for knowing')
+                    ->orWhere('status', 'waiting for approval');
+            })
+            ->get();
+
+        foreach ($purchaseOrders as $purchaseOrder) {
+            try {
+                $this->sendPendingEmailReminder($purchaseOrder);
+                Log::info("Daily email reminder sent for PO: {$purchaseOrder->po_number}");
+            } catch (\Exception $e) {
+                Log::error("Error sending daily email reminder for PO: {$purchaseOrder->po_number} - {$e->getMessage()}");
+            }
+        }
+    }
+
+    private function sendMinuteWhatsappReminders()
+    {
+        Log::info('Sending 1-minute WhatsApp reminders.');
+
+        // Get POs created in the last 1 minutes that need reminders
+        $purchaseOrders = PurchaseOrder::where(function ($query) {
+            $query->where('status', 'waiting for checking')
+                ->orWhere('status', 'waiting for knowing')
+                ->orWhere('status', 'waiting for approval');
+        })
+            ->get();
+
+        foreach ($purchaseOrders as $purchaseOrder) {
+            try {
+                $message = $this->formatWhatsappMessage($purchaseOrder);
+                $recipientNumber = '6285156376462'; // Replace with recipient's number
+                WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
+                Log::info("20-minute WhatsApp reminder sent for PO: {$purchaseOrder->po_number}");
+            } catch (\Exception $e) {
+                Log::error("Error sending 1-minute WhatsApp reminder for PO: {$purchaseOrder->po_number} - {$e->getMessage()}");
+            }
+        }
+    }
+
+    private function send7DayEscalationReminders()
+    {
+        Log::info('Sending 7-day escalation reminders.');
+        // Get POs created 7 days ago that still need attention
+        $purchaseOrders = PurchaseOrder::where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())
+            ->where('created_at', '<', Carbon::now()->subDays(7)->endOfDay())
+            ->where(function ($query) {
+                $query->where('status', 'waiting for checking')
+                    ->orWhere('status', 'waiting for knowing')
+                    ->orWhere('status', 'waiting for approval');
+            })
+            ->get();
+
+        foreach ($purchaseOrders as $purchaseOrder) {
+            try {
+                $this->sendEscalationEmailReminder($purchaseOrder);
+                Log::info("7-day escalation reminder sent for PO: {$purchaseOrder->po_number}");
+            } catch (\Exception $e) {
+                Log::error("Error sending 7-day escalation reminder for PO: {$purchaseOrder->po_number} - {$e->getMessage()}");
+            }
+        }
+    }
+
+    private function formatWhatsappMessage(PurchaseOrder $purchaseOrder)
+    {
+        // Customize the message based on the PO status
+        switch ($purchaseOrder->status) {
+            case 'waiting for checking':
+                $message = "Purchase Order {$purchaseOrder->po_number} needs to be checked. Please check the system.";
+                break;
+            case 'waiting for knowing':
+                $message = "Purchase Order {$purchaseOrder->po_number} needs to be acknowledged. Please check the system.";
+                break;
+            case 'waiting for approval':
+                $message = "Purchase Order {$purchaseOrder->po_number} needs to be approved. Please check the system.";
+                break;
+            default:
+                $message = "Purchase Order {$purchaseOrder->po_number} needs attention. Please check the system.";
+                break;
+        }
+
+        return $message;
+    }
+
+    private function sendEscalationEmailReminder(PurchaseOrder $purchaseOrder)
+    {
+        // Get HOD's email address (you'll need to implement the logic to find this)
+        $hodEmail = $this->getHODEmail($purchaseOrder); // Replace with your logic
+
+        if ($hodEmail) {
+            Mail::to($hodEmail)->send(new PurchaseOrderEscalationReminder($purchaseOrder));
+        }
+    }
+
+    private function getHODEmail(PurchaseOrder $purchaseOrder)
+    {
+        // Implement logic to retrieve the HOD's email based on the purchase order
+        // For example, you might:
+        // 1. Get the user associated with the PO.
+        // 2. Use the user's department or other information to find the HOD.
+        // 3. Retrieve the HOD's email address.
+
+        // Placeholder - replace with your actual logic
+        return 'hod@example.com';
     }
 
     /**

@@ -44,7 +44,7 @@ class CreatePurchaseOrderTable extends Migration
             $table->decimal('subtotal');
             $table->string('tax')->nullable();
             $table->string('tax_type')->nullable();
-            $table->string('status')->default('waiting for checked');
+            $table->string('status')->default('waiting for checking');
             $table->string('po_status');
             $table->boolean('is_send_email_to_supplier')->default(false);
             $table->longText('notes')->nullable();

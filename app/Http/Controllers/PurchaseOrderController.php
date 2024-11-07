@@ -639,15 +639,14 @@ class PurchaseOrderController extends Controller
         // $res_po = Crypt::decryptString($po_number);
         $res_po = PurchaseOrder::findOrFail($po_id);
         try {
-            $this->downloadPDF($res_po->po_number);
 
             $this->markAsDownloaded($res_po->po_number);
-
-            return response()->json([
-                'type' => 'success',
-                'message' => 'PDF downloaded successfully',
-                'data' => ['po_number' => $res_po->po_number]
-            ], 200);
+            return $this->downloadPDF($res_po->po_number);
+            // return response()->json([
+            //     'type' => 'success',
+            //     'message' => 'PDF downloaded successfully',
+            //     'data' => ['po_number' => $res_po->po_number]
+            // ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
@@ -724,6 +723,57 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    public function printPO($po_number)
+    {
+        try {
+            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            $forecastQties = ForecastQty::where('is_active', 1)->get();
+
+            if (!$purchaseOrder) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order not found',
+                    'data' => null
+                ], 404);
+            }
+
+            // check status purchase order
+            if (!isset($purchaseOrder->status)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order status not found',
+                    'data' => null
+                ], 404);
+            }
+
+            $pdf = PDF::loadView('purchase_orders.pdf2', ['forecastQties' => $forecastQties, 'purchaseOrder' => new PurchaseOrderResource($purchaseOrder)]);
+            $result = $pdf->output();
+            return response()->json(['pdf_data' => base64_encode($result)]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    public function printPOForSupplier($po_id)
+    {
+        try {
+            $res_po = PurchaseOrder::findOrFail($po_id);
+
+            $this->markAsDownloaded($res_po->po_number);
+            return $this->printPO($res_po->po_number);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error downloading PDF: ' . $th->getMessage(),
                 'data' => null
             ], 500);
         }

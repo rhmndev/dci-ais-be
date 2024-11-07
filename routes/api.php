@@ -1,5 +1,7 @@
 <?php
 
+use App\PurchaseOrder;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 /*
@@ -276,8 +278,31 @@ Route::get('/readqrcode', 'InspectionController@qrDecode');
 Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
 Route::get('/d/{po_id}/download', 'PurchaseOrderController@downloadPDFForSupplier');
 Route::get('/d/{po_id}/print-qr-label', 'PurchaseOrderController@printLabelQRForSupplier');
+Route::get('/d/{po_id}/print-po-for-supplier', 'PurchaseOrderController@printPOForSupplier');
 Route::post('/{po_number}/download', 'PurchaseOrderController@download');
 Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
+Route::post('/{po_number}/print-po', 'PurchaseOrderController@printPO');
 Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');
 
 Route::get('/send-whatsapp', 'WhatsAppController@sendWhatsAppMessage');
+
+
+Route::get('/debug-po', function () {
+        // $purchaseOrders = PurchaseOrder::where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())
+        //         ->where('created_at', '<', Carbon::now()->subDays(7)->endOfDay())
+        //         ->where(function ($query) {
+        //                 $query->where('status', 'waiting for checking')
+        //                         ->orWhere('status', 'waiting for knowing')
+        //                         ->orWhere('status', 'waiting for approval');
+        //         })
+        //         ->get();
+
+        $purchaseOrders = PurchaseOrder::where(function ($query) {
+                $query->where('status', 'waiting for checking')
+                        ->orWhere('status', 'waiting for knowing')
+                        ->orWhere('status', 'waiting for approval');
+        })
+                ->get();
+
+        return response()->json(['data' => $purchaseOrders, 'date' => Carbon::now()->subMinutes(1)->toDateTimeString()]);
+});

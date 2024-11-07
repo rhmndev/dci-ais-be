@@ -18,6 +18,7 @@ class CreatePurchaseOrderSignersTable extends Migration
             $table->bigIncrements('id');
             $table->enum('type', ['knowed', 'checked', 'approved']);
             $table->string('user_id');
+            $table->string('npk');
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use Carbon\Carbon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -26,10 +27,12 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')
         //          ->hourly();
-        $schedule->command('purchase-order:calculate-analytics')
-            ->monthly();
+        // $schedule->command('purchase-order:calculate-analytics')->monthly();
+        $schedule->command('purchase-order:send-reminder')->daily();
         $schedule->command('purchase-order:send-reminder')->everyMinute();
-        $schedule->command('purchase-order:add-dummy')->everyMinute();
+        $schedule->command('purchase-order:send-reminder')->daily()->when(function () {
+            return Carbon::now()->dayOfWeek === Carbon::MONDAY; // Run every Monday for the 7-day check
+        });
     }
 
     /**

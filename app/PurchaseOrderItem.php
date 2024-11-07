@@ -8,6 +8,7 @@ class PurchaseOrderItem extends Model
 {
     protected $fillable = [
         'purchase_order_id',
+        'po_number',
         'material_id',
         'quantity',
         'unit_type',
@@ -18,7 +19,7 @@ class PurchaseOrderItem extends Model
 
     public function purchaseOrder()
     {
-        return $this->hasOne(PurchaseOrder::class, 'po_number', 'purchase_order_id');
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id', '_id');
     }
 
     public function material()

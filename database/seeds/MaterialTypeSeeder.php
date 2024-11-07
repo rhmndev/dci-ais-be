@@ -47,10 +47,8 @@ class MaterialTypeSeeder extends Seeder
             ],
         ];
 
-        foreach ($types as $type) {
-            foreach ($datas as $data) {
-                MaterialType::create($data);
-            }
+        foreach ($datas as $data) {
+            MaterialType::create($data);
         }
     }
 }
