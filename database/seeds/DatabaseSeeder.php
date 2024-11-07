@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SupplierSeeder::class);
         $this->call(EmailTemplateSeeder::class);
         $this->call(ShippingAddressesSeeder::class);
+        $this->call(MaterialTypeSeeder::class);
         $this->call(SLockSeeder::class);
         $this->call(PurchaseOrderSeeder::class);
     }

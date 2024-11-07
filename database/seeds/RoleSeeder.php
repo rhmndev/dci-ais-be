@@ -19,6 +19,8 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Admin',
                 'description' => 'Administrator',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
                     return [
                         'permission_id' => $perm->id,
@@ -32,6 +34,8 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Vendor',
                 'description' => 'Vendor',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
                     if ($perm->url == 'dashboard' || $perm->url == 'transaction' || $perm->url == 'receiving-vendor') {
 
@@ -48,6 +52,8 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Supplier',
                 'description' => 'Supplier',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
                     if ($perm->url == 'dashboard') {
 
@@ -64,6 +70,8 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Purchasing',
                 'description' => 'Purchasing',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
                     if ($perm->url == 'dashboard' || $perm->url == 'purchase-order' || $perm->url == 'OrderApproval' || $perm->url == 'MonitoringPO' || $perm->url == 'delivery-schedule') {
 
@@ -80,6 +88,8 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Warehouse',
                 'description' => 'Warehouse',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
                     if ($perm->url == 'dashboard' || $perm->url == 'delivery-schedule' || $perm->url == 'receiving-checkpoint') {
 

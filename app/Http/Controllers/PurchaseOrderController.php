@@ -29,19 +29,20 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         try {
+            $request->validate([
+                'columns' => 'required',
+                'perpage' => 'required|numeric',
+                'page' => 'required|numeric',
+                'sort' => 'required|string',
+                'status' => 'nullable|string',
+                'order' => 'string',
+            ]);
+
             $perPage = $request->input('perpage', 10);
             $page = $request->input('page', 1);
             $sortBy = $request->input('sort', 'order_date');
             $sortOrder = $request->input('order', 'descend');
 
-            // $request->validate([
-            //     'columns' => 'required',
-            //     'perpage' => 'required|numeric',
-            //     'page' => 'required|numeric',
-            //     'sort' => 'required|string',
-            //     'status' => 'nullable|string',
-            //     'order' => 'string',
-            // ]);
             $query = PurchaseOrder::query();
 
             if ($request->has('keyword')) {
@@ -55,9 +56,9 @@ class PurchaseOrderController extends Controller
                 });
             }
 
-            // if ($request->has('status')) {
-            //     $query->where('status', $request->status);
-            // }
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
 
             if ($request->has('startDate') && $request->has('endDate')) {
                 // $startDate = Carbon::createFromFormat('Y-m-d\TH:i:s.u\Z', $request->input('startDate'));
@@ -74,7 +75,7 @@ class PurchaseOrderController extends Controller
                 ->take($perPage)
                 ->get();
 
-            return response()->json(['data' => PurchaseOrderResource::collection($data), 'total' => $total], 200);
+            return response()->json(['type' => 'success', 'data' => PurchaseOrderResource::collection($data), 'total' => $total], 200);
         } catch (\Throwable $th) {
             return response()->json([
 

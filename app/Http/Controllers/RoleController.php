@@ -72,6 +72,8 @@ class RoleController extends Controller
 
         $role->name = $request->name;
         $role->description = $request->description;
+        $role->has_head_of_department = $request->has_head_of_department;
+        $role->head_of_department_id = $request->head_of_department_id ?? null;
         $role->permissions = $permissions;
         $role->created_by = auth()->user()->username;
         $role->changed_by = auth()->user()->username;
@@ -125,6 +127,8 @@ class RoleController extends Controller
 
         $role->name = $request->name;
         $role->description = $request->description;
+        $role->has_head_of_department = $request->has_head_of_department;
+        $role->head_of_department_id = $request->head_of_department_id;
         $role->permissions = $permissions;
         $role->changed_by = auth()->user()->username;
         $role->save();
