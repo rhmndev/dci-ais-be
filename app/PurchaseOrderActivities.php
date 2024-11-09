@@ -82,6 +82,6 @@ class PurchaseOrderActivities extends Model
 
     public function purchaseOrder()
     {
-        return $this->hasOne(PurchaseOrder::class, 'po_number', 'po_number');
+        return $this->belongsTo(PurchaseOrder::class, 'po_number', 'po_number');
     }
 }

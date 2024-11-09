@@ -31,4 +31,9 @@ class PurchaseOrderItem extends Model
     {
         return $this->hasMany(TravelDocumentItem::class, 'po_item_id', '_id');
     }
+
+    public function travelDocumentItemLabelTemp()
+    {
+        return $this->hasMany(TravelDocumentLabelTemp::class, 'po_item_id', '_id');
+    }
 }

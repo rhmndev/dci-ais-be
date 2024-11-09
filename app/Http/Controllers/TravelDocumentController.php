@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TravelDocumentResource;
 use Illuminate\Http\Request;
 use App\PurchaseOrder;
+use App\PurchaseOrderItem;
+use App\TravelDocumentLabelTemp;
 use App\TravelDocument;
 use App\TravelDocumentItem;
 use Endroid\QrCode\QrCode;
@@ -12,6 +14,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class TravelDocumentController extends Controller
@@ -69,68 +72,108 @@ class TravelDocumentController extends Controller
             ], 400);
         }
     }
-    public function createDraftTravelDocument(Request $request, $poId)
-    {
-        $purchaseOrder = PurchaseOrder::firstOrCreate($poId);
-    }
 
-    public function generateItemLabels(Request $request, $poId)
+    public function generateItemLabels(Request $request, $poId, $poItemId)
     {
         $request->validate([
-            'order_delivery_date' => 'required',
-            'items' => 'required|array', // 'items' must be an array
-            'shipping_address' => 'required|string',
-            'items.*.po_item_id' => 'required|string', // Each item must have a 'po_item_id'
-            'items.*.qty' => 'required',
-            'items.*.lot_production_number' => 'required',
-            'items.*.inspector_name' => 'required|string',
-            'items.*.inspector_date' => 'required',
-            'driver_name' => 'required|string',
-            'vehicle_number' => 'nullable|string',
-            'notes' => 'nullable|string',
+            'lot_production_number' => 'required',
+            'qty' => 'required',
+            'inspector_name' => 'required',
+            'inspection_date' => 'required',
         ]);
+        // return $this->tempPrintLabel($poItemId);
 
-        $purchaseOrder = PurchaseOrder::findOrFail($poId);
-        $qrCodeData = [];
+        try {
+            $poItem = PurchaseOrderItem::with('purchaseOrder', 'material')->findOrFail($poItemId);
+            $qrCodeData = [];
+            $yearMonth = Carbon::now()->format('ym');
 
-        foreach ($items as $item) {
-            $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
+            if ($poItem) {
+                $printedLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->sum('qty');
+                $packQty = $poItem->material->default_packing_qty ?: 20;
+                $numLabels = ceil($poItem->quantity / $packQty);
 
-            for ($i = 0; $i < $numLabels; $i++) {
-                $itemNumber =  $item['po_item_id'] . '-' . $i; // Unique identifier for the label
-                $labelQty = min($packQty, $remainingQty);
+                $remainingQty = $poItem->quantity - $printedLabelTemp;
 
-                // Generate QR code and store data temporarily (e.g., in session)
-                $qrCodePath = $this->generateAndStoreQRCodeForItemLabel($itemNumber);
-                $qrCodeData[] = [
-                    'item_number' => $itemNumber,
-                    'qty' => $labelQty,
-                    'qr_path' => $qrCodePath,
-                ];
+                if ($remainingQty <= 0) {
+                    return response()->json([
+                        'type' => 'failed',
+                        'message' => 'Cannot generate more labels. The quantity exceeds the remaining PO item quantity.',
+                        'data' => null
+                    ], 400);
+                }
 
-                // ... (update $remainingQty) ...
+                $data = array();
+                for ($i = 0; $i < $numLabels; $i++) {
+                    $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
+                        ->where('created_at', '<=', Carbon::now()->endOfMonth())
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+
+                    $lastLabelNumber = $lastLabel ? (int)substr($lastLabel->item_number, -6) : 0;
+                    $nextLabelNumber = $lastLabelNumber + 1;
+                    if ($nextLabelNumber > 1000000) {
+                        return response()->json([
+                            'type' => 'failed',
+                            'message' => 'Cannot generate more labels. Label number limit reached.',
+                            'data' => null
+                        ], 400);
+                    }
+                    $itemNumber = $yearMonth . str_pad($nextLabelNumber, 6, '0', STR_PAD_LEFT);
+
+                    $qty = min($remainingQty, $packQty);
+                    if ($qty == 0) {
+                        break;
+                    }
+                    $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
+                        'po_number' => $poItem->purchaseOrder->po_number,
+                        'po_item_id' => $poItem->_id,
+                        'item_number' => $itemNumber,
+                        'lot_production_number' => $request->lot_production_number,
+                        'inspector_name' => $request->inspector_name,
+                        'inspection_date' => $request->inspection_date,
+                        'qty' => $qty,
+                        'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
+                    ]);
+                    $travelDocumentLabelTemp->save();
+                    $remainingQty -= $qty;
+                }
+                // return response()->json([
+                //     'type' => 'success',
+                //     'message' => 'Labels generated successfully.',
+                //     'data' => TravelDocumentLabelTemp::where('po_item_id', $poItemId)->get()
+                // ], 200);
+                return $this->tempPrintLabel($poItemId);
             }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $th->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
         }
     }
 
     public function create(Request $request, $poId)
     {
+
         $request->validate([
             'order_delivery_date' => 'required',
-            'items' => 'required|array', // 'items' must be an array
-            'shipping_address' => 'required|string',
-            'items.*.po_item_id' => 'required|string', // Each item must have a 'po_item_id'
-            'items.*.qty' => 'required',
-            'items.*.lot_production_number' => 'required',
-            'items.*.inspector_name' => 'required|string',
-            'items.*.inspector_date' => 'required',
-            'driver_name' => 'required|string',
+            'items' => 'required|array',
+            // 'shipping_address' => 'required|string',
+            // 'items.*.po_item_id' => 'required|string',
+            // 'items.*.qty' => 'required',
+            // 'items.*.lot_production_number' => 'required',
+            // 'items.*.inspector_name' => 'required|string',
+            // 'items.*.inspector_date' => 'required',
+            'driver_name' => 'nullable|string',
             'vehicle_number' => 'nullable|string',
+            'shipping_address' => 'required|string',
             'notes' => 'nullable|string',
         ]);
 
         try {
-            $purchaseOrder = PurchaseOrder::firstOrCreate($poId);
+            $purchaseOrder = PurchaseOrder::findOrFail($poId);
 
             // adding check duplicate po_item_id selected inside travel document item
             $items = $request->has('items') ? $request->items : [];
@@ -150,8 +193,8 @@ class TravelDocumentController extends Controller
                 'po_date' => $purchaseOrder->order_date,
                 'supplier_code' => $purchaseOrder->supplier_code,
                 'shipping_address' => $request->shipping_address,
-                'driver_name' => $request->driver_name,
-                'vehicle_number' => $request->vehicle_number,
+                'driver_name' => $request->driver_name ?? '',
+                'vehicle_number' => $request->vehicle_number ?? '',
                 'notes' => $request->notes,
                 'status' => 'created',
             ]);
@@ -161,38 +204,38 @@ class TravelDocumentController extends Controller
             $travelDocument->qr_path = $this->generateAndStoreQRCode($travelDocument->no);
             $travelDocument->save();
 
-            foreach ($items as $item) {
-                $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
-                if ($poItem) {
-                    $travelDocumentItem = $travelDocument->items()->create([
-                        'po_item_id' => $item['po_item_id'],
-                        'qty' => $item['qty'],
-                        'lot_production_number' => $item['lot_production_number'],
-                        'inspector_name' => $item['inspector_name'],
-                        'inspector_date' => $item['inspector_date'],
-                        'notes' => $request->notes,
-                    ]);
+            // foreach ($items as $item) {
+            //     $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
+            //     if ($poItem) {
+            //         $travelDocumentItem = $travelDocument->items()->create([
+            //             'po_item_id' => $item['po_item_id'],
+            //             'qty' => $item['qty'],
+            //             'lot_production_number' => $item['lot_production_number'],
+            //             'inspector_name' => $item['inspector_name'],
+            //             'inspector_date' => $item['inspector_date'],
+            //             'notes' => $request->notes,
+            //         ]);
 
-                    $packQty = $poItem->material->default_packing_qty ?: 100; // Default to 100 if not set
-                    $numLabels = ceil($item['qty'] / $packQty);
+            //         $packQty = $poItem->material->default_packing_qty ?: 100; // Default to 100 if not set
+            //         $numLabels = ceil($item['qty'] / $packQty);
 
-                    $remainingQty = $item['qty'];
+            //         $remainingQty = $item['qty'];
 
-                    for ($i = 0; $i < $numLabels; $i++) {
-                        $itemNumber = $travelDocumentItem->no . "-" . $item['po_item_id'] . '-' . $i;
-                        $labelQty = min($packQty, $remainingQty);
+            //         for ($i = 0; $i < $numLabels; $i++) {
+            //             $itemNumber = $travelDocumentItem->no . "-" . $item['po_item_id'] . '-' . $i;
+            //             $labelQty = min($packQty, $remainingQty);
 
-                        $travelDocumentPackingItem = $travelDocumentItem->packingItems()->create([
-                            'td_no' => $itemNumber,
-                            'item_number' => $itemNumber,
-                            'qty' => $labelQty,
-                            'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
-                        ]);
+            //             $travelDocumentPackingItem = $travelDocumentItem->packingItems()->create([
+            //                 'td_no' => $itemNumber,
+            //                 'item_number' => $itemNumber,
+            //                 'qty' => $labelQty,
+            //                 'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
+            //             ]);
 
-                        $remainingQty -= $labelQty;
-                    }
-                }
-            }
+            //             $remainingQty -= $labelQty;
+            //         }
+            //     }
+            // }
 
             return response()->json([
                 'type' => 'success',
@@ -200,7 +243,7 @@ class TravelDocumentController extends Controller
                 'data' => $travelDocument
             ], 201);
         } catch (\Throwable $th) {
-            return response()->json(['message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
+            return response()->json(['type' => 'failed', 'message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
         }
     }
 
@@ -271,6 +314,66 @@ class TravelDocumentController extends Controller
         return $fileName;
     }
 
+    public function getPrintedItemsLabel($po_number)
+    {
+        try {
+            $tdiTemps = TravelDocumentLabelTemp::with('purchaseOrderItem', 'purchaseOrderItem.material')->where('po_number', $po_number)->groupBy('po_item_id')->get();
+            $groupedData = [];
+            foreach ($tdiTemps as $tdiTemp) {
+                $dataTempQr = TravelDocumentLabelTemp::where('po_item_id', $tdiTemp->po_item_id)->get();
+                $groupedData[] = [
+                    "po_item_id" => $tdiTemp,
+                    "description" => $tdiTemp->purchaseOrderItem->material->code . " - " . $tdiTemp->purchaseOrderItem->material->description,
+                    "data" => $dataTempQr
+                ];
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $groupedData,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Not Found.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+    public function getPrintedItemsLabelsForSupplier($poId)
+    {
+        try {
+            $PoData = PurchaseOrder::findOrFail($poId);
+
+            return $this->getPrintedItemsLabel($PoData->po_number);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Not Found.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+    public function getPrintedLabels($poItemId)
+    {
+        try {
+            $travelDocumentLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->get();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $travelDocumentLabelTemp,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Not Found.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
     public function download($id)
     {
         $travelDocument = TravelDocument::with('items')->findOrFail($id);
@@ -333,6 +436,14 @@ class TravelDocumentController extends Controller
         $pdfContent = $pdf->output();
         return response()->json(['pdf_data' => base64_encode($pdfContent)]);
         // return $pdf->stream('Label-Item-' . $item->po_item_id . '.pdf', array("Attachment" => false));
+    }
+
+    public function tempPrintLabel($itemId)
+    {
+        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->get();
+        $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabels' => $itemLabels, 'is_all' => false])->setPaper('a4');;
+        $pdfContent = $pdf->output();
+        return response()->json(['data' => base64_encode($pdfContent)]);
     }
 
     public function downloadToPdf($travelDocumentId)
