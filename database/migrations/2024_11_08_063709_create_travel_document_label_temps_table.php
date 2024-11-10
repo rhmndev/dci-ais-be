@@ -24,6 +24,7 @@ class CreateTravelDocumentLabelTempsTable extends Migration
             $table->integer('qty');
             $table->string('qr_path');
             $table->string('td_no')->nullable();
+            $table->boolean('is_scanned')->default(false);
             $table->timestamps();
         });
     }

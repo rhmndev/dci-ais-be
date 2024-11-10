@@ -21,7 +21,7 @@ class TravelDocumentController extends Controller
 {
     public function show(Request $request, $id)
     {
-        $TravelDocument = TravelDocument::with('items', 'supplier', 'scannedUserBy')->findOrFail($id);
+        $TravelDocument = TravelDocument::with('items', 'items.tempLabelItem', 'supplier', 'scannedUserBy')->findOrFail($id);
 
         return response()->json([
             'type' => 'success',
@@ -55,9 +55,7 @@ class TravelDocumentController extends Controller
                 ], 404);
             }
             $po_number = $purchaseOrder->po_number;
-            $travelDocuments = TravelDocument::with('purchaseOrder')->with(['items' => function ($query) {
-                $query->with('poItem');
-            }])->where('po_number', $po_number)->get();
+            $travelDocuments = TravelDocument::with('purchaseOrder', 'items.poItem', 'items.tempLabelItem')->where('po_number', $po_number)->get();
 
             return response()->json([
                 'type' => 'success',
@@ -292,7 +290,7 @@ class TravelDocumentController extends Controller
     public function getDeliveryOrders($no)
     {
         try {
-            $travelDocument = TravelDocument::with('purchaseOrder', 'items.poItem.material')->where('no', $no)->first();
+            $travelDocument = TravelDocument::with('purchaseOrder', 'items.poItem.material', 'items.tempLabelItem')->where('no', $no)->first();
 
             if (!$travelDocument) {
                 return response()->json([
@@ -429,7 +427,7 @@ class TravelDocumentController extends Controller
         $travelDocument = TravelDocument::with('items')->findOrFail($id);
 
         $pdf = PDF::loadView('travel_documents.item-pdf', ['travelDocument' => $travelDocument, 'is_all' => true])
-            ->setPaper('a4', 'landscape');
+            ->setPaper('a4');
         return $pdf->download('Label-Surat-Jalan-' . $travelDocument->no . '.pdf');
     }
     public function PrintItemsLabel(Request $request, $id)
@@ -438,7 +436,7 @@ class TravelDocumentController extends Controller
 
         // return response()->json(['travelDocument' => $travelDocument]);
         $pdf = PDF::loadView('travel_documents.item-pdf', ['travelDocument' => $travelDocument, 'is_all' => true])
-            ->setPaper('a4', 'landscape');
+            ->setPaper('a4');
         $pdfContent = $pdf->output();
         return response()->json(['pdf_data' => base64_encode($pdfContent)]);
     }
@@ -535,14 +533,23 @@ class TravelDocumentController extends Controller
                     'data' => NULL,
                 ], 400);
             }
-
             $travelDocumentItems = $travelDocument->items;
 
-            foreach ($travelDocumentItems as $item) {
-                $item->is_scanned = true;
-                $item->scanned_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
-                $item->scanned_by = auth()->user() ? auth()->user()->npk : '';
-                $item->save();
+            foreach ($request->scanned_items as $scannedItem) {
+                $item = $travelDocumentItems->first(function ($item) use ($scannedItem) {
+                    return $item->qr_tdi_no === $scannedItem['items']['qr_tdi_no'];
+                });
+
+                if ($item) {
+                    $item->is_scanned = true;
+                    $item->scanned_at = new UTCDateTime(Carbon::parse($scannedItem['scanTime'])->getPreciseTimestamp(3));
+                    $item->scanned_by = auth()->user() ? auth()->user()->npk : '';
+                    $item->save();
+
+                    $itemsLabelTemp = TravelDocumentLabelTemp::where('item_number', $item->qr_tdi_no)->first();
+                    $itemsLabelTemp->is_scanned = true;
+                    $itemsLabelTemp->save();
+                }
             }
 
             $travelDocument->status = "completed";
@@ -552,12 +559,6 @@ class TravelDocumentController extends Controller
             $travelDocument->scanned_by = auth()->user() ? auth()->user()->npk : '';;
             $travelDocument->notes = $request->has('notes') ? $request->notes : '';
             $travelDocument->save();
-
-            return response()->json([
-                'type' => 'success',
-                'message' => 'Travel Document scanned successfully.',
-                'data' => $travelDocument,
-            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'failed',

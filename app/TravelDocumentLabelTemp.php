@@ -16,6 +16,7 @@ class TravelDocumentLabelTemp extends Model
         'qty',
         'qr_path',
         'td_no',
+        'is_scanned',
     ];
 
     protected $date = [

@@ -14,6 +14,14 @@ class TravelDocumentItem extends Model
         'qr_tdi_no',
         'qr_path',
         'verified_by',
+        'is_scanned',
+        'scanned_at',
+        'scanned_by',
+        'notes',
+    ];
+
+    protected $dates = [
+        'scanned_at',
     ];
 
     public function travelDocument()
