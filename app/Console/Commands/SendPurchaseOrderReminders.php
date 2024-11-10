@@ -101,16 +101,11 @@ class SendPurchaseOrderReminders extends Command
     {
         Log::info('Sending daily email reminders.');
         // Get POs needing reminders (created yesterday and status hasn't changed)
-        $purchaseOrders = PurchaseOrder::whereBetween('created_at', [
-            Carbon::create(2024, 11, 3)->startOfDay(),
-            Carbon::today()->endOfDay(),
-        ])
-            ->where(function ($query) {
-                $query->where('status', 'waiting for checking')
-                    ->orWhere('status', 'waiting for knowing')
-                    ->orWhere('status', 'waiting for approval');
-            })
-            ->get();
+        $purchaseOrders = PurchaseOrder::where(function ($query) {
+            $query->where('status', 'waiting for checking')
+                ->orWhere('status', 'waiting for knowing')
+                ->orWhere('status', 'waiting for approval');
+        })->get();
 
         foreach ($purchaseOrders as $purchaseOrder) {
             try {
@@ -150,8 +145,8 @@ class SendPurchaseOrderReminders extends Command
     {
         Log::info('Sending 7-day escalation reminders.');
         // Get POs created 7 days ago that still need attention
-        $purchaseOrders = PurchaseOrder::where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())
-            ->where('created_at', '<', Carbon::now()->subDays(7)->endOfDay())
+        $purchaseOrders = PurchaseOrder::where('order_date', '>=', Carbon::now()->subDays(7)->startOfDay())
+            ->where('order_date', '<', Carbon::now()->subDays(7)->endOfDay())
             ->where(function ($query) {
                 $query->where('status', 'waiting for checking')
                     ->orWhere('status', 'waiting for knowing')
@@ -161,6 +156,9 @@ class SendPurchaseOrderReminders extends Command
 
         foreach ($purchaseOrders as $purchaseOrder) {
             try {
+                $message = $this->formatWhatsappMessage($purchaseOrder, true);
+                $recipientNumber = '6285156376462'; // Replace with recipient's number
+                WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
                 $this->sendEscalationEmailReminder($purchaseOrder);
                 Log::info("7-day escalation reminder sent for PO: {$purchaseOrder->po_number}");
             } catch (\Exception $e) {
@@ -169,23 +167,40 @@ class SendPurchaseOrderReminders extends Command
         }
     }
 
-    private function formatWhatsappMessage(PurchaseOrder $purchaseOrder)
+    private function formatWhatsappMessage(PurchaseOrder $purchaseOrder, $isEscalation = false)
     {
-        // Customize the message based on the PO status
-        switch ($purchaseOrder->status) {
-            case 'waiting for checking':
-                $message = "Purchase Order {$purchaseOrder->po_number} needs to be checked. Please check the system.";
-                break;
-            case 'waiting for knowing':
-                $message = "Purchase Order {$purchaseOrder->po_number} needs to be acknowledged. Please check the system.";
-                break;
-            case 'waiting for approval':
-                $message = "Purchase Order {$purchaseOrder->po_number} needs to be approved. Please check the system.";
-                break;
-            default:
-                $message = "Purchase Order {$purchaseOrder->po_number} needs attention. Please check the system.";
-                break;
+        if ($isEscalation) {
+            switch ($purchaseOrder->status) {
+                case 'waiting for checking':
+                    $message = "Purchase Order {$purchaseOrder->po_number} has been pending to needs to be checking for 7 days and requires your attention. Please check the system.";
+                    break;
+                case 'waiting for knowing':
+                    $message = "Purchase Order {$purchaseOrder->po_number} has been pending to needs to be knowing for 7 days and requires your attention. Please check the system.";
+                    break;
+                case 'waiting for approval':
+                    $message = "Purchase Order {$purchaseOrder->po_number} has been pending to needs to be approving for 7 days and requires your attention. Please check the system.";
+                    break;
+                default:
+                    $message = "Purchase Order {$purchaseOrder->po_number} has been pending for 7 days and requires your attention. Please check the system.";
+                    break;
+            }
+        } else {
+            switch ($purchaseOrder->status) {
+                case 'waiting for checking':
+                    $message = "Purchase Order {$purchaseOrder->po_number} needs to be checking. Please check the system.";
+                    break;
+                case 'waiting for knowing':
+                    $message = "Purchase Order {$purchaseOrder->po_number} needs to be knowing. Please check the system.";
+                    break;
+                case 'waiting for approval':
+                    $message = "Purchase Order {$purchaseOrder->po_number} needs to be approving. Please check the system.";
+                    break;
+                default:
+                    $message = "Purchase Order {$purchaseOrder->po_number} needs attention. Please check the system.";
+                    break;
+            }
         }
+        // Customize the message based on the PO status
 
         return $message;
     }
@@ -209,7 +224,7 @@ class SendPurchaseOrderReminders extends Command
         // 3. Retrieve the HOD's email address.
 
         // Placeholder - replace with your actual logic
-        return 'hod@example.com';
+        return 'fachriansyahmni@gmail.com';
     }
 
     /**

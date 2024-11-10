@@ -21,7 +21,7 @@ class AddDummyPurchaseOrder extends Command
      * @var string
      */
     protected $signature = 'purchase-order:add-dummy {numberOfOrders? : The number of dummy orders to create (default: 1)}
-    {status? : The status of the purchase order (pending, approved, unapproved) (default: approved)} {supplier_code? : The number of supplier code}';
+    {status? : The status of the purchase order (pending, waiting for checking, waiting for knowing, waiting for approval, approved, unapproved) (default: approved)} {supplier_code? : The number of supplier code}';
 
     /**
      * The console command description.
@@ -50,7 +50,7 @@ class AddDummyPurchaseOrder extends Command
         $numberOfOrders = $this->argument('numberOfOrders') ?: 1;
         $supplier_code = $this->argument('supplier_code') ?: "";
         $status = $this->argument('status') ?: 'approved';
-        $validStatuses = ['pending', 'approved', 'unapproved'];
+        $validStatuses = ['pending', 'approved', 'unapproved', 'waiting for checking', 'waiting for knowing', 'waiting for approval'];
         if (!in_array($status, $validStatuses)) {
             $this->error("Invalid status. Choose from: " . implode(', ', $validStatuses));
             return 1; // Indicate an error occurred
@@ -69,6 +69,28 @@ class AddDummyPurchaseOrder extends Command
                     $is_checked = true;
                     $is_knowed = true;
                     $is_approved = true;
+                    break;
+                case 'waiting for knowing':
+                    $checkedBy = "39748";
+                    $knowedBy = "";
+                    $approvedBy = "";
+                    $dateChecked = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+                    $dateKnowed = null;
+                    $dateApproved = null;
+                    $is_checked = true;
+                    $is_knowed = false;
+                    $is_approved = false;
+                    break;
+                case 'waiting for approval':
+                    $checkedBy = "39748";
+                    $knowedBy = "39748";
+                    $approvedBy = "";
+                    $dateChecked = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+                    $dateKnowed = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+                    $dateApproved = null;
+                    $is_checked = true;
+                    $is_knowed = true;
+                    $is_approved = false;
                     break;
                 default:
                     $checkedBy = "";

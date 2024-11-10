@@ -369,10 +369,10 @@ class UserController extends Controller
     public function getMyPermissions(Request $request)
     {
         try {
-            $user = $request->user(); // Get the authenticated user
-
+            $user = auth()->user(); // Get the authenticated user
             if ($user) {
-                $permissions = $user->getAllPermissions()->pluck('name');
+                $permissions = $user->getPermissions;
+
                 return response()->json([
                     'type' => 'success',
                     'message' => 'User permissions retrieved successfully.',
