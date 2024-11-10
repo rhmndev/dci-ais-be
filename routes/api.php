@@ -33,9 +33,9 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/user/{id}', 'UserController@store');
                 Route::delete('/user/{id}', 'UserController@destroy');
                 Route::post('/userimport', 'UserController@import');
-                Route::get('/user/c/permissions', 'UserController@getMyPermissions');
                 #endregion
         });
+        Route::get('/user/c/permissions', 'UserController@getMyPermissions');
 
 
         #region Master Vendor
@@ -242,6 +242,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/{poId}/get-print-items-label', 'TravelDocumentController@getPrintedItemsLabelsForSupplier');
                 Route::post('/{poItemId}/get-print-label', 'TravelDocumentController@getPrintedLabels');
                 Route::post('/{poId}/{poItemId}/print-label', 'TravelDocumentController@generateItemLabels');
+                Route::post('/{poItemId}/print-label-temp', 'TravelDocumentController@tempPrintLabel');
+                Route::post('/{itemNumberId}/print-label-temp-by-id', 'TravelDocumentController@tempPrintLabelById');
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
                 Route::post('/{id}/download', 'TravelDocumentController@downloadToPdf');

@@ -30,4 +30,9 @@ class TravelDocumentItem extends Model
     {
         return $this->hasMany(TravelDocumentPackingItems::class, 'travel_document_item_id', '_id');
     }
+
+    public function tempLabelItem()
+    {
+        return $this->hasOne(TravelDocumentLabelTemp::class, 'qr_tdi_no', 'item_number');
+    }
 }

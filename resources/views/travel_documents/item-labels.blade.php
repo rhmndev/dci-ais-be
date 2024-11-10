@@ -8,9 +8,7 @@
             margin: 0;
         }
         .label-container {
-            /* width: 150mm; */
-            /* page-break-after: always; Page break after each table */
-            /* padding: 5px; */
+            page-break-after: always;
         }
         
         .label-table {
@@ -59,9 +57,53 @@
     </style>
 </head>
 <body>
-    @if ($is_all)
+    @if (!$is_all)
     <table class="label-container">
-        
+        <tr>
+            <td>
+                <table class="label-table">
+                    <tr>
+                        <td style="text-align: center; padding:15px;"> 
+                            <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
+                        </td>
+                        <td style="text-align: right;padding:15px;"> 
+                            @isset($itemLabel->qr_path)
+                            <img src="{{ public_path('storage/'.$itemLabel->qr_path) }}" alt="QR Code Item" style="width: 50px;" class="qrimage">
+                            <br><small style="font-size: 10px;">{{$itemLabel->item_number}}</small>
+                            @endisset
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Supplier:</td>
+                        <td>{{ $itemLabel->purchaseOrder->supplier->name ?? 'SUPPLIER_NAME' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Part Name:</td>
+                        <td>{{ $itemLabel->purchaseOrderItem->material->description ?? 'ITEM_NAME' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Part Number:</td>
+                        <td>{{ $itemLabel->purchaseOrderItem->material->code ?? 'ITEM_NUMBER' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Qty:</td>
+                        <td>{{ $itemLabel->qty ?? 'QTY' }} {{ $itemLabel->purchaseOrderItem->material->unit ?? 'UNIT' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Lot Production:</td>
+                        <td>{{ $itemLabel->lot_production_number ?? 'LOT_PRODUCTION' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Verified By:</td>
+                        <td>{{ $itemLabel->inspector_name ?? 'VERIFIED_BY' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Date:</td>
+                        <td>{{ $itemLabel->inspection_date ? $itemLabel->inspection_date : '-' }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
     </table>
     @else
     <table class="label-container">
@@ -106,7 +148,7 @@
                     </tr>
                     <tr>
                         <td>Date:</td>
-                        {{-- <td>{{ $label->inspection_date ? $label->inspection_date->format('Y-m-d') : '-' }}</td> --}}
+                        <td>{{ $label->inspection_date ? $label->inspection_date : '-' }}</td>
                     </tr>
                 </table>
             </td>

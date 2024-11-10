@@ -168,18 +168,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                  @php $total = 0; $no = 1;$totalItems = count($travelDocument->items); @endphp 
-                  @foreach ($travelDocument->items as $item)
+                  @php $total = 0; $no = 1;@endphp 
+                  @foreach ($groupedItems as $group)
                   <tr style="border-top: none; border-bottom: none;">
                     <td  style="text-align:center;">{{ $no++ }}</td>
-                    <td>{{ $item->poItem->material->code ?? 'code_item'}} - {{$item->poItem->material->description ?? 'description_item'}}</td>
-                    <td style="text-align:center;">{{ $item->qty }}</td>
-                    <td style="text-align:center;">{{ $item->poItem->unit_type }}</td>
-                    <td style="text-align:right;">@currency($item->poItem->unit_price ?? 0)</td> 
-                    <td style="text-align:right;">@currency($item->poItem->unit_price * $item->qty)</td> 
+                    <td>{{ $group['material']['code'] ?? 'code_item'}} - {{$group['material']['description'] ?? 'description_item'}}</td>
+                    <td style="text-align:center;">{{ $group['total_qty'] }}</td>
+                    <td style="text-align:center;">{{ $group['poItem']['unit_type'] }}</td>
+                    <td style="text-align:right;">@currency($group['poItem']['unit_price'] ?? 0)</td> 
+                    <td style="text-align:right;">@currency($group['poItem']['unit_price'] * $group['total_qty'])</td> 
                     <td>&nbsp;</td> 
                   </tr>
-                  @php $total += $item->poItem->unit_price * $item->qty; @endphp 
+                  @php $total += $group['poItem']['unit_price'] * $group['total_qty']; @endphp
                   @endforeach
                   @for ($i = $no; $i <= 10; $i++) 
                   <tr style="border-top: none; @if ($i == 15) border-bottom: 1px solid #ddd; @else border-bottom: none; @endif">
@@ -213,7 +213,7 @@
                 <p>Made By:</p>
                 <br>
                 <br>
-                <p>{{$travelDocument->made_by_user ?? ''}}</p> 
+                <p>{{$travelDocument->made_by_user ?: '-'}}</p> 
               </div>
             </td>
             <td style="border: none; padding: 0; text-align: center;">
@@ -221,7 +221,7 @@
                 <p>Delivered By:</p>
                 <br>
                 <br>
-                <p>{{$travelDocument->driver_name}}</p> 
+                <p>{{$travelDocument->driver_name ?: '-'}}</p> 
               </div>
             </td>
             <td style="border: none; padding: 0; text-align: center;">

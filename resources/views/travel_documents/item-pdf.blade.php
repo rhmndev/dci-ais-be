@@ -49,7 +49,7 @@
         .logo {
             display: block;
             margin: 0 auto 10px;
-            width: 100px;
+            width: 250px;
         }
 
         .label-table td {
@@ -66,12 +66,13 @@
             <td>
                 <table class="label-table">
                     <tr>
-                        <td style="text-align: center;"> 
+                        <td style="text-align: center; padding:15px;"> 
                             <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
                         </td>
-                        <td style="text-align: right;"> 
+                        <td style="text-align:right; padding:15px;"> 
                             @isset($travelDocument->items[$i]->qr_path)
-                            <img src="{{ public_path('storage/'.$travelDocument->items[$i]->qr_path) }}" alt="QR Code Item" style="width: 80px;" class="qrimage">
+                            <img src="{{ public_path('storage/'.$travelDocument->items[$i]->qr_path) }}" alt="QR Code Item" style="width: 50px;" class="qrimage">
+                            <br><small style="font-size: 10px;">{{$travelDocument->items[$i]->qr_tdi_no}}</small>
                             @endisset
                         </td>
                     </tr>
@@ -97,11 +98,12 @@
                     </tr>
                     <tr>
                         <td>Verified By:</td>
-                        <td>{{ $travelDocument->items[$i]->verified_by ?? 'VERIFIED_BY' }}</td>
+                        <td>{{ $travelDocument->items[$i]->tempLabelItem->inspector_name ?? 'VERIFIED_BY' }}</td>
                     </tr>
                     <tr>
                         <td>Date:</td>
-                        <td>{{ $travelDocument->items[$i]->created_at ? $travelDocument->items[$i]->created_at->format('Y-m-d') : 'DATE' }}</td>
+                        {{-- <td>{{ $travelDocument->items[$i]->temp_label_item->inspection_date ? $travelDocument->items[$i]->temp_label_item->inspection_date->format('Y-m-d') : 'DATE' }}</td> --}}
+                        <td></td>
                     </tr>
                 </table>
             </td>
@@ -110,10 +112,7 @@
     </table>
     @else
     <table class="label-container">
-        @php
-         $totalPrint = $item->total_print_label ?? 1;   
-        @endphp
-        @for ($i = 0; $i < $totalPrint; $i++)
+        @foreach($items as $item)
         <tr>
             <td>
                 <table class="label-table">
@@ -121,9 +120,10 @@
                         <td style="text-align: center; padding:5px;"> 
                             <img src="{{ public_path('/img/logo.png') }}" alt="DCI Logo" class="logo">
                         </td>
-                        <td style="text-align: right;"> 
+                        <td style="text-align: right; padding:15px;"> 
                             @isset($item->qr_path)
-                            <img src="{{ public_path('storage/'.$item->qr_path) }}" alt="QR Code Item" style="width: 80px;" class="qrimage">
+                            <img src="{{ public_path('storage/'.$item->qr_path) }}" alt="QR Code Item" style="width: 50px;" class="qrimage">
+                            <br><small style="font-size: 10px;">{{$item->qr_tdi_no}}</small>
                             @endisset
                         </td>
                     </tr>
@@ -149,7 +149,7 @@
                     </tr>
                     <tr>
                         <td>Verified By:</td>
-                        <td>{{ $item->verified_by ?? 'VERIFIED_BY' }}</td>
+                        <td>{{ $item->tempLabelItem->inspector_name ?? 'VERIFIED_BY' }}</td>
                     </tr>
                     <tr>
                         <td>Date:</td>
@@ -158,7 +158,7 @@
                 </table>
             </td>
         </tr>
-        @endfor
+        @endforeach
     </table>
     @endif
 </body>

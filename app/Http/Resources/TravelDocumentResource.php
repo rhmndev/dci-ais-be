@@ -36,17 +36,28 @@ class TravelDocumentResource extends JsonResource
             'purchase_order' => new PurchaseOrderResource($this->whenLoaded('purchaseOrder')),
             'supplier' => new SupplierResource($this->whenLoaded('supplier')),
             'items' => $this->whenLoaded('items', function () {
-                return $this->items->map(function ($item) {
+                return collect($this->items)->groupBy('po_item_id')->map(function ($group, $poItemId) {
+                    $firstItem = $group->first();
                     return [
-                        'id' => $item->_id,
-                        'po_item_id' => $item->po_item_id,
-                        'verified_by' => $item->verified_by,
-                        'qty' => $item->qty,
-                        'material' => new MaterialResource($item->poItem->material),
-                        'poItem' => new PurchaseOrderItemsResource($item->poItem),
-                        'lot_production_number' => $item->lot_production_number,
-                        'qr_uuid' => $item->qr_uuid,
-                        'qr_path' => $item->qr_path,
+                        'po_item_id' => $poItemId,
+                        'material' => new MaterialResource($firstItem->poItem->material),
+                        'poItem' => new PurchaseOrderItemsResource($firstItem->poItem),
+                        'total_qty' => $group->sum('qty'),
+                        'items' => $group->map(function ($item) {
+                            return [
+                                'id' => $item->_id,
+                                'qty' => $item->qty,
+                                'qr_uuid' => $item->qr_uuid,
+                                'qr_path' => $item->qr_path,
+                                'qr_tdi_no' => $item->qr_tdi_no,
+                                'lot_production_number' => $item->lot_production_number,
+                                'inspector_name' => $item->inspector_name,
+                                'inspector_date' => $item->inspector_date,
+                                'is_scanned' => $item->is_scanned,
+                                'scanned_at' => $item->scanned_at,
+                                'scanned_by' => $item->scanned_by,
+                            ];
+                        }),
                     ];
                 });
             }),

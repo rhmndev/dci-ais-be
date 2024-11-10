@@ -79,7 +79,7 @@ class TravelDocumentController extends Controller
             'lot_production_number' => 'required',
             'qty' => 'required',
             'inspector_name' => 'required',
-            'inspection_date' => 'required',
+            'inspection_date' => 'required|date',
         ]);
         // return $this->tempPrintLabel($poItemId);
 
@@ -131,7 +131,7 @@ class TravelDocumentController extends Controller
                         'item_number' => $itemNumber,
                         'lot_production_number' => $request->lot_production_number,
                         'inspector_name' => $request->inspector_name,
-                        'inspection_date' => $request->inspection_date,
+                        'inspection_date' => new UTCDateTime(Carbon::parse($request->inspection_date)->getPreciseTimestamp(3)),
                         'qty' => $qty,
                         'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
                     ]);
@@ -160,12 +160,13 @@ class TravelDocumentController extends Controller
         $request->validate([
             'order_delivery_date' => 'required',
             'items' => 'required|array',
-            // 'shipping_address' => 'required|string',
+            'shipping_address' => 'required|string',
             // 'items.*.po_item_id' => 'required|string',
             // 'items.*.qty' => 'required',
             // 'items.*.lot_production_number' => 'required',
             // 'items.*.inspector_name' => 'required|string',
             // 'items.*.inspector_date' => 'required',
+            'made_by_user' => 'required|string',
             'driver_name' => 'nullable|string',
             'vehicle_number' => 'nullable|string',
             'shipping_address' => 'required|string',
@@ -193,6 +194,7 @@ class TravelDocumentController extends Controller
                 'po_date' => $purchaseOrder->order_date,
                 'supplier_code' => $purchaseOrder->supplier_code,
                 'shipping_address' => $request->shipping_address,
+                'made_by_user' => $request->made_by_user,
                 'driver_name' => $request->driver_name ?? '',
                 'vehicle_number' => $request->vehicle_number ?? '',
                 'notes' => $request->notes,
@@ -203,6 +205,26 @@ class TravelDocumentController extends Controller
 
             $travelDocument->qr_path = $this->generateAndStoreQRCode($travelDocument->no);
             $travelDocument->save();
+
+            foreach ($items as $item) {
+                $parts = explode('-', $item);
+                if (isset($parts[1]) && $parts[1] != "") {
+                    // $dataPoItemId = $parts[0];
+                    $dataPartId = $parts[1];
+
+                    $DataLabelItem = TravelDocumentLabelTemp::where("_id", $dataPartId)->first();
+
+                    $travelDocumentItem = $travelDocument->items()->create([
+                        'po_item_id' => $DataLabelItem->po_item_id,
+                        'qty' => $DataLabelItem->qty,
+                        'qr_tdi_no' => $DataLabelItem->item_number,
+                        'lot_production_number' => $DataLabelItem->lot_production_number,
+                        'inspector_name' => $DataLabelItem->inspector_name,
+                        'inspector_date' => $DataLabelItem->inspection_date,
+                        'qr_path' => $DataLabelItem->qr_path
+                    ]);
+                }
+            }
 
             // foreach ($items as $item) {
             //     $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
@@ -412,8 +434,9 @@ class TravelDocumentController extends Controller
     }
     public function PrintItemsLabel(Request $request, $id)
     {
-        $travelDocument = TravelDocument::with('items')->findOrFail($id);
+        $travelDocument = TravelDocument::with('items', 'items.tempLabelItem')->findOrFail($id);
 
+        // return response()->json(['travelDocument' => $travelDocument]);
         $pdf = PDF::loadView('travel_documents.item-pdf', ['travelDocument' => $travelDocument, 'is_all' => true])
             ->setPaper('a4', 'landscape');
         $pdfContent = $pdf->output();
@@ -430,18 +453,25 @@ class TravelDocumentController extends Controller
 
     public function printLabel($itemId)
     {
-        $item = TravelDocumentItem::with('travelDocument.supplier', 'poItem.material')->findOrFail($itemId);
+        $items = TravelDocumentItem::with('travelDocument.supplier', 'tempLabelItem', 'poItem.material')->where('po_item_id', $itemId)->get();
+        // return response()->json(['data' => $items]);
 
-        $pdf = PDF::loadView('travel_documents.item-pdf', ['item' => $item, 'is_all' => false])->setPaper('a4', 'landscape');;
+        $pdf = PDF::loadView('travel_documents.item-pdf', ['items' => $items, 'is_all' => false])->setPaper('a4');;
         $pdfContent = $pdf->output();
         return response()->json(['pdf_data' => base64_encode($pdfContent)]);
-        // return $pdf->stream('Label-Item-' . $item->po_item_id . '.pdf', array("Attachment" => false));
     }
 
     public function tempPrintLabel($itemId)
     {
         $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->get();
-        $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabels' => $itemLabels, 'is_all' => false])->setPaper('a4');;
+        $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabels' => $itemLabels, 'is_all' => true])->setPaper('a4');;
+        $pdfContent = $pdf->output();
+        return response()->json(['data' => base64_encode($pdfContent)]);
+    }
+    public function tempPrintLabelById($itemNumberId)
+    {
+        $itemLabel = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('_id', $itemNumberId)->first();
+        $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabel' => $itemLabel, 'is_all' => false])->setPaper('a4');;
         $pdfContent = $pdf->output();
         return response()->json(['data' => base64_encode($pdfContent)]);
     }
@@ -459,10 +489,23 @@ class TravelDocumentController extends Controller
 
     public function printTravelDocument($travelDocumentId)
     {
-        $travelDocument = TravelDocument::with('items')->findOrFail($travelDocumentId);
-        // return response()->json(['message' => 'Error creating travel document', 'data' => $travelDocument], 500);
+        $travelDocument = TravelDocument::with(['items' => function ($query) {
+            $query->with('poItem.material'); // Eager load necessary relationships
+        }])->findOrFail($travelDocumentId);
+        $groupedItems = collect($travelDocument->items)
+            ->groupBy('po_item_id')
+            ->map(function ($group, $poItemId) {
+                $firstItem = $group->first();
+                return [
+                    'po_item_id' => $poItemId,
+                    'material' => $firstItem->poItem->material,
+                    'poItem' => $firstItem->poItem,
+                    'total_qty' => $group->sum('qty'),
+                    'items' => $group,
+                ];
+            });
 
-        $pdf = PDF::loadView('travel_documents.pdf', ['travelDocument' => $travelDocument])
+        $pdf = PDF::loadView('travel_documents.pdf', ['travelDocument' => $travelDocument, 'groupedItems' => $groupedItems])
             ->setPaper('a4', 'landscape'); // Set landscape orientation
 
         $pdfContent = $pdf->output();
