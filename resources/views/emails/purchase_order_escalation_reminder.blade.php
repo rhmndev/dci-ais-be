@@ -15,7 +15,7 @@
     <ul>
         <li><strong>PO Number:</strong> {{ $purchaseOrder->po_number }}</li>
         <li><strong>Status:</strong> {{ $purchaseOrder->status }}</li>
-        <li><strong>Created At:</strong> {{ $purchaseOrder->created_at->format('Y-m-d H:i:s') }}</li>
+        <li><strong>Order Date At:</strong> {{ $purchaseOrder->order_date->format('Y-m-d H:i:s') }}</li>
         <!-- Add more relevant details as needed -->
     </ul>
 

@@ -221,6 +221,9 @@ class TravelDocumentController extends Controller
                         'inspector_date' => $DataLabelItem->inspection_date,
                         'qr_path' => $DataLabelItem->qr_path
                     ]);
+
+                    $DataLabelItem->td_no = $travelDocument->no;
+                    $DataLabelItem->save();
                 }
             }
 

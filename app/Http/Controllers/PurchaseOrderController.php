@@ -467,7 +467,7 @@ class PurchaseOrderController extends Controller
     public function getListScheduleDelivered()
     {
         try {
-            $purchaseOrders = PurchaseOrder::where('status', 'approved')
+            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries')->where('status', 'approved')
                 ->whereHas('scheduleDeliveries', function ($query) {
                     // $query->where('show_to_supplier', 1);
                 })
