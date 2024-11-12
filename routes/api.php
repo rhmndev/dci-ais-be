@@ -36,7 +36,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         });
         Route::get('/userlist', 'UserController@list');
         Route::get('/user/c/permissions', 'UserController@getMyPermissions');
-
+        Route::post('/changepassword', 'UserController@changePassword');
 
         #region Master Vendor
         Route::get('/vendor', 'VendorController@index');
