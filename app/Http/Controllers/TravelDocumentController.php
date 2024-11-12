@@ -129,7 +129,7 @@ class TravelDocumentController extends Controller
                         'item_number' => $itemNumber,
                         'lot_production_number' => $request->lot_production_number,
                         'inspector_name' => $request->inspector_name,
-                        'inspection_date' => new UTCDateTime(Carbon::parse($request->inspection_date)->getPreciseTimestamp(3)),
+                        'inspection_date' => $request->inspection_date,
                         'qty' => $qty,
                         'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
                     ]);

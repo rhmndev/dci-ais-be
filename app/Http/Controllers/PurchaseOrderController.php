@@ -363,6 +363,7 @@ class PurchaseOrderController extends Controller
             if ($purchaseOrderActivity) {
                 // $purchaseOrderActivity->po_id = $purchaseOrderActivity->purchaseOrder->_id;
                 $purchaseOrderActivity->seen += 1;
+                $purchaseOrderActivity->last_seen_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
                 $purchaseOrderActivity->save();
             } else {
                 $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
@@ -397,7 +398,7 @@ class PurchaseOrderController extends Controller
             if ($purchaseOrderActivity) {
                 // $purchaseOrderActivity->po_id = $purchaseOrderActivity->purchaseOrder->_id;
                 $purchaseOrderActivity->downloaded += 1;
-                // $purchaseOrderActivity->last_downloaded_at =
+                $purchaseOrderActivity->last_downloaded_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
                 $purchaseOrderActivity->save();
             } else {
                 $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
@@ -464,14 +465,29 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function getListPOScheduleDeliveries()
+    {
+        try {
+            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries', 'supplier')->where('status', 'approved')
+                ->get();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $purchaseOrders
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 500);
+        }
+    }
     public function getListScheduleDelivered()
     {
         try {
-            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries')->where('status', 'approved')
-                ->whereHas('scheduleDeliveries', function ($query) {
-                    // $query->where('show_to_supplier', 1);
-                })
-                ->get();
+            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries', 'supplier')->where('status', 'approved')
+                ->whereHas('scheduleDeliveries')->get();
 
             return response()->json([
                 'type' => 'success',

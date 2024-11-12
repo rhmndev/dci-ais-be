@@ -29,12 +29,12 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/user', 'UserController@index');
                 Route::get('/user/{id}', 'UserController@show');
                 Route::post('/user', 'UserController@store');
-                Route::get('/userlist', 'UserController@list');
                 Route::post('/user/{id}', 'UserController@store');
                 Route::delete('/user/{id}', 'UserController@destroy');
                 Route::post('/userimport', 'UserController@import');
                 #endregion
         });
+        Route::get('/userlist', 'UserController@list');
         Route::get('/user/c/permissions', 'UserController@getMyPermissions');
 
 
@@ -205,6 +205,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/purchase-orders/mark-as-downloaded/{po_number}', 'PurchaseOrderController@markAsDownloaded');
         Route::get('/purchase-orders/g/list-need-schedule-delivery', 'PurchaseOrderController@listNeedScheduleDeliveries');
         Route::get('/purchase-orders/g/list-schedule-delivered', 'PurchaseOrderController@getListScheduleDelivered');
+        Route::get('/purchase-orders/g/list-po-schedule-deliveries', 'PurchaseOrderController@getListPOScheduleDeliveries');
 
         Route::get('/purchase-order/a/{approvalType}', 'PurchaseOrderController@listNeedSigned');
         Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');

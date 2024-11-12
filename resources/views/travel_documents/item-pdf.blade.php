@@ -103,7 +103,14 @@
                     <tr>
                         <td>Date:</td>
                         {{-- <td>{{ $travelDocument->items[$i]->temp_label_item->inspection_date ? $travelDocument->items[$i]->temp_label_item->inspection_date->format('Y-m-d') : 'DATE' }}</td> --}}
-                        <td></td>
+                        <pre>
+                            {{$travelDocument->items[$i]->temp_label_item}}
+                        </pre>
+                        <td>
+                            @if ($travelDocument->items[$i]->tempLabelItem)
+                            {{ $travelDocument->items[$i]->tempLabelItem->inspection_date ? \Carbon\Carbon::createFromTimestampMs($travelDocument->items[$i]->tempLabelItem->inspection_date)->format('Y-m-d') : 'DATE' }}                            
+                            @endif
+                        </td>
                     </tr>
                 </table>
             </td>

@@ -28,6 +28,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')
         //          ->hourly();
         // $schedule->command('purchase-order:calculate-analytics')->monthly();
+        // $schedule->command('sap:sync-purchase-orders')->everyFiveMinutes();
         $schedule->command('email:send-po-confirmation')->everyMinute();
         $schedule->command('purchase-order:send-reminder')->daily();
         $schedule->command('purchase-order:send-reminder')->everyMinute();

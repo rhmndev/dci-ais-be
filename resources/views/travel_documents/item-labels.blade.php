@@ -99,7 +99,22 @@
                     </tr>
                     <tr>
                         <td>Date:</td>
-                        <td>{{ $itemLabel->inspection_date ? $itemLabel->inspection_date : '-' }}</td>
+                        @if ($itemLabel->inspection_date)
+                        <td>
+                        {{-- @php
+                            // Attempt to create a Carbon instance from the date
+                            try {
+                                $inspectionDate = \Carbon\Carbon::parse($itemLabel->inspection_date);
+                            } catch (\Exception $e) {
+                                // If parsing fails, assume it's already a timestamp
+                                $inspectionDate = \Carbon\Carbon::createFromTimestamp($itemLabel->inspection_date);
+                            }
+                        @endphp --}}
+                
+                        {{ $itemLabel->inspection_date ?: '' }} </td>
+                        @else
+                        <td>-</td>
+                        @endif
                     </tr>
                 </table>
             </td>

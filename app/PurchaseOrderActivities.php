@@ -20,6 +20,7 @@ class PurchaseOrderActivities extends Model
     {
 
         $query = PurchaseOrder::query();
+        $query = $query->with('supplier');
 
         if (!empty($keyword)) {
 
@@ -46,6 +47,7 @@ class PurchaseOrderActivities extends Model
     {
         $query = PurchaseOrder::query();
         $skip = $perpage * ($page - 1);
+        $query = $query->with('supplier');
 
         if (!empty($keyword)) {
 
@@ -62,18 +64,18 @@ class PurchaseOrderActivities extends Model
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
-        $data = $query->with(['purchaseOrderActivity' => function ($q) {
-            $q->select('po_number', 'seen', 'last_seen_at', 'downloaded', 'last_downloaded_at');
-        }])->take((int)$perpage)->skip((int)$skip)->get();
+        $data = $query->with(['purchaseOrderActivity'])->take((int)$perpage)->skip((int)$skip)->get();
 
         $transformedData = $data->map(function ($item) {
-            return $item->purchaseOrderActivity ?? (object)[
-                '_id' => $item->_id,
+            return [
                 'po_number' => $item->po_number,
-                'seen' => 0,
-                'last_seen_at' => null,
-                'downloaded' => 0,
-                'last_downloaded_at' => null
+                'supplier_name' => $item->supplier->name ?? $item->supplier_code,
+                'po_date' => $item->order_date,
+                'total_amount' => $item->total_amount,
+                'seen' => $item->purchaseOrderActivity ? $item->purchaseOrderActivity->seen : 0,
+                'last_seen_at' => $item->purchaseOrderActivity ? $item->purchaseOrderActivity->last_seen_at : null,
+                'downloaded' => $item->purchaseOrderActivity ? $item->purchaseOrderActivity->downloaded : 0,
+                'last_downloaded_at' => $item->purchaseOrderActivity ? $item->purchaseOrderActivity->last_downloaded_at : null,
             ];
         });
 
