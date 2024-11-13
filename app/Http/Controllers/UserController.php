@@ -312,10 +312,10 @@ class UserController extends Controller
         ], 200);
     }
 
-    // private function IsNullOrEmptyString($str)
-    // {
-    //     return (!isset($str) || trim($str) === '');
-    // }
+    private function IsNullOrEmptyString($str)
+    {
+        return (!isset($str) || trim($str) === '');
+    }
 
     public function changePassword(Request $request)
     {

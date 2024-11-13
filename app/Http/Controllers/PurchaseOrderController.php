@@ -292,8 +292,11 @@ class PurchaseOrderController extends Controller
 
             $msg = $purchaseOrder->po_number . ' schedule delivery has been updated.';
             $receipt_number = 'whatsapp:+6285156376462';
-            WhatsAppController::sendWhatsAppMessage($request, $receipt_number, $msg);
+            WhatsAppController::sendWhatsAppMessage($receipt_number, $msg);
 
+            // change status po to open
+            $purchaseOrder->po_status = 'open';
+            $purchaseOrder->save();
 
             return response()->json([
                 'type' => 'success',

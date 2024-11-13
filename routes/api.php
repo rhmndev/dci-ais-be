@@ -85,6 +85,18 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/materialexport', 'MaterialController@export');
         #endregion
 
+        #region Master Material Type
+        Route::get('/materialtype', 'MaterialTypeController@index');
+        Route::get('/materialtype/{id}', 'MaterialTypeController@show');
+        // Route::get('/materialtypesync', 'MaterialTypeController@SyncSAP');
+        Route::get('/materialtypelist', 'MaterialTypeController@list');
+        Route::post('/materialtype', 'MaterialTypeController@store');
+        Route::post('/materialtype/{id}', 'MaterialTypeController@store');
+        Route::delete('/materialtype/{id}', 'MaterialTypeController@destroy');
+        Route::post('/materialtypeimport', 'MaterialTypeController@import');
+        Route::get('/materialtypeexport', 'MaterialTypeController@export');
+        #endregion
+
         #region Master Customer
         Route::get('/customer', 'CustomerController@index');
         Route::get('/customer/{id}', 'CustomerController@show');
