@@ -8,6 +8,8 @@ use App\EmailTemplate;
 use App\PurchaseOrder;
 use App\EmailLog;
 use App\Http\Resources\PurchaseOrderResource;
+use App\Role;
+use App\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -288,6 +290,10 @@ class EmailController extends Controller
                 ->where('is_active', true)
                 ->first();
 
+            $templateInternalSendSchedule = EmailTemplate::where('template_type', 'purchase_order_approved_need_schedule_to_internal')
+                ->where('is_active', true)
+                ->first();
+
             if (!$template || !$templateInternal) {
                 return response()->json(['message' => 'Template not found'], 404);
             }
@@ -331,10 +337,19 @@ class EmailController extends Controller
                 ];
 
                 $emailInternal = "fachriansyahmni@gmail.com";
-
                 $MailingInternal = Mail::to($emailInternal);
-
                 $MailingInternal->send(new DynamicEmail($templateInternal, $data, $attachments));
+
+                $warehouseRole = Role::where('name', 'Warehouse')->first();
+                if (!$warehouseRole) {
+                    return response()->json(['message' => 'Warehouse role not found'], 404);
+                }
+
+                $internalWarehouseUsers = User::where('role_name', 'Warehouse')->get();
+                $emailInternalSendSchedule = $internalWarehouseUsers->pluck('email')->toArray();
+
+                $MailingInternalSendSchedule = Mail::to($emailInternalSendSchedule);
+                $MailingInternalSendSchedule->send(new DynamicEmail($templateInternalSendSchedule, $data, $attachments));
 
                 $Mailing = Mail::to($emailTo);
 
@@ -354,8 +369,15 @@ class EmailController extends Controller
                     'message' => $emailContent,
                     'status' => 'sent',
                 ]);
+                EmailLog::create([
+                    'recipient' => $emailInternalSendSchedule,
+                    'subject' => 'Purchase Order Notification Need Schedule Delivery' . $data['orderNumber'],
+                    'message' => $emailContent,
+                    'status' => 'sent',
+                ]);
 
                 $POData->is_send_email_to_supplier = 1;
+                $POData->po_status = "open";
                 $POData->save();
 
                 return response()->json([

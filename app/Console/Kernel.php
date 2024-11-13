@@ -30,11 +30,11 @@ class Kernel extends ConsoleKernel
         // $schedule->command('purchase-order:calculate-analytics')->monthly();
         // $schedule->command('sap:sync-purchase-orders')->everyFiveMinutes();
         $schedule->command('email:send-po-confirmation')->everyMinute();
-        $schedule->command('purchase-order:send-reminder')->daily();
-        $schedule->command('purchase-order:send-reminder')->everyMinute();
-        $schedule->command('purchase-order:send-reminder')->daily()->when(function () {
-            return Carbon::now()->dayOfWeek === Carbon::MONDAY; // Run every Monday for the 7-day check
-        });
+        // $schedule->command('purchase-order:send-reminder')->daily();
+        // $schedule->command('purchase-order:send-reminder')->everyMinute();
+        // $schedule->command('purchase-order:send-reminder')->daily()->when(function () {
+        //     return Carbon::now()->dayOfWeek === Carbon::MONDAY; // Run every Monday for the 7-day check
+        // });
     }
 
     /**

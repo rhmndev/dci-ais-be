@@ -8,6 +8,7 @@ use App\Jobs\SendWhatsAppReminder;
 use App\Mail\PurchaseOrderEscalationReminder;
 use App\PurchaseOrder;
 use App\User;
+use App\PurchaseOrderSigner;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PurchaseOrderReminder;
 use Carbon\Carbon;
@@ -66,30 +67,6 @@ class SendPurchaseOrderReminders extends Command
             $this->sendDailyEmailReminders();
             $this->sendMinuteWhatsappReminders();
             $this->send7DayEscalationReminders();
-
-            // $unassignedPurchaseOrders = PurchaseOrder::where(function ($query) {
-            //     $query->where('is_knowed', false)
-            //         ->orWhere('is_checked', false)
-            //         ->orWhere('is_approved', false);
-            // })->get();
-
-            // foreach ($unassignedPurchaseOrders as $purchaseOrder) {
-            //     // WhatsAppController::sendWhatsAppMessage("whatsapp:+61234567", $purchaseOrder->po_number);
-            //     // SendWhatsAppReminder::dispatch($purchaseOrder);
-            //     if (!$purchaseOrder->is_knowed || !$purchaseOrder->is_checked || !$purchaseOrder->is_approved) {
-            //         $message = "Purchase Order {$purchaseOrder->po_number} needs to be assigned. Please check the system.";
-
-            //         // foreach ($unassignedPurchaseOrders as $purchaseOrder) {
-            //         // Send email reminder for pending status
-            //         $this->sendPendingEmailReminder($purchaseOrder);
-            //         // }
-
-            //         $recipientNumber = '6285156376462'; // Replace with the recipient's phone number
-
-            //         // Send the WhatsApp message
-            //         WhatsAppController::sendWhatsAppMessage($recipientNumber, $message);
-            //     }
-            // }
         }
 
         // $this->info($resp);
@@ -222,9 +199,21 @@ class SendPurchaseOrderReminders extends Command
         // 1. Get the user associated with the PO.
         // 2. Use the user's department or other information to find the HOD.
         // 3. Retrieve the HOD's email address.
+        if ($purchaseOrder->status === 'waiting for knowing') {
+            $signerType = 'knowed';
+        } else if ($purchaseOrder->status === 'waiting for checking') {
+            $signerType = 'checked';
+        } else if ($purchaseOrder->status === 'waiting for approval') {
+            $signerType = 'approved';
+        } else {
+            // Handle other statuses or log an error if needed
+            return;
+        }
+
+        $recipientEmail = $this->getPurchaseOrderSignerEmail($signerType);
 
         // Placeholder - replace with your actual logic
-        return 'fachriansyahmni@gmail.com';
+        return $recipientEmail;
     }
 
     /**
@@ -236,10 +225,36 @@ class SendPurchaseOrderReminders extends Command
     private function sendPendingEmailReminder(PurchaseOrder $purchaseOrder)
     {
         // Find the recipient's email address (e.g., from the User model)
-        $recipientEmail = 'fachriansyah.10119065@mahasiswa.unikom.ac.id'; // Replace with actual email retrieval logic
+        if ($purchaseOrder->status === 'waiting for knowing') {
+            $signerType = 'knowed';
+        } else if ($purchaseOrder->status === 'waiting for checking') {
+            $signerType = 'checked';
+        } else if ($purchaseOrder->status === 'waiting for approval') {
+            $signerType = 'approved';
+        } else {
+            // Handle other statuses or log an error if needed
+            return;
+        }
+
+        $recipientEmails = $this->getPurchaseOrderSignerEmails($signerType);
 
         // Send the email reminder
-        Mail::to($recipientEmail)->send(new PurchaseOrderReminder($purchaseOrder));
+        if ($recipientEmails->isNotEmpty()) {
+            // Send the email reminder to each recipient
+            Mail::to($recipientEmails)->send(new PurchaseOrderReminder($purchaseOrder));
+        } else {
+            // Handle case where signer email is not found (log error, etc.)
+            Log::error("No recipient emails found for PO: {$purchaseOrder->po_number} with signer type: {$signerType}");
+        }
+    }
+
+    private function getPurchaseOrderSignerEmails($signerType)
+    {
+        // Assuming you have a PurchaseOrderSigner model related to PurchaseOrder
+        $POSigners = PurchaseOrderSigner::where('type', $signerType)->get();
+
+        // Make sure to adjust the relationship and field names if needed
+        return $POSigners->pluck('user.email')->filter();
     }
 
     private function sendPendingEmailReminderTesting(PurchaseOrder $purchaseOrder)

@@ -50,7 +50,7 @@ class AddDummyPurchaseOrder extends Command
         $numberOfOrders = $this->argument('numberOfOrders') ?: 1;
         $supplier_code = $this->argument('supplier_code') ?: "";
         $status = $this->argument('status') ?: 'approved';
-        $validStatuses = ['pending', 'approved', 'unapproved', 'waiting for checking', 'waiting for knowing', 'waiting for approval'];
+        $validStatuses = ['pending', 'approved', 'unapproved', 'waiting for checking', 'waiting for knowing', 'waiting for approval', 'waiting for schedule delivery'];
         if (!in_array($status, $validStatuses)) {
             $this->error("Invalid status. Choose from: " . implode(', ', $validStatuses));
             return 1; // Indicate an error occurred
@@ -130,7 +130,8 @@ class AddDummyPurchaseOrder extends Command
                 'tax' => $faker->randomFloat(2, 100, 10000),
                 'tax_type' => $faker->randomElement(['PPN']),
                 'status' => $status,
-                'po_status' => $faker->randomElement(['In Progress']),
+                // 'po_status' => $faker->randomElement(['In Progress']),
+                'po_status' => null,
                 'is_send_email_to_supplier' => 0,
                 'is_checked' => $is_checked,
                 'is_knowed' => $is_knowed,
@@ -157,7 +158,7 @@ class AddDummyPurchaseOrder extends Command
             PurchaseOrderItem::create([
                 'purchase_order_id' => $purchaseOrder->_id,
                 'material_id' => $faker->randomElement($materialIds), // Replace with your material ID generation logic
-                'quantity' => $faker->randomNumber(2), // Random 2-digit quantity
+                'quantity' => $faker->randomElement([1000, 1500, 2000, 2500, 3000, 3500, 4000]), // Random 2-digit quantity
                 'unit_type' => $faker->randomElement(['pcs', 'pce']), // Random unit type
                 'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
                 'unit_price_type' => $faker->randomElement(['IDR']), // Random unit type

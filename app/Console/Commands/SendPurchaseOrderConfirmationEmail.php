@@ -6,6 +6,8 @@ use App\EmailLog;
 use App\EmailTemplate;
 use App\Mail\DynamicEmail;
 use App\PurchaseOrder;
+use App\Role;
+use App\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -61,16 +63,6 @@ class SendPurchaseOrderConfirmationEmail extends Command
                 ->where('is_active', true)
                 ->first();
 
-            $templateInternal = EmailTemplate::where('template_type', 'purchase_order_approved_to_internal')
-                ->where('is_active', true)
-                ->first();
-
-            if (!$template || !$templateInternal) {
-                // Log the error (you might want to use a dedicated logging system)
-                Log::error('Email template not found for purchase order confirmation.');
-                return;
-            }
-
             $noPO = $POData->po_number;
             $emailTo = $POData->delivery_email;
 
@@ -91,9 +83,7 @@ class SendPurchaseOrderConfirmationEmail extends Command
             // Send to supplier
             Mail::to($emailTo)->send(new DynamicEmail($template, $data));
 
-            // Send to internal
-            $emailInternal = "fachriansyahmni@gmail.com";
-            Mail::to($emailInternal)->send(new DynamicEmail($templateInternal, $data));
+            $this->sendInternalConfirmationEmails($POData, $data);
 
             // Log the email
             EmailLog::create([
@@ -105,6 +95,7 @@ class SendPurchaseOrderConfirmationEmail extends Command
 
             // Update the PO to indicate that the email has been sent
             $POData->is_send_email_to_supplier = 1;
+            $POData->po_status = "open";
             $POData->save();
 
             Log::info("Purchase order confirmation email sent for PO: {$noPO}");
@@ -120,5 +111,37 @@ class SendPurchaseOrderConfirmationEmail extends Command
 
             Log::error("Error sending PO confirmation email for PO: {$noPO} - {$e->getMessage()}");
         }
+    }
+
+    private function sendInternalConfirmationEmails($POData, $data)
+    {
+        $templateInternal = EmailTemplate::where('template_type', 'purchase_order_approved_to_internal')
+            ->where('is_active', true)
+            ->first();
+
+        $templateInternalSendSchedule = EmailTemplate::where('template_type', 'purchase_order_approved_need_schedule_to_internal')
+            ->where('is_active', true)
+            ->first();
+
+        if (!$templateInternal || !$templateInternalSendSchedule) {
+            Log::error('Email template not found for internal purchase order confirmation.');
+            return;
+        }
+
+        // Send to specific internal email
+        $emailInternal = "fachriansyahmni@gmail.com";
+        Mail::to($emailInternal)->send(new DynamicEmail($templateInternal, $data));
+
+        // Send to Warehouse users
+        $warehouseRole = Role::where('name', 'Warehouse')->first();
+        if (!$warehouseRole) {
+            Log::error('Warehouse role not found for internal purchase order confirmation.');
+            return;
+        }
+
+        $internalWarehouseUsers = User::where('role_name', 'Warehouse')->get();
+        $emailInternalSendSchedule = $internalWarehouseUsers->pluck('email')->toArray();
+
+        Mail::to($emailInternalSendSchedule)->send(new DynamicEmail($templateInternalSendSchedule, $data));
     }
 }
