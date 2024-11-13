@@ -419,9 +419,13 @@ class EmailController extends Controller
             } else {
             }
 
-            $template = EmailTemplate::where('template_type', 'purchase_order_send_schedule_to_supplier_for_internal')
+            $template = EmailTemplate::where('template_type', 'purchase_order_schedule_to_supplier')
                 ->where('is_active', true)
                 ->first();
+
+            // $template = EmailTemplate::where('template_type', 'purchase_order_send_schedule_to_supplier_for_internal')
+            //     ->where('is_active', true)
+            //     ->first();
 
             if (!$template) {
                 return response()->json(['message' => 'Template not found'], 404);
@@ -429,7 +433,7 @@ class EmailController extends Controller
 
             $POData = PurchaseOrder::where('po_number', $noPO)->first();
             $deliveryEmail = $request->input('to') ? $request->to : $POData->delivery_email;
-            $emailTo = "fachriansyahmni@gmail.com";
+            $emailTo = $deliveryEmail;
 
             // check if POData not signed
             if (isset($POData->is_knowed) && isset($POData->is_checked) && isset($POData->is_approved) && $POData->is_knowed == 1 && $POData->is_checked == 1 && $POData->is_approved == 1) {

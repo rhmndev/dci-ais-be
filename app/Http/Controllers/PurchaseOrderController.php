@@ -262,7 +262,7 @@ class PurchaseOrderController extends Controller
                 return response()->json([
                     'type' => 'error',
                     'message' => $validator->errors()->first(),
-                    'data' => null
+                    'data' => $request->all()
                 ], 422);
             }
 
@@ -429,13 +429,23 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    public function listNeedScheduleDeliveries()
+    public function listNeedScheduleDeliveries(Request $request)
     {
         try {
+            $keyword = ($request->keyword != null) ? $request->keyword : '';
+            $order = ($request->order != null) ? $request->order : 'ascend';
+
+
             $purchaseOrders = PurchaseOrder::with('supplier', 'scheduleDeliveries')->where('status', 'approved')
                 ->whereDoesntHave('scheduleDeliveries')
-                ->orderBy('approved_at', 'asc')
-                ->get();
+                ->when($keyword, function ($query) use ($keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('po_number', 'like', '%' . $keyword . '%');
+                        // ->orWhere('supplier_code', 'like', '%' . $keyword . '%');
+                    });
+                })
+                ->orderBy('approved_at', $order == 'descend' ? 'desc' : 'asc')
+                ->paginate($request->perpage ?? 10);
 
             return response()->json([
                 'type' => 'success',

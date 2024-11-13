@@ -221,6 +221,24 @@ class PermissionSeeder extends Seeder
 				]
 			],
 			[
+				"name" => "PO Order Delivery",
+				"description" => null,
+				"url" => "supplier-area",
+				"icon" => "shopping-cart",
+				"order_number" => 3,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
+				"name" => "Warehouse Area",
+				"description" => null,
+				"url" => "warehouse-area",
+				"icon" => "home",
+				"order_number" => 3,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
 				"name" => "Settings",
 				"description" => null,
 				"url" => "settings",

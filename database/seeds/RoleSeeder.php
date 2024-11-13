@@ -55,7 +55,7 @@ class RoleSeeder extends Seeder
                 'has_head_of_department' => false,
                 'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
-                    if ($perm->url == 'dashboard') {
+                    if ($perm->url == 'dashboard' || $perm->url == 'supplier-area') {
 
                         return [
                             'permission_id' => $perm->id,
@@ -91,7 +91,7 @@ class RoleSeeder extends Seeder
                 'has_head_of_department' => false,
                 'head_of_department_id' => null,
                 'permissions' => $permissions->map(function ($perm) {
-                    if ($perm->url == 'dashboard' || $perm->url == 'delivery-schedule' || $perm->url == 'receiving-checkpoint') {
+                    if ($perm->url == 'dashboard' || $perm->url == 'warehouse-area' || $perm->url == 'delivery-schedule' || $perm->url == 'receiving-checkpoint') {
 
                         return [
                             'permission_id' => $perm->id,
