@@ -131,7 +131,7 @@ class AddDummyPurchaseOrder extends Command
                 'tax_type' => $faker->randomElement(['PPN']),
                 'status' => $status,
                 // 'po_status' => $faker->randomElement(['In Progress']),
-                'po_status' => null,
+                'po_status' => $faker->randomElement(['waiting for schedule delivery']),
                 'is_send_email_to_supplier' => 0,
                 'is_checked' => $is_checked,
                 'is_knowed' => $is_knowed,

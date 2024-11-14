@@ -516,4 +516,91 @@ class EmailController extends Controller
             ], 500);
         }
     }
+    public static function sendEmailPurchaseOrderScheduleUpdate(Request $request, $po_number)
+    {
+        $noPO = $po_number;
+        try {
+            $ccTo = $request->has('cc') ? explode(',', $request->cc) : [];
+            $bccTo = $request->has('bcc') ? explode(',', $request->bcc) : [];
+
+            $ccTo = array_filter($ccTo);
+            $bccTo = array_filter($bccTo);
+
+            $template = EmailTemplate::where('template_type', 'purchase_order_schedule_updated_to_supplier')
+                ->where('is_active', true)
+                ->first();
+
+            if (!$template) {
+                return response()->json(['message' => 'Template not found'], 404);
+            }
+
+            $POData = PurchaseOrder::where('po_number', $noPO)->first();
+            $deliveryEmail = $request->input('to') ? $request->to : $POData->delivery_email;
+            $emailTo = $deliveryEmail;
+
+            // check if POData not signed
+            if (isset($POData->is_knowed) && isset($POData->is_checked) && isset($POData->is_approved) && $POData->is_knowed == 1 && $POData->is_checked == 1 && $POData->is_approved == 1) {
+
+                $data = [
+                    'supplierName' => isset($POData->supplier) ? $POData->supplier->name : $POData->supplier_code,
+                    'supplierCode' => isset($POData->supplier) ? $POData->supplier->code : $POData->supplier_code,
+                    'orderDate' => $POData->order_date,
+                    'deliveryDate' => $POData->delivery_date,
+                    'totalAmount' => $POData->total_amount,
+                    'orderNumber' => $noPO,
+                    'purchaseOrderLink' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
+                ];
+
+                $bodyEmail = new DynamicEmail($template, $data);
+
+                // Get the rendered email content as a string
+                $emailContent = $bodyEmail->render();
+
+                $attachments = [];
+
+                $Mailing = Mail::to($emailTo);
+
+                if (!empty($ccTo)) {
+                    $Mailing = $Mailing->cc($ccTo);
+                }
+
+                if (!empty($bccTo)) {
+                    $Mailing = $Mailing->bcc($bccTo);
+                }
+
+                $Mailing->send(new DynamicEmail($template, $data, $attachments));
+
+                EmailLog::create([
+                    'recipient' => $emailTo,
+                    'subject' => 'Purchase Order Notification Schedule Delivery Updated ' . $data['orderNumber'],
+                    'message' => $emailContent,
+                    'status' => 'sent',
+                ]);
+
+                return response()->json([
+                    'type' => 'success',
+                    'message' => 'Email sent successfully'
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase Order ' . $POData->po_number . ' not signed'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            // Log the failed email
+            EmailLog::create([
+                'recipient' => $emailTo,
+                'subject' => 'Purchase Order Notification ' . $noPO,
+                'message' => $emailContent ?? 'Failed to retrieve content',
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Failed to send email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

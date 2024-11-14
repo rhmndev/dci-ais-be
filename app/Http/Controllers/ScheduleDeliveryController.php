@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\PurchaseOrderScheduleDelivery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ScheduleDeliveryController extends Controller
 {
@@ -49,6 +51,66 @@ class ScheduleDeliveryController extends Controller
         }
     }
 
+    public function update(Request $request, $id)
+    {
+        return response()->json([
+            'type' => 'error',
+            'message' => '',
+            'data' => $request->all()
+        ], 422);
+        $scheduleDelivery = PurchaseOrderScheduleDelivery::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'nullable|mimes:xlsx,csv,xls|max:2048',
+            'description' => 'nullable|string',
+            'show_to_supplier' => 'required|boolean',
+            'is_send_email_to_supplier' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'type' => 'error',
+                'message' => $validator->errors()->first(),
+                'data' => $request->all()
+            ], 422);
+        }
+
+        // Handle file upload if a new file is provided
+        if ($request->hasFile('file')) {
+            // Delete the old file if it exists
+            if (Storage::disk('public')->exists($scheduleDelivery->file_path)) {
+                Storage::disk('public')->delete($scheduleDelivery->file_path);
+            }
+
+            $file = $request->file('file');
+            $originalFileName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+            $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
+            $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
+            $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
+
+            $scheduleDelivery->filename = $fileName;
+            $scheduleDelivery->file_path = $filePath;
+        }
+
+        // Update other fields
+        $scheduleDelivery->description = $request->description;
+        $scheduleDelivery->show_to_supplier = $request->show_to_supplier;
+        $scheduleDelivery->updated_by = auth()->user()->npk;
+        $scheduleDelivery->save();
+
+        if ($request->is_send_email_to_supplier) {
+            EmailController::sendEmailPurchaseOrderSchedule($request, $scheduleDelivery->po_number);
+        }
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Schedule delivery updated successfully',
+            'data' => $scheduleDelivery,
+        ], 200);
+    }
+
     public function downloadScheduleDelivery($id)
     {
         // Ensure the file exists and the user is authorized to access it
@@ -62,6 +124,32 @@ class ScheduleDeliveryController extends Controller
             return Storage::disk('public')->download($filePath);
         } else {
             abort(404, 'File not found');
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $scheduleDelivery = PurchaseOrderScheduleDelivery::findOrFail($id);
+
+            if (Storage::disk('public')->exists($scheduleDelivery->file_path)) {
+                Storage::disk('public')->delete($scheduleDelivery->file_path);
+            }
+
+            $scheduleDelivery->delete();
+
+            $scheduleDelivery->po->po_status = 'waiting for schedule delivery';
+            $scheduleDelivery->po->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Schedule delivery deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error deleting schedule delivery: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

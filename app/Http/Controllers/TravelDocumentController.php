@@ -132,13 +132,13 @@ class TravelDocumentController extends Controller
                     $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
                         'po_number' => $poItem->purchaseOrder->po_number,
                         'po_item_id' => $poItem->_id,
-                        'po_item_code' => $poItem->material_code ?? null,
+                        'po_item_code' => $poItem->material->code ?? null,
                         'item_number' => $itemNumber,
                         'lot_production_number' => $request->lot_production_number,
                         'inspector_name' => $request->inspector_name,
                         'inspection_date' => $request->inspection_date,
                         'qty' => $qtyForThisLabel,
-                        'pack' => $i,
+                        'pack' => $i + 1,
                         'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
                     ]);
                     $travelDocumentLabelTemp->save();
