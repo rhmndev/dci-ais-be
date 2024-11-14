@@ -152,6 +152,62 @@ class TravelDocumentController extends Controller
         }
     }
 
+    public function getBySupplierLoggedUser(Request $request)
+    {
+        $request->validate([
+            'columns' => 'required',
+            'perpage' => 'required|numeric',
+            'page' => 'required|numeric',
+            'sort' => 'required|string',
+            'status' => 'nullable|string',
+            'order' => 'string',
+        ]);
+
+        try {
+            $user = auth()->user();
+            if ($user->role_name == 'supplier' || $user->role_name == 'Supplier') {
+                $supplier_code = $user->vendor_code;
+
+                $keyword = ($request->keyword != null) ? $request->keyword : '';
+                $order = ($request->order != null) ? $request->order : 'ascend';
+                $status = ($request->status != null) ? $request->status : '';
+
+                $TravelDocument = TravelDocument::where('supplier_code', $supplier_code)
+                    ->when($keyword, function ($query) use ($keyword) {
+                        $query->where(function ($q) use ($keyword) {
+                            $q->where('no', 'like', '%' . $keyword . '%')
+                                ->orWhere('po_number', 'like', '%' . $keyword . '%');
+                        });
+                    })
+                    ->when($status, function ($query) use ($status) {
+                        $query->where('status', $status);
+                    });
+                $resultAlls = $TravelDocument->get($request->columns);
+                $results = $TravelDocument->orderBy($request->sort, $order == 'descend' ? 'desc' : 'asc')
+                    ->paginate($request->perpage);
+
+                return response()->json([
+                    'type' => 'success',
+                    'data' => TravelDocumentResource::collection($results),
+                    'dataAll' => $resultAlls,
+                    'total' => count($resultAlls),
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User is not a supplier.',
+                    'data' => $user,
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
     public function create(Request $request, $poId)
     {
 
