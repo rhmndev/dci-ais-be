@@ -87,7 +87,7 @@ class TravelDocumentController extends Controller
 
             if ($poItem) {
                 $printedLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->sum('qty');
-                $packQty = $request->pack_qty ?: 100;
+                $packQty = $request->pack ?? 100;
                 $numLabels = ceil($poItem->quantity / $packQty);
 
                 $remainingQty = $poItem->quantity - $printedLabelTemp;
