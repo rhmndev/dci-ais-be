@@ -78,17 +78,16 @@ class TravelDocumentController extends Controller
             'qty' => 'required',
             'inspector_name' => 'required',
             'inspection_date' => 'required|date',
+            'pack' => 'required'
         ]);
-        // return $this->tempPrintLabel($poItemId);
 
         try {
             $poItem = PurchaseOrderItem::with('purchaseOrder', 'material')->findOrFail($poItemId);
-            $qrCodeData = [];
             $yearMonth = Carbon::now()->format('ym');
 
             if ($poItem) {
                 $printedLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->sum('qty');
-                $packQty = $poItem->material->default_packing_qty ?: 20;
+                $packQty = $request->pack_qty ?: 100;
                 $numLabels = ceil($poItem->quantity / $packQty);
 
                 $remainingQty = $poItem->quantity - $printedLabelTemp;
@@ -101,7 +100,6 @@ class TravelDocumentController extends Controller
                     ], 400);
                 }
 
-                $data = array();
                 for ($i = 0; $i < $numLabels; $i++) {
                     $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
                         ->where('created_at', '<=', Carbon::now()->endOfMonth())
@@ -126,21 +124,18 @@ class TravelDocumentController extends Controller
                     $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
                         'po_number' => $poItem->purchaseOrder->po_number,
                         'po_item_id' => $poItem->_id,
+                        'po_item_code' => $poItem->material_code ?? null,
                         'item_number' => $itemNumber,
                         'lot_production_number' => $request->lot_production_number,
                         'inspector_name' => $request->inspector_name,
                         'inspection_date' => $request->inspection_date,
                         'qty' => $qty,
+                        'pack' => $packQty,
                         'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
                     ]);
                     $travelDocumentLabelTemp->save();
                     $remainingQty -= $qty;
                 }
-                // return response()->json([
-                //     'type' => 'success',
-                //     'message' => 'Labels generated successfully.',
-                //     'data' => TravelDocumentLabelTemp::where('po_item_id', $poItemId)->get()
-                // ], 200);
                 return $this->tempPrintLabel($poItemId);
             }
         } catch (\Throwable $th) {

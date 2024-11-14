@@ -10,6 +10,7 @@ class PurchaseOrderItem extends Model
         'purchase_order_id',
         'po_number',
         'material_id',
+        'material_code',
         'quantity',
         'unit_type',
         'unit_price',
