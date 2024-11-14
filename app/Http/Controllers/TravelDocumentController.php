@@ -205,60 +205,24 @@ class TravelDocumentController extends Controller
             $travelDocument->save();
 
             foreach ($items as $item) {
-                $parts = explode('-', $item);
-                if (isset($parts[1]) && $parts[1] != "") {
-                    // $dataPoItemId = $parts[0];
-                    $dataPartId = $parts[1];
+                $DataLabelsItem = TravelDocumentLabelTemp::where("po_item_id", $item)->get();
 
-                    $DataLabelItem = TravelDocumentLabelTemp::where("_id", $dataPartId)->first();
-
+                foreach ($dataLabelsItem as $labelItem) {
                     $travelDocumentItem = $travelDocument->items()->create([
-                        'po_item_id' => $DataLabelItem->po_item_id,
-                        'qty' => $DataLabelItem->qty,
-                        'qr_tdi_no' => $DataLabelItem->item_number,
-                        'lot_production_number' => $DataLabelItem->lot_production_number,
-                        'inspector_name' => $DataLabelItem->inspector_name,
-                        'inspector_date' => $DataLabelItem->inspection_date,
-                        'qr_path' => $DataLabelItem->qr_path
+                        'po_item_id' => $labelItem->po_item_id,
+                        'qty' => $labelItem->qty,
+                        'qr_tdi_no' => $labelItem->item_number,
+                        'lot_production_number' => $labelItem->lot_production_number,
+                        'inspector_name' => $labelItem->inspector_name,
+                        'inspector_date' => $labelItem->inspection_date,
+                        'qr_path' => $labelItem->qr_path
                     ]);
 
-                    $DataLabelItem->td_no = $travelDocument->no;
-                    $DataLabelItem->save();
+                    // Update TravelDocumentLabelTemp
+                    $labelItem->td_no = $travelDocument->no;
+                    $labelItem->save();
                 }
             }
-
-            // foreach ($items as $item) {
-            //     $poItem = $purchaseOrder->items->where('_id', $item['po_item_id'])->first();
-            //     if ($poItem) {
-            //         $travelDocumentItem = $travelDocument->items()->create([
-            //             'po_item_id' => $item['po_item_id'],
-            //             'qty' => $item['qty'],
-            //             'lot_production_number' => $item['lot_production_number'],
-            //             'inspector_name' => $item['inspector_name'],
-            //             'inspector_date' => $item['inspector_date'],
-            //             'notes' => $request->notes,
-            //         ]);
-
-            //         $packQty = $poItem->material->default_packing_qty ?: 100; // Default to 100 if not set
-            //         $numLabels = ceil($item['qty'] / $packQty);
-
-            //         $remainingQty = $item['qty'];
-
-            //         for ($i = 0; $i < $numLabels; $i++) {
-            //             $itemNumber = $travelDocumentItem->no . "-" . $item['po_item_id'] . '-' . $i;
-            //             $labelQty = min($packQty, $remainingQty);
-
-            //             $travelDocumentPackingItem = $travelDocumentItem->packingItems()->create([
-            //                 'td_no' => $itemNumber,
-            //                 'item_number' => $itemNumber,
-            //                 'qty' => $labelQty,
-            //                 'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
-            //             ]);
-
-            //             $remainingQty -= $labelQty;
-            //         }
-            //     }
-            // }
 
             return response()->json([
                 'type' => 'success',
