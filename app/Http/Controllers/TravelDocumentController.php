@@ -88,9 +88,9 @@ class TravelDocumentController extends Controller
             if ($poItem) {
                 $printedLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->sum('qty');
                 $packQty = $request->pack ?? 100;
-                $numLabels = ceil($poItem->quantity / $packQty);
+                $totalQty = $request->qty;
 
-                $remainingQty = $poItem->quantity - $printedLabelTemp;
+                $remainingQty = $totalQty - $printedLabelTemp;
 
                 if ($remainingQty <= 0) {
                     return response()->json([
@@ -100,7 +100,9 @@ class TravelDocumentController extends Controller
                     ], 400);
                 }
 
-                for ($i = 0; $i < $numLabels; $i++) {
+                $numBoxes = ceil($totalQty / $packQty);
+
+                for ($i = 0; $i < $numBoxes; $i++) {
                     $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
                         ->where('created_at', '<=', Carbon::now()->endOfMonth())
                         ->orderBy('created_at', 'desc')
@@ -117,8 +119,8 @@ class TravelDocumentController extends Controller
                     }
                     $itemNumber = $yearMonth . str_pad($nextLabelNumber, 6, '0', STR_PAD_LEFT);
 
-                    $qty = min($remainingQty, $packQty);
-                    if ($qty == 0) {
+                    $qtyForThisLabel = min($remainingQty, $packQty); // Quantity for this specific label
+                    if ($qtyForThisLabel == 0) {
                         break;
                     }
                     $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
@@ -129,12 +131,12 @@ class TravelDocumentController extends Controller
                         'lot_production_number' => $request->lot_production_number,
                         'inspector_name' => $request->inspector_name,
                         'inspection_date' => $request->inspection_date,
-                        'qty' => $qty,
-                        'pack' => $packQty,
+                        'qty' => $qtyForThisLabel,
+                        'pack' => $i + 1,
                         'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
                     ]);
                     $travelDocumentLabelTemp->save();
-                    $remainingQty -= $qty;
+                    $remainingQty -= $qtyForThisLabel;
                 }
                 return $this->tempPrintLabel($poItemId);
             }
