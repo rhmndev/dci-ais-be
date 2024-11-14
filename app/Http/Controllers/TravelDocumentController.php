@@ -266,7 +266,7 @@ class TravelDocumentController extends Controller
             foreach ($items as $item) {
                 $DataLabelsItem = TravelDocumentLabelTemp::where("po_item_id", $item)->get();
 
-                foreach ($dataLabelsItem as $labelItem) {
+                foreach ($DataLabelsItem as $labelItem) {
                     $travelDocumentItem = $travelDocument->items()->create([
                         'po_item_id' => $labelItem->po_item_id,
                         'qty' => $labelItem->qty,
@@ -277,7 +277,6 @@ class TravelDocumentController extends Controller
                         'qr_path' => $labelItem->qr_path
                     ]);
 
-                    // Update TravelDocumentLabelTemp
                     $labelItem->td_no = $travelDocument->no;
                     $labelItem->save();
                 }
