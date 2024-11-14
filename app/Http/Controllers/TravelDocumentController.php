@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class TravelDocumentController extends Controller
 {
@@ -90,13 +91,14 @@ class TravelDocumentController extends Controller
                 $packQty = $request->pack ?? 1;
                 $totalQty = $request->qty;
 
-                $remainingQty = $totalQty - $printedLabelTemp;
+                $poItemQty = $poItem->quantity;
+                $remainingQty = $poItemQty - $printedLabelTemp;
 
-                if ($remainingQty <= 0) {
+                if ($totalQty > $remainingQty) {
                     return response()->json([
                         'type' => 'failed',
                         'message' => 'Cannot generate more labels. The quantity exceeds the remaining PO item quantity.',
-                        'data' => null
+                        'data' => NULL,
                     ], 400);
                 }
 
@@ -218,11 +220,6 @@ class TravelDocumentController extends Controller
             'order_delivery_date' => 'required',
             'items' => 'required|array',
             'shipping_address' => 'required|string',
-            // 'items.*.po_item_id' => 'required|string',
-            // 'items.*.qty' => 'required',
-            // 'items.*.lot_production_number' => 'required',
-            // 'items.*.inspector_name' => 'required|string',
-            // 'items.*.inspector_date' => 'required',
             'made_by_user' => 'required|string',
             'driver_name' => 'nullable|string',
             'vehicle_number' => 'nullable|string',
@@ -233,7 +230,6 @@ class TravelDocumentController extends Controller
         try {
             $purchaseOrder = PurchaseOrder::findOrFail($poId);
 
-            // adding check duplicate po_item_id selected inside travel document item
             $items = $request->has('items') ? $request->items : [];
 
             if (count($items) == 0) {
@@ -267,18 +263,29 @@ class TravelDocumentController extends Controller
                 $DataLabelsItem = TravelDocumentLabelTemp::where("po_item_id", $item)->get();
 
                 foreach ($DataLabelsItem as $labelItem) {
-                    $travelDocumentItem = $travelDocument->items()->create([
-                        'po_item_id' => $labelItem->po_item_id,
-                        'qty' => $labelItem->qty,
-                        'qr_tdi_no' => $labelItem->item_number,
-                        'lot_production_number' => $labelItem->lot_production_number,
-                        'inspector_name' => $labelItem->inspector_name,
-                        'inspector_date' => $labelItem->inspection_date,
-                        'qr_path' => $labelItem->qr_path
-                    ]);
+                    try {
+                        $travelDocumentItem = $travelDocument->items()->create([
+                            'po_item_id' => $labelItem->po_item_id,
+                            'qty' => $labelItem->qty,
+                            'qr_tdi_no' => $labelItem->item_number,
+                            'lot_production_number' => $labelItem->lot_production_number,
+                            'inspector_name' => $labelItem->inspector_name,
+                            'inspector_date' => $labelItem->inspection_date,
+                            'qr_path' => $labelItem->qr_path
+                        ]);
 
-                    $labelItem->td_no = $travelDocument->no;
-                    $labelItem->save();
+                        $labelItem->td_no = $travelDocument->no;
+                        $labelItem->save();
+                    } catch (\Exception $e) {
+                        // Log the error for debugging
+                        Log::error("Error creating Travel Document Item: " . $e->getMessage());
+
+                        return response()->json([
+                            'type' => 'failed',
+                            'message' => 'Error creating Travel Document Item: ' . $e->getMessage(),
+                            'data' => null
+                        ], 500);
+                    }
                 }
             }
 
@@ -288,6 +295,11 @@ class TravelDocumentController extends Controller
                 'data' => $travelDocument
             ], 201);
         } catch (\Throwable $th) {
+            // Log the error for debugging
+            Log::error("Error creating Travel Document: " . $th->getMessage());
+
+            // Rollback the transaction in case of any other exception
+            DB::rollBack();
             return response()->json(['type' => 'failed', 'message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
         }
     }
@@ -574,7 +586,28 @@ class TravelDocumentController extends Controller
                     $itemsLabelTemp = TravelDocumentLabelTemp::where('item_number', $item->qr_tdi_no)->first();
                     $itemsLabelTemp->is_scanned = true;
                     $itemsLabelTemp->save();
+
+                    $poItem = $item->poItem;
+                    if ($poItem) {
+                        $poItem->qty_delivered += $item->qty;
+
+                        if ($poItem->qty_delivered >= $poItem->qty) {
+                            $poItem->delivered_at = now();
+                        } else if ($poItem->qty_delivered > 0 && $poItem->qty_delivered < $poItem->qty) {
+                            $poItem->partially_delivered_at = now();
+                        }
+
+                        $poItem->save();
+                    }
                 }
+            }
+
+            $po = $travelDocument->purchaseOrder;
+            if ($po && $po->items->every(function ($item) {
+                return $item->qty_delivered >= $item->qty;
+            })) {
+                $po->po_status = 'closed';
+                $po->save();
             }
 
             $travelDocument->status = "completed";

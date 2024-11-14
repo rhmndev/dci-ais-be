@@ -18,6 +18,11 @@ class PurchaseOrderItem extends Model
         'unit_price_amount',
     ];
 
+    protected $casts = [
+        'delivered_at' => 'datetime',
+        'partially_delivered_at' => 'datetime',
+    ];
+
     public function purchaseOrder()
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id', '_id');
