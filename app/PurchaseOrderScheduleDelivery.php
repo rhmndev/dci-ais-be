@@ -14,6 +14,11 @@ class PurchaseOrderScheduleDelivery extends Model
         'file_path',
         'show_to_supplier',
         'is_send_email_to_supplier',
+        'status_schedule',
+        'supplier_confirmed',
+        'supplier_revision_notes',
+        'supplier_revised_file_path',
+        'supplier_confirmed_at',
         'created_by',
         'updated_by',
     ];
@@ -77,7 +82,6 @@ class PurchaseOrderScheduleDelivery extends Model
 
         return $data;
     }
-
 
     public function po()
     {

@@ -44,13 +44,10 @@ class PurchaseOrderController extends Controller
                 'total' => count($resultAlls),
             ], 200);
         } catch (\Exception $e) {
-
             return response()->json([
-
                 'type' => 'failed',
                 'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
-
             ], 400);
         }
     }
@@ -284,18 +281,20 @@ class PurchaseOrderController extends Controller
                 'is_send_email_to_supplier' => $request->is_send_email_to_supplier ?? 0,
                 'created_by' => auth()->user()->npk,
                 'updated_by' => auth()->user()->npk,
+                'status_schedule' => 'waiting for confirmation',
             ]);
             $scheduleDelivery->save();
 
             $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
             EmailController::sendEmailPurchaseOrderSchedule($request, $po_number);
 
-            $msg = $purchaseOrder->po_number . ' schedule delivery has been updated.';
-            $receipt_number = 'whatsapp:+6285156376462';
-            WhatsAppController::sendWhatsAppMessage($receipt_number, $msg);
+            // $msg = $purchaseOrder->po_number . ' schedule delivery has been updated.';
+            // $receipt_number = 'whatsapp:+6285156376462';
+            // WhatsAppController::sendWhatsAppMessage($receipt_number, $msg);
 
             // change status po to open
-            $purchaseOrder->po_status = 'open';
+            $purchaseOrder->po_status = 'waiting for schedule delivery confirmation';
+            // $purchaseOrder->po_status = 'open';
             $purchaseOrder->save();
 
             return response()->json([

@@ -234,6 +234,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::put('/schedule-deliveries/{id}', 'ScheduleDeliveryController@update');
         Route::get('/schedule-deliveries/download/{id}', 'ScheduleDeliveryController@downloadScheduleDelivery');
         Route::delete('/schedule-deliveries/{id}', 'ScheduleDeliveryController@destroy');
+        Route::put('/schedule-deliveries/{id}/confirmation', 'ScheduleDeliveryController@updateConfirmationScheduleDelivery');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
         Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
