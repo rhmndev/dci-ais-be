@@ -86,22 +86,29 @@ class TravelDocumentController extends Controller
             $yearMonth = Carbon::now()->format('ym');
 
             if ($poItem) {
+                $poItemData = PurchaseOrderItem::findOrFail($poItemId);
                 $printedLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->sum('qty');
                 $packQty = $request->pack ?? 1;
-                $totalQty = $request->qty;
+                $totalQty = $poItemData->quantity;
+                $reqTotalQtyDelivery = $request->qty;
 
-                $remainingQty = $totalQty - $printedLabelTemp;
 
-                if ($remainingQty <= 0) {
+                $remainingQty = ($totalQty - $printedLabelTemp);
+                if ($reqTotalQtyDelivery > $remainingQty || $remainingQty < 0) {
                     return response()->json([
                         'type' => 'failed',
                         'message' => 'Cannot generate more labels. The quantity exceeds the remaining PO item quantity.',
-                        'data' => null
+                        'data' => NULL
                     ], 400);
                 }
 
-                $baseQtyPerBox = floor($totalQty / $packQty);
-                $extraItems = $totalQty % $packQty;
+                $baseQtyPerBox = floor($reqTotalQtyDelivery / $packQty);
+                $extraItems = $reqTotalQtyDelivery % $packQty;
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Cannot generate more labels. The quantity exceeds the remaining PO item quantity.',
+                    'data' => $extraItems,
+                ], 400);
 
                 for ($i = 0; $i < $packQty; $i++) {
                     $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
