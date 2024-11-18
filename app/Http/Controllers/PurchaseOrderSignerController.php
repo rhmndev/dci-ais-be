@@ -118,6 +118,38 @@ class PurchaseOrderSignerController extends Controller
         return response()->json(null, 204);
     }
 
+    public function getByTypeName(Request $request)
+    {
+        $request->validate([
+            'type' => 'required'
+        ]);
+        $typeName = $request->type;
+        try {
+            $signers = PurchaseOrderSigner::where('type', $typeName)->with('user')->get();
+
+            // Check if any signers were found
+            if ($signers->isEmpty()) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'No signers found for type: ' . $typeName,
+                    'data' => NULL,
+                ], 404);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $signers,
+                'message' => '',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error:' . $e->getMessage(),
+                'data' => NULL,
+            ], 500);
+        }
+    }
+
     public function mySigner()
     {
         try {

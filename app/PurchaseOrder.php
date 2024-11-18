@@ -42,6 +42,7 @@ class PurchaseOrder extends Model
         'checked_at',
         'knowed_at',
         'approved_at',
+        'expired_at',
         'qr_uuid',
         'created_by',
         'updated_by',
@@ -53,6 +54,7 @@ class PurchaseOrder extends Model
         'checked_at',
         'knowed_at',
         'approved_at',
+        'expired_at',
     ];
 
     public function getAllData($keyword, $columns, $sort, $order, $status)

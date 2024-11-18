@@ -240,6 +240,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
+        Route::get('/g/signer-by-type', 'PurchaseOrderSignerController@getByTypeName');
         // Email Area
         Route::get('/email-settings', 'EmailController@index');
         Route::post('/email-settings', 'EmailController@store');

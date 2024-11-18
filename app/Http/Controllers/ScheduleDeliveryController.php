@@ -53,11 +53,6 @@ class ScheduleDeliveryController extends Controller
 
     public function update(Request $request, $id)
     {
-        return response()->json([
-            'type' => 'error',
-            'message' => '',
-            'data' => $request->all()
-        ], 422);
         $scheduleDelivery = PurchaseOrderScheduleDelivery::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -95,10 +90,16 @@ class ScheduleDeliveryController extends Controller
         }
 
         // Update other fields
+        $scheduleDelivery->status_schedule = $request->status_schedule;
         $scheduleDelivery->description = $request->description;
         $scheduleDelivery->show_to_supplier = $request->show_to_supplier;
-        $scheduleDelivery->updated_by = auth()->user()->npk;
+        $scheduleDelivery->updated_by = auth()->user()->role_name === 'supplier' ? auth()->user()->full_name : auth()->user()->npk;
         $scheduleDelivery->save();
+
+        if (isset($request->status_schedule) && $request->status_schedule == 'confirmed') {
+            $scheduleDelivery->po->po_status = 'open';
+            $scheduleDelivery->po->save();
+        }
 
         if ($request->is_send_email_to_supplier) {
             EmailController::sendEmailPurchaseOrderSchedule($request, $scheduleDelivery->po_number);
@@ -107,6 +108,60 @@ class ScheduleDeliveryController extends Controller
         return response()->json([
             'type' => 'success',
             'message' => 'Schedule delivery updated successfully',
+            'data' => $scheduleDelivery,
+        ], 200);
+    }
+
+    public function updateConfirmationScheduleDelivery(Request $request, $id)
+    {
+        $scheduleDelivery = PurchaseOrderScheduleDelivery::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'supplier_confirmed' => 'required|in:confirmed,revision_needed', // Validate the confirmation status
+            'supplier_revision_notes' => 'nullable|string', // Notes are optional
+            'file' => 'nullable|mimes:xlsx,csv,xls|max:2048', // Optional revised file upload
+        ]);
+
+
+        if ($validator->fails()) {
+            return response()->json([
+                'type' => 'error',
+                'message' => $validator->errors()->first(),
+                'data' => $request->all()
+            ], 422);
+        }
+
+        $scheduleDelivery->supplier_confirmed = $request->supplier_confirmed;
+        $scheduleDelivery->supplier_revision_notes = $request->supplier_revision_notes;
+        $scheduleDelivery->supplier_confirmed_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+
+
+
+        // Handle revised file upload
+        if ($request->hasFile('file')) {
+
+            // If a previous revision exists, delete it.  Consider a better archival strategy in production.
+            if ($scheduleDelivery->supplier_revised_file_path && Storage::disk('public')->exists($scheduleDelivery->supplier_revised_file_path)) {
+                Storage::disk('public')->delete($scheduleDelivery->supplier_revised_file_path);
+            }
+
+
+            $file = $request->file('file');
+            $originalFileName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+            $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
+            $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
+            $filePath = $file->storeAs('schedule_deliveries/revised', $fileName, 'public'); // Store in a "revised" subfolder
+            $scheduleDelivery->supplier_revised_file_path = $filePath;
+        }
+
+        $scheduleDelivery->save();
+
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Schedule delivery confirmation updated successfully',
             'data' => $scheduleDelivery,
         ], 200);
     }

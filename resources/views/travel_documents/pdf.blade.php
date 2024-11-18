@@ -112,7 +112,6 @@
   <hr>
     <div class="container">
         <div class="surat-jalan-details">
-            <p><strong>Dear,</strong></p>
             <table style="border: 0px">
               <tr style="border: 0px">
                 <td style="border: 0px">
@@ -151,8 +150,7 @@
                 </td>
               </tr>
             </table>
-            
-
+          
             <br>
 
             <table>
