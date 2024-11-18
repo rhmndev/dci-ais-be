@@ -281,7 +281,7 @@ class PurchaseOrderController extends Controller
                 'is_send_email_to_supplier' => $request->is_send_email_to_supplier ?? 0,
                 'created_by' => auth()->user()->npk,
                 'updated_by' => auth()->user()->npk,
-                'status_schedule' => 'waiting for confirmation',
+                'status_schedule' => 'waiting for confirmation'
             ]);
             $scheduleDelivery->save();
 
@@ -294,7 +294,6 @@ class PurchaseOrderController extends Controller
 
             // change status po to open
             $purchaseOrder->po_status = 'waiting for schedule delivery confirmation';
-            // $purchaseOrder->po_status = 'open';
             $purchaseOrder->save();
 
             return response()->json([

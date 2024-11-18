@@ -116,6 +116,10 @@
                         <td>-</td>
                         @endif
                     </tr>
+                    <tr>
+                        <td>Judgement</td>
+                        <td><h1>OK</h1></td>
+                    </tr>
                 </table>
             </td>
         </tr>
@@ -164,6 +168,10 @@
                     <tr>
                         <td>Date:</td>
                         <td>{{ $label->inspection_date ? $label->inspection_date : '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Judgement</td>
+                        <td><h1>OK</h1></td>
                     </tr>
                 </table>
             </td>

@@ -90,10 +90,16 @@ class ScheduleDeliveryController extends Controller
         }
 
         // Update other fields
+        $scheduleDelivery->status_schedule = $request->status_schedule;
         $scheduleDelivery->description = $request->description;
         $scheduleDelivery->show_to_supplier = $request->show_to_supplier;
-        $scheduleDelivery->updated_by = auth()->user()->npk;
+        $scheduleDelivery->updated_by = auth()->user()->role_name === 'supplier' ? auth()->user()->full_name : auth()->user()->npk;
         $scheduleDelivery->save();
+
+        if (isset($request->status_schedule) && $request->status_schedule == 'confirmed') {
+            $scheduleDelivery->po->po_status = 'open';
+            $scheduleDelivery->po->save();
+        }
 
         if ($request->is_send_email_to_supplier) {
             EmailController::sendEmailPurchaseOrderSchedule($request, $scheduleDelivery->po_number);
