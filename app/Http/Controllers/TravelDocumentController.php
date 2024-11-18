@@ -9,6 +9,7 @@ use App\PurchaseOrderItem;
 use App\TravelDocumentLabelTemp;
 use App\TravelDocument;
 use App\TravelDocumentItem;
+use App\TravelDocumentLabelPackageTemp;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
@@ -77,9 +78,11 @@ class TravelDocumentController extends Controller
         $request->validate([
             'lot_production_number' => 'required',
             'qty' => 'required',
+            'qty_per_package' => 'required',
             'inspector_name' => 'required',
             'inspection_date' => 'required|date',
-            'pack' => 'required'
+            'is_have_pack' => 'nullable|boolean',
+            'pack' => 'nullable'
         ]);
 
         try {
@@ -87,65 +90,138 @@ class TravelDocumentController extends Controller
             $yearMonth = Carbon::now()->format('ym');
 
             if ($poItem) {
+                $poItemData = PurchaseOrderItem::findOrFail($poItemId);
                 $printedLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->sum('qty');
+                $totalQty = $poItemData->quantity;
+                $reqTotalQtyDelivery = $request->qty;
+                $qtyPerPackage = $request->qty_per_package;
                 $packQty = $request->pack ?? 1;
-                $totalQty = $request->qty;
 
-                $poItemQty = $poItem->quantity;
-                $remainingQty = $poItemQty - $printedLabelTemp;
-
-                if ($totalQty > $remainingQty) {
+                $remainingQty = ($totalQty - $printedLabelTemp);
+                if ($reqTotalQtyDelivery > $remainingQty || $remainingQty < 0) {
                     return response()->json([
                         'type' => 'failed',
                         'message' => 'Cannot generate more labels. The quantity exceeds the remaining PO item quantity.',
-                        'data' => NULL,
+                        'data' => NULL
                     ], 400);
                 }
 
-                $baseQtyPerBox = floor($totalQty / $packQty);
-                $extraItems = $totalQty % $packQty;
+                $totalPackages = ceil($reqTotalQtyDelivery / $qtyPerPackage);
+                if ($packQty > $totalPackages) {
+                    return response()->json([
+                        'type' => 'failed',
+                        'message' => 'Requested packs exceeds the number of possible packages based on total quantity and quantity per package.',
+                        'data' => NULL
+                    ], 400);
+                }
 
+                $totalItemLabels = ceil($reqTotalQtyDelivery / $qtyPerPackage);
+                // $baseQtyPerItem = floor($reqTotalQtyDelivery / $totalItemLabels);
+                // $extraItemsForItem = $reqTotalQtyDelivery % $totalItemLabels;
+                $itemLabels = [];
+                $remainingQtyForItems = $reqTotalQtyDelivery;
+
+                $baseQtyPerBox = floor($reqTotalQtyDelivery / $packQty);
+                $extraItems = $reqTotalQtyDelivery % $packQty;
+                $data = [];
+                $j = 0;
+                // for ($j = 0; $j < $totalItemLabels; $j++) {
+                while ($remainingQtyForItems > 0) {
+                    $itemNumber = $this->generateUniqueItemNumber($yearMonth);
+                    $qtyForThisItem = min($qtyPerPackage, $remainingQtyForItems);
+
+                    $itemLabels[] = new TravelDocumentLabelTemp([
+                        'po_number' => $poItem->purchaseOrder->po_number,
+                        'po_item_id' => $poItem->_id,
+                        'item_number' => $itemNumber,
+                        'po_item_code' => $poItem->material->code ?? null,
+                        'lot_production_number' => $request->lot_production_number,
+                        'inspector_name' => $request->inspector_name,
+                        'inspection_date' => $request->inspection_date,
+                        'qty' => $qtyForThisItem,
+                        'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
+                    ]);
+                    // $data[] = $itemLabels[$j];
+
+                    $remainingQtyForItems -= $qtyForThisItem;
+                    $j++;
+                }
+
+                $packLabels = [];
                 for ($i = 0; $i < $packQty; $i++) {
-                    $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
-                        ->where('created_at', '<=', Carbon::now()->endOfMonth())
-                        ->orderBy('created_at', 'desc')
-                        ->first();
+                    $packageNumber = $this->generateUniquePackageNumber($yearMonth);
 
-                    $lastLabelNumber = $lastLabel ? (int)substr($lastLabel->item_number, -6) : 0;
-                    $nextLabelNumber = $lastLabelNumber + 1;
-                    if ($nextLabelNumber > 1000000) {
-                        return response()->json([
-                            'type' => 'failed',
-                            'message' => 'Cannot generate more labels. Label number limit reached.',
-                            'data' => null
-                        ], 400);
-                    }
-                    $itemNumber = $yearMonth . str_pad($nextLabelNumber, 6, '0', STR_PAD_LEFT);
+                    // $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
+                    //     ->where('created_at', '<=', Carbon::now()->endOfMonth())
+                    //     ->orderBy('created_at', 'desc')
+                    //     ->first();
+
+                    // $lastLabelNumber = $lastLabel ? (int)substr($lastLabel->item_number, -6) : 0;
+                    // $nextLabelNumber = $lastLabelNumber + 1;
+                    // if ($nextLabelNumber > 1000000) {
+                    //     return response()->json([
+                    //         'type' => 'failed',
+                    //         'message' => 'Cannot generate more labels. Label number limit reached.',
+                    //         'data' => null
+                    //     ], 400);
+                    // }
+                    // $itemNumber = $yearMonth . str_pad($nextLabelNumber, 6, '0', STR_PAD_LEFT);
 
                     $qtyForThisLabel = $baseQtyPerBox;
                     if ($extraItems > 0) {
                         $qtyForThisLabel++;
                         $extraItems--;
                     }
+                    // if ($extraItems > 0 && $qtyForThisLabel + $extraItems <=  $baseQtyPerBox) {
+                    //     $qtyForThisLabel += $extraItems;
+                    //     $extraItems = 0;
+                    // }
+                    // if ($remainingQty < $baseQtyPerBox && $i == $packQty - 1 && $extraItems <= 0) {
+                    //     $qtyForThisLabel = $remainingQty;
+                    // }
 
-                    if ($qtyForThisLabel == 0) {
-                        break;
+                    // if ($qtyForThisLabel == 0) {
+                    //     break;
+                    // }
+                    if ($qtyForThisLabel <= 0 || $remainingQty <= 0) {
+                        break; // Stop if no more items or remainingQty = 0
                     }
-                    $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
+
+                    // $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
+                    //     'po_number' => $poItem->purchaseOrder->po_number,
+                    //     'po_item_id' => $poItem->_id,
+                    //     'po_item_code' => $poItem->material->code ?? null,
+                    //     'item_number' => $itemNumber,
+                    //     'lot_production_number' => $request->lot_production_number,
+                    //     'inspector_name' => $request->inspector_name,
+                    //     'inspection_date' => $request->inspection_date,
+                    //     'qty' => $qtyForThisLabel,
+                    //     'pack' => $i + 1,
+                    //     // 'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
+                    // ]);
+                    $packLabels[] = new TravelDocumentLabelPackageTemp([
                         'po_number' => $poItem->purchaseOrder->po_number,
                         'po_item_id' => $poItem->_id,
                         'po_item_code' => $poItem->material->code ?? null,
-                        'item_number' => $itemNumber,
+                        'package_number' => $packageNumber,
                         'lot_production_number' => $request->lot_production_number,
                         'inspector_name' => $request->inspector_name,
                         'inspection_date' => $request->inspection_date,
                         'qty' => $qtyForThisLabel,
-                        'pack' => $i + 1,
-                        'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
+                        'qr_path' => $this->generateAndStoreQRCodeForPackageLabel($itemNumber),
                     ]);
-                    $travelDocumentLabelTemp->save();
+                    // $travelDocumentLabelPackageTemp->save();
                     $remainingQty -= $qtyForThisLabel;
                 }
+
+
+                foreach ($itemLabels as $label) {
+                    $label->save();
+                }
+                foreach ($packLabels as $packLabel) {
+                    $packLabel->save();
+                }
+
                 return $this->tempPrintLabel($poItemId);
             }
         } catch (\Throwable $th) {
@@ -155,6 +231,47 @@ class TravelDocumentController extends Controller
                 'data' => NULL,
             ], 400);
         }
+    }
+
+    private function generateUniqueItemNumber($yearMonth)
+    {
+        $lastLabel = TravelDocumentLabelTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->where('created_at', '<=', Carbon::now()->endOfMonth())
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastLabelNumber = $lastLabel ? (int)substr($lastLabel->item_number, -6) : 0;
+        $nextLabelNumber = $lastLabelNumber + 1;
+        if ($nextLabelNumber > 1000000) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Cannot generate more labels. Label number limit reached.',
+                'data' => null
+            ], 400);
+        }
+        $itemNumber = $yearMonth . str_pad($nextLabelNumber, 6, '0', STR_PAD_LEFT);
+
+        return $itemNumber;
+    }
+    private function generateUniquePackageNumber($yearMonth)
+    {
+        $lastLabel = TravelDocumentLabelPackageTemp::where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->where('created_at', '<=', Carbon::now()->endOfMonth())
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $lastLabelNumber = $lastLabel ? (int)substr($lastLabel->item_number, -6) : 0;
+        $nextLabelNumber = $lastLabelNumber + 1;
+        if ($nextLabelNumber > 1000000) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Cannot generate more labels. Label package number limit reached.',
+                'data' => null
+            ], 400);
+        }
+        $packageNumber = "PKG" . $yearMonth . str_pad($nextLabelNumber, 6, '0', STR_PAD_LEFT);
+
+        return $packageNumber;
     }
 
     public function getBySupplierLoggedUser(Request $request)
@@ -316,6 +433,25 @@ class TravelDocumentController extends Controller
 
         // Generate a unique filename for the QR code
         $fileName = 'qrcodes/travel_document_item_label_' . $itemNumber . '_' . uniqid() . '.png';
+
+        // Store the QR code image in the storage folder
+        Storage::disk('public')->put($fileName, $qrCodeData->getString());
+
+        // Return the path to the stored QR code
+        return $fileName;
+    }
+    private function generateAndStoreQRCodeForPackageLabel($packageNumber)
+    {
+        // Generate the QR code
+        $qrCode = QrCode::create($packageNumber);
+        $qrCode->setSize(150);
+
+        // Create the writer
+        $writer = new PngWriter();
+        $qrCodeData = $writer->write($qrCode);
+
+        // Generate a unique filename for the QR code
+        $fileName = 'qrcodes/travel_document_package_label_' . $packageNumber . '_' . uniqid() . '.png';
 
         // Store the QR code image in the storage folder
         Storage::disk('public')->put($fileName, $qrCodeData->getString());

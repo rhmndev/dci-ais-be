@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateWhatsappTemplateTable extends Migration
+class CreateTravelDocumentLabelPackageItemTempTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,14 +13,12 @@ class CreateWhatsappTemplateTable extends Migration
      */
     public function up()
     {
-        Schema::create('whatsapp_template', function (Blueprint $table) {
+        Schema::create('travel_document_label_package_item_temp', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('template_name');
-            $table->enum('template_type', [
-                'purchase_order_to_vendor',
-                'welcome',
-                'password_reset',
-            ]);
+            $table->string('package_id')->nullable();
+            $table->string('package_number');
+            $table->string('item_number_id');
+            $table->string('item_number');
             $table->timestamps();
         });
     }
@@ -32,6 +30,6 @@ class CreateWhatsappTemplateTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('whatsapp_template');
+        Schema::dropIfExists('travel_document_label_package_item_temp');
     }
 }
