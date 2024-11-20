@@ -23,6 +23,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/dashboard', 'DashboardController@index');
         Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
+        Route::put('/admin/reset-password/{id}', 'AdminController@resetPassword');
 
         Route::group(['middleware' => ['checkPermission:user']], function () {
                 #region Master User

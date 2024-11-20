@@ -6,11 +6,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\UsersImport;
+use App\Mail\PasswordChangedNotification;
 use App\User;
 use App\Vendor;
 use Carbon\Carbon;
 use Image;
 use Excel;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -323,17 +325,24 @@ class UserController extends Controller
             'current_password' => 'required',
             'new_password' => 'required|min:8|confirmed',
         ]);
+        try {
+            $user = $request->user();
 
-        $user = $request->user();
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['message' => 'Current password incorrect.'], 400);
+            }
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['message' => 'Current password incorrect.'], 400);
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            Mail::to($user->email)->send(new PasswordChangedNotification($user));
+
+            return response()->json(['message' => 'Password changed successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error changing password: ' . $e->getMessage(),  // Or a more user-friendly message
+            ], 500);  // 500 for server errors
         }
-
-        $user->password = Hash::make($request->new_password);
-        $user->save();
-
-        return response()->json(['message' => 'Password changed successfully.'], 200);
     }
 
     private function phoneNumber($number)
