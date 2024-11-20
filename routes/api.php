@@ -260,8 +260,10 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/by-po', 'TravelDocumentController@byPO');
                 Route::post('/{poId}/get-print-items-label', 'TravelDocumentController@getPrintedItemsLabelsForSupplier');
                 Route::post('/{poItemId}/get-print-label', 'TravelDocumentController@getPrintedLabels');
+                Route::post('/{poItemId}/get-print-package-label', 'TravelDocumentController@getPrintedPackageLabels');
                 Route::post('/{poId}/{poItemId}/print-label', 'TravelDocumentController@generateItemLabels');
                 Route::post('/{poItemId}/print-label-temp', 'TravelDocumentController@tempPrintLabel');
+                Route::post('/{poItemId}/print-package-label-temp', 'TravelDocumentController@tempPrintPackageLabel');
                 Route::post('/{itemNumberId}/print-label-temp-by-id', 'TravelDocumentController@tempPrintLabelById');
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');

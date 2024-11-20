@@ -128,9 +128,8 @@
                             <table style="width: 100%; border: none;">
                                 <tr style="border: none;">
                                     <td class="nested-label" style="border: none;width: 30%; vertical-align: top; text-align: left;">Description</td>
-                                    <td class="nested-value" style="border: none;">&nbsp;</td>
-                                    <td class="nested-value" style="border: none; border-left: 1px solid black;text-align: center;">Judgement</td>
-                                    <td class="nested-value" style="border: none; border-left: 1px dotted black; text-align:center;"><h1>OK</h1></td>
+                                    <td class="nested-value" colspan="2" style="border: none;">&nbsp;</td>
+                                    <td class="nested-value" style="border: none; border-left: 1px solid black; text-align:center;"><h1>OK</h1></td>
                                 </tr>
                             </table>
                         </td>
@@ -197,9 +196,8 @@
                             <table style="width: 100%; border: none;">
                                 <tr style="border: none;">
                                     <td class="nested-label" style="border: none;width: 30%; vertical-align: top; text-align: left;">Description</td>
-                                    <td class="nested-value" style="border: none;">&nbsp;</td>
-                                    <td class="nested-value" style="border: none; border-left: 1px solid black;text-align: center;">Judgement</td>
-                                    <td class="nested-value" style="border: none; border-left: 1px dotted black; text-align:center;"><h1>OK</h1></td>
+                                    <td colspan="2" class="nested-value" style="border: none;">&nbsp;</td>
+                                    <td class="nested-value" style="border: none; border-left: 1px solid black; text-align:center;"><h1>OK</h1></td>
                                 </tr>
                             </table>
                         </td>

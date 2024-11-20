@@ -227,14 +227,11 @@ class TravelDocumentController extends Controller
                 }
                 $currentPackageIndex = 0;
                 $itemLabelNumbers = [];
-                $j = 0;
-                // for ($j = 0; $j < $totalItemLabels; $j++) {
                 while ($remainingQtyForItems > 0 && $currentPackageIndex < count($packages)) {
                     $itemNumber = $this->generateUniqueItemNumber($yearMonth);
-                    $currentPackage = &$packages[$currentPackageIndex];  // Use reference
+                    $currentPackage = &$packages[$currentPackageIndex];
 
-
-                    $qtyForThisItem = min($qtyPerPackage, $remainingQtyForItems, $currentPackage['data']->qty - count($currentPackage['items']));
+                    $qtyForThisItem = min($qtyPerPackage, $remainingQtyForItems, $currentPackage['data']->qty - collect($currentPackage['items'])->sum('qty'));
 
                     $travelDocumentLabelTemp = new TravelDocumentLabelTemp([
                         'po_number' => $poItem->purchaseOrder->po_number,
@@ -253,10 +250,9 @@ class TravelDocumentController extends Controller
 
                     // $currentPackage['data']->qty = count($currentPackage['items']);
                     $remainingQtyForItems -= $qtyForThisItem;
-                    if (count($currentPackage['items']) >= $currentPackage['data']->qty) {
+                    if (collect($currentPackage['items'])->sum('qty') >= $currentPackage['data']->qty) {
                         $currentPackageIndex++;
                     }
-                    $j++;
                 }
 
                 foreach ($packages as &$package) {
@@ -457,7 +453,6 @@ class TravelDocumentController extends Controller
                     }
                 }
             }
-
             return response()->json([
                 'type' => 'success',
                 'message' => 'Travel document created successfully',
@@ -471,6 +466,48 @@ class TravelDocumentController extends Controller
             DB::rollBack();
             return response()->json(['type' => 'failed', 'message' => 'Error creating travel document', 'data' => $th->getMessage()], 500);
         }
+    }
+
+    private function printAllLabelDocuments($travelDocumentNo)
+    {
+        $travelDocument = TravelDocument::with(['items' => function ($query) {
+            $query->with('poItem.material', 'tempLabelItem'); // Include tempLabelItem
+        }])->where('no', $travelDocumentNo)->firstOrFail();
+
+
+        $itemLabels = collect([]);
+        $packageLabels = collect([]);
+
+        foreach ($travelDocument->items as $item) {
+            $itemLabels = $itemLabels->merge($item->tempLabelItem);
+
+            $packageLabels = $packageLabels->merge(TravelDocumentLabelPackageTemp::with('packageItems', 'purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')
+                ->where('po_item_id', $item->po_item_id)
+                ->get());
+        }
+        $groupedItems = collect($travelDocument->items)
+            ->groupBy('po_item_id')
+            ->map(function ($group, $poItemId) {
+                $firstItem = $group->first();
+                return [
+                    'po_item_id' => $poItemId,
+                    'material' => $firstItem->poItem->material,
+                    'poItem' => $firstItem->poItem,
+                    'total_qty' => $group->sum('qty'),
+                    'items' => $group,
+                ];
+            });
+
+        $pdf = PDF::loadView('travel_documents.all-labels', [ // Create all-labels.blade.php
+            'travelDocument' => $travelDocument,
+            'itemLabels' => $itemLabels,
+            'packageLabels' => $packageLabels,
+            'groupedItems' => $groupedItems
+        ])->setPaper('a4');
+
+
+        $pdfContent = $pdf->output();
+        return response()->json(['pdf_data' => base64_encode($pdfContent)]);
     }
 
     private function generateAndStoreQRCodeForItemLabel($itemNumber)
@@ -618,6 +655,24 @@ class TravelDocumentController extends Controller
             ], 400);
         }
     }
+    public function getPrintedPackageLabels($poItemId)
+    {
+        try {
+            $TravelDocumentLabelPackageTemp = TravelDocumentLabelPackageTemp::with('packageItems')->where('po_item_id', $poItemId)->get();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $TravelDocumentLabelPackageTemp,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Not Found.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
 
     public function download($id)
     {
@@ -690,8 +745,8 @@ class TravelDocumentController extends Controller
     }
     public function tempPrintPackageLabel($itemId)
     {
-        $packageLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->get();
-        $pdf = PDF::loadView('travel_documents.item-labels', ['packageLabels' => $packageLabels, 'is_all' => true])->setPaper('a4');
+        $packageLabels = TravelDocumentLabelPackageTemp::with('packageItems', 'purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->get();
+        $pdf = PDF::loadView('travel_documents.item-package-labels', ['packageLabels' => $packageLabels, 'is_all' => true])->setPaper('a4');
         $pdfContent = $pdf->output();
         return response()->json(['data' => base64_encode($pdfContent)]);
     }
@@ -798,11 +853,11 @@ class TravelDocumentController extends Controller
             }
 
             $po = $travelDocument->purchaseOrder;
-            if ($po && $po->items->every(function ($item) {
-                return $item->qty_delivered >= $item->qty;
-            })) {
-                // $po->po_status = 'closed';
-                // $po->save();
+            if ($po && $po->items->every((function ($poItem) {
+                return $poItem->qty_delivered >= $poItem->quantity;
+            }))) {
+                $po->po_status = 'closed';
+                $po->save();
             }
 
             $travelDocument->status = "completed";

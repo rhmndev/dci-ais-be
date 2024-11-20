@@ -18,6 +18,7 @@ use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
 use App\PurchaseOrderScheduleDelivery;
 use App\Qr;
+use App\Settings;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
@@ -196,6 +197,77 @@ class PurchaseOrderController extends Controller
                 "result" => false,
                 "msg_type" => 'error',
                 "message" => 'err: ' . $th->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function SyncSAP(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+
+            $Settings = new Settings;
+            $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+            $code = $code_sap[1]['name'];
+
+            $date = date('Y-m-d\TH:i:s', strtotime($request->date));
+
+            // $client = new Client;
+            // $json = $client->get("http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '$code' and Ersda eq datetime'$date'&\$format=json&sap-300", [
+            //     'auth' => [
+            //         // 'wcs-abap',
+            //         // 'Wilmar12'
+            //         'DCI-DGT01',
+            //         'DCI0001'
+            //     ],
+            // ]);
+            // $results = json_decode($json->getBody())->d->results;
+
+            // if (count($results) > 0) {
+
+            //     foreach ($results as $result) {
+
+            //         $po_number = $this->stringtoupper($result->Matnr);
+
+            //         $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
+
+            //         $PurchaseOrder->created_by = auth()->user()->username;
+            //         $PurchaseOrder->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+            //         $PurchaseOrder->updated_by = auth()->user()->username;
+            //         $PurchaseOrder->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+            //         $PurchaseOrder->save();
+            //     }
+
+            //     return response()->json([
+
+            //         "result" => true,
+            //         "msg_type" => 'success',
+            //         "message" => 'Sync SAP Success. ' . count($results) . ' data synced',
+
+            //     ], 200);
+            // } else {
+
+            //     return response()->json([
+
+            //         "result" => false,
+            //         "msg_type" => 'failed',
+            //         "message" => 'Data not found',
+
+            //     ], 400);
+            // }
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $e,
+
             ], 400);
         }
     }

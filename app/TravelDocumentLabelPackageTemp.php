@@ -43,6 +43,6 @@ class TravelDocumentLabelPackageTemp extends Model
 
     public function packageItems()
     {
-        return $this->hasMany(TravelDocumentLabelPackageItemTemp::class, 'package_id', '_id');
+        return $this->hasMany(TravelDocumentLabelPackageItemTemp::class, 'package_number', 'package_number');
     }
 }

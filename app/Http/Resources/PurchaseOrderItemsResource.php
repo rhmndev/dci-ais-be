@@ -30,6 +30,7 @@ class PurchaseOrderItemsResource extends JsonResource
             'travel_document_items_count' => $this->whenLoaded('travelDocumentItem', function () {
                 return $this->travelDocumentItem->count();
             }),
+            'qty_delivered' => $this->qty_delivered,
         ];
     }
 }
