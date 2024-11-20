@@ -9,6 +9,7 @@ class TravelDocumentLabelPackageTemp extends Model
     protected $fillable = [
         'po_number',
         'po_item_id',
+        'po_item_code',
         'package_number',
         'lot_production_number',
         'inspector_name',
@@ -17,13 +18,12 @@ class TravelDocumentLabelPackageTemp extends Model
         'qr_path',
         'td_no',
         'is_scanned',
-        'package_items'
+        'package_items',
+        'items'
     ];
 
     protected $casts = [
-        'inspection_date' => 'date',
-        'is_scanned' => 'boolean',
-
+        'inspection_date' => 'string',
     ];
 
     public function travelDocument()

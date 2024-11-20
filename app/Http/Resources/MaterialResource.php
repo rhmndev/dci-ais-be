@@ -21,6 +21,7 @@ class MaterialResource extends JsonResource
             'description' => $this->description,
             'photo' => $this->photo,
             'type' => $this->type,
+            'unit' => $this->unit,
             'default_packing_qty' => $this->whenLoaded('materialType') ? $this->materialType->pack_qty : 1,
         ];
     }

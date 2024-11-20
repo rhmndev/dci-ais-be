@@ -117,18 +117,21 @@
                 <td style="border: 0px">
                   <table style="border: 0px">
                     <tr style="border: 0px">
-                      <td style="border: 0px; width: 10px;">Name:</td>
-                      <td style="border: 0px">{{ $travelDocument->supplier_code }} - {{ $travelDocument->supplier->name }}</td> 
+                      <td style="border: 0px; width: 70px;">Supplier Code:</td>
+                      <td style="border: 0px">{{ $travelDocument->supplier_code }}</td> 
                     </tr>
                     <tr style="border: 0px">
-                      <td style="border: 0px; width: 10px;">Telp:</td>
+                      <td style="border: 0px; width: 70px;">Supplier Name:</td>
+                      <td style="border: 0px">{{ $travelDocument->supplier->name }}</td> 
+                    </tr>
+                    <tr style="border: 0px">
+                      <td style="border: 0px; width: 70px;">Telp:</td>
                       <td style="border: 0px">{{ $travelDocument->supplier->phone }}</td> 
                     </tr>
                     <tr style="border: 0px">
-                      <td style="border: 0px; width: 10px;">Address:</td>
+                      <td style="border: 0px; width: 70px;">Address:</td>
                       <td style="border: 0px">{{ $travelDocument->supplier->address }}</td> 
                     </tr>
-                    <!-- Add more supplier details as needed -->
                   </table>
                 </td>
                 <td style="border: 0px">
@@ -145,8 +148,7 @@
                         <td>PO Date:</td>
                         <td>{{ $travelDocument->purchaseOrder->order_date ? date('d-m-Y', strtotime($travelDocument->purchaseOrder->order_date)) : '-'}}</td>
                     </tr>
-                    <!-- Add more details as needed -->
-                </table>
+                  </table>
                 </td>
               </tr>
             </table>

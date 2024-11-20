@@ -17,6 +17,8 @@ class TravelDocumentItem extends Model
         'is_scanned',
         'scanned_at',
         'scanned_by',
+        'condition',
+        'condition_note',
         'notes',
     ];
 
@@ -41,6 +43,6 @@ class TravelDocumentItem extends Model
 
     public function tempLabelItem()
     {
-        return $this->hasOne(TravelDocumentLabelTemp::class, 'qr_tdi_no', 'item_number');
+        return $this->hasOne(TravelDocumentLabelTemp::class, 'item_number', 'qr_tdi_no');
     }
 }

@@ -250,7 +250,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
 
         Route::group(['prefix' => 'travel-documents'], function () {
+                Route::get('/list', 'TravelDocumentController@index');
                 Route::get('/{id}', 'TravelDocumentController@show');
+                Route::get('/g/scan', 'TravelDocumentController@scan');
                 Route::get('/item/{id}', 'TravelDocumentController@showItem');
                 // Route::post('/{id}', 'TravelDocumentController@update');
                 Route::get('/delivery-orders/g/{no}', 'TravelDocumentController@getDeliveryOrders');
