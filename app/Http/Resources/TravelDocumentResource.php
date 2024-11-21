@@ -56,6 +56,7 @@ class TravelDocumentResource extends JsonResource
                                 'is_scanned' => $item->is_scanned,
                                 'scanned_at' => $item->scanned_at,
                                 'scanned_by' => $item->scanned_by,
+                                'package' => $item->tempLabelItem->pack,
                             ];
                         }),
                     ];

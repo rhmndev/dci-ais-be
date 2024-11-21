@@ -32,11 +32,13 @@ class PurchaseOrderController extends Controller
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
         $status = ($request->status != null) ? $request->status : '';
+        $startDate = $request->startDate;
+        $endDate = $request->endDate;
         try {
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
-            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status);
-            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status);
+            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status, $startDate, $endDate);
+            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $startDate, $endDate);
 
             return response()->json([
                 'type' => 'success',
