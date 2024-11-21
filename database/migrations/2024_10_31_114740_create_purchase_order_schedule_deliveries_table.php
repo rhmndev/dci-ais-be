@@ -21,6 +21,11 @@ class CreatePurchaseOrderScheduleDeliveriesTable extends Migration
             $table->longText('file_path');
             $table->boolean('show_to_supplier')->default(false);
             $table->boolean('is_send_email_to_supplier')->default(false);
+            $table->string('status_schedule');
+            $table->string('supplier_confirmed');
+            $table->string('supplier_revision_notes')->nullable();
+            $table->longText('supplier_revised_file_path')->nullable();
+            $table->timestamp('supplier_confirmed_at')->nullable();
             $table->string('created_by');
             $table->string('updated_by');
             $table->timestamps();

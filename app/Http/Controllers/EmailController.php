@@ -8,6 +8,8 @@ use App\EmailTemplate;
 use App\PurchaseOrder;
 use App\EmailLog;
 use App\Http\Resources\PurchaseOrderResource;
+use App\Mail\ScheduleRevisionNeeded;
+use App\PurchaseOrderScheduleDelivery;
 use App\Role;
 use App\User;
 use Illuminate\Support\Facades\Mail;
@@ -25,6 +27,21 @@ class EmailController extends Controller
             'type' => 'success',
             'data' =>  $EmailTemplate
         ]);
+    }
+
+    public static function sendEmailForRevision(PurchaseOrderScheduleDelivery $scheduleDelivery)
+    {
+        $internalUserEmails = ['fachriansyahmni@gmail.com'];
+
+
+        $emailData = [
+            'po_number' => $scheduleDelivery->po_number,
+            'supplier' => $scheduleDelivery->po->supplier->name, // Assuming you have the relationship set up
+            'revision_notes' => $scheduleDelivery->supplier_revision_notes
+        ];
+
+
+        Mail::to($internalUserEmails)->send(new ScheduleRevisionNeeded($emailData));
     }
 
     public function showTemplate(Request $request)

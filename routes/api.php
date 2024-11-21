@@ -232,8 +232,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/{poId}/tracking-events', 'PurchaseOrderController@getTrackingEvents');
 
         Route::get('/schedule-deliveries', 'ScheduleDeliveryController@index');
-        Route::put('/schedule-deliveries/{id}', 'ScheduleDeliveryController@update');
+        Route::post('/schedule-deliveries/{id}', 'ScheduleDeliveryController@update');
         Route::get('/schedule-deliveries/download/{id}', 'ScheduleDeliveryController@downloadScheduleDelivery');
+        Route::get('/schedule-deliveries/revision/download/{id}', 'ScheduleDeliveryController@downloadRevisionScheduleDelivery');
         Route::delete('/schedule-deliveries/{id}', 'ScheduleDeliveryController@destroy');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
