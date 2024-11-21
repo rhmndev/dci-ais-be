@@ -4,6 +4,7 @@ namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 use App\PurchaseOrderActivities;
+use Carbon\Carbon;
 
 class PurchaseOrder extends Model
 {
@@ -57,7 +58,7 @@ class PurchaseOrder extends Model
         'expired_at',
     ];
 
-    public function getAllData($keyword, $columns, $sort, $order, $status)
+    public function getAllData($keyword, $columns, $sort, $order, $status, $startDate = null, $endDate = null)
     {
 
         $query = PurchaseOrder::query();
@@ -80,6 +81,13 @@ class PurchaseOrder extends Model
             $query->where('status', $status);
         }
 
+        if ($startDate && $endDate) {
+            $query->whereBetween('order_date', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
+        }
+
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
         $data = $query->get();
@@ -87,7 +95,7 @@ class PurchaseOrder extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $status)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $status, $startDate = null, $endDate = null)
     {
 
         $query = PurchaseOrder::query();
@@ -109,6 +117,13 @@ class PurchaseOrder extends Model
 
         if ($status !== null && $status !== '') {
             $query->where('status', $status);
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('order_date', [
+                Carbon::parse($startDate)->startOfDay(),
+                Carbon::parse($endDate)->endOfDay()
+            ]);
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');

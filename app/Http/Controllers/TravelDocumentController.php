@@ -36,6 +36,8 @@ class TravelDocumentController extends Controller
             $keyword = $request->keyword ?? '';
             $order = $request->order ?? 'ascend'; // Get order from request or default to 'ascend'
             $status = $request->status ?? '';
+            $startDate = $request->startDate ?? null;
+            $endDate = $request->endDate ?? null;
 
             $travelDocuments = TravelDocument::with('purchaseOrder', 'supplier', 'scannedUserBy')
                 ->when($keyword, function ($query) use ($keyword) {
@@ -50,6 +52,12 @@ class TravelDocumentController extends Controller
                 })
                 ->when($status, function ($query) use ($status) {
                     $query->where('status', $status);
+                })
+                ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('order_delivery_date', [
+                        Carbon::parse($startDate)->startOfDay(),
+                        Carbon::parse($endDate)->endOfDay()
+                    ]);
                 });
 
 
@@ -828,6 +836,7 @@ class TravelDocumentController extends Controller
                     $item->is_scanned = true;
                     $item->scanned_at = new UTCDateTime(Carbon::parse($scannedItem['scanTime'])->getPreciseTimestamp(3));
                     $item->scanned_by = auth()->user() ? auth()->user()->npk : '';
+                    $item->qty_received = $scannedItem['qty_received'];
                     $item->condition = $scannedItem['condition'];
                     $item->condition_note = $scannedItem['custom_input'];
                     $item->notes = $scannedItem['notes'] ?? null;
