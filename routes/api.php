@@ -335,3 +335,8 @@ Route::get('/debug-po', function () {
 
         return response()->json(['data' => $purchaseOrders, 'date' => Carbon::now()->subMinutes(1)->toDateTimeString()]);
 });
+
+Route::post('/send-po-reminder', function () {
+        \App\Jobs\SendPOReminder::dispatch(); // Dispatch the job
+        return response()->json(['message' => 'PO Reminder emails queued for sending.']);
+});

@@ -79,7 +79,9 @@ class ScheduleDeliveryController extends Controller
                 $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
 
                 $scheduleDelivery->filename = $fileName;
-                $scheduleDelivery->supplier_revised_file_path = $filePath;
+                if ($request->status_schedule == 'revision_requested') {
+                    $scheduleDelivery->supplier_revised_file_path = $filePath;
+                }
             }
 
             // Update other fields

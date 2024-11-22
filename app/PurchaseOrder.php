@@ -47,11 +47,13 @@ class PurchaseOrder extends Model
         'qr_uuid',
         'created_by',
         'updated_by',
+        'schedule_updated_at',
     ];
 
     protected $dates = [
         'order_date',
         'delivery_date',
+        'schedule_updated_at',
         'checked_at',
         'knowed_at',
         'approved_at',

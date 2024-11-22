@@ -73,8 +73,8 @@ class SendPurchaseOrderConfirmationEmail extends Command
                 'deliveryDate' => $POData->delivery_date,
                 'totalAmount' => $POData->total_amount,
                 'orderNumber' => $noPO,
-                'purchaseOrderLink' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
-                'purchaseOrderLinkInternal' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
+                'purchaseOrderLink' => env('FRONT_URL') . '/get-po/' . $POData->_id,
+                'purchaseOrderLinkInternal' => env('FRONT_URL') . '/get-po/' . $POData->_id,
             ];
 
             $bodyEmail = new DynamicEmail($template, $data);
@@ -95,7 +95,7 @@ class SendPurchaseOrderConfirmationEmail extends Command
 
             // Update the PO to indicate that the email has been sent
             $POData->is_send_email_to_supplier = 1;
-            $POData->po_status = "open";
+            $POData->po_status = "waiting for schedule delivery";
             $POData->save();
 
             Log::info("Purchase order confirmation email sent for PO: {$noPO}");
@@ -130,16 +130,16 @@ class SendPurchaseOrderConfirmationEmail extends Command
 
         // Send to specific internal email
         $emailInternal = "fachriansyahmni@gmail.com";
-        Mail::to($emailInternal)->send(new DynamicEmail($templateInternal, $data));
+        Mail::to($emailInternal)->send(new DynamicEmail($templateInternalSendSchedule, $data));
 
         // Send to Warehouse users
-        $warehouseRole = Role::where('name', 'Warehouse')->first();
-        if (!$warehouseRole) {
-            Log::error('Warehouse role not found for internal purchase order confirmation.');
-            return;
-        }
+        // $warehouseRole = Role::where('name', 'Warehouse')->first();
+        // if (!$warehouseRole) {
+        //     Log::error('Warehouse role not found for internal purchase order confirmation.');
+        //     return;
+        // }
 
-        $internalWarehouseUsers = User::where('role_name', 'Warehouse')->get();
+        $internalWarehouseUsers = User::where('role_name', 'warehouse')->get();
         $emailInternalSendSchedule = $internalWarehouseUsers->pluck('email')->toArray();
 
         Mail::to($emailInternalSendSchedule)->send(new DynamicEmail($templateInternalSendSchedule, $data));

@@ -367,6 +367,7 @@ class PurchaseOrderController extends Controller
             // WhatsAppController::sendWhatsAppMessage($receipt_number, $msg);
 
             // change status po to open
+            $purchaseOrder->schedule_updated_at = Carbon::now();
             $purchaseOrder->po_status = 'waiting for schedule delivery confirmation';
             $purchaseOrder->save();
 
@@ -571,7 +572,7 @@ class PurchaseOrderController extends Controller
     {
         try {
             $keyword = ($request->keyword != null) ? $request->keyword : '';
-            $order = ($request->order != null) ? $request->order : 'ascend';
+            $order = ($request->order != null) ? $request->order : 'desc';
 
             $purchaseOrders = PurchaseOrder::with('supplier', 'scheduleDeliveries')->where('status', 'approved')
                 ->whereHas('scheduleDeliveries')
@@ -581,7 +582,7 @@ class PurchaseOrderController extends Controller
                         // ->orWhere('supplier_code', 'like', '%' . $keyword . '%');
                     });
                 })
-                ->orderBy('approved_at', $order == 'descend' ? 'desc' : 'asc')
+                ->orderBy('schedule_updated_at', $order == 'desc' ? 'desc' : 'asc')
                 ->paginate($request->perpage ?? 10);
 
             return response()->json([
