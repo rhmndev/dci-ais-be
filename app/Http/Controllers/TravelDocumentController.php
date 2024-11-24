@@ -34,7 +34,7 @@ class TravelDocumentController extends Controller
         ]);
         try {
             $keyword = $request->keyword ?? '';
-            $order = $request->order ?? 'ascend'; // Get order from request or default to 'ascend'
+            $order = $request->order ?? 'ascend';
             $status = $request->status ?? '';
             $startDate = $request->startDate ?? null;
             $endDate = $request->endDate ?? null;
@@ -55,11 +55,10 @@ class TravelDocumentController extends Controller
                 })
                 ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('order_delivery_date', [
-                        Carbon::parse($startDate)->startOfDay(),
-                        Carbon::parse($endDate)->endOfDay()
+                        Carbon::parse($startDate)->startOfDay()->format('Y-m-d'),
+                        Carbon::parse($endDate)->endOfDay()->format('Y-m-d')
                     ]);
                 });
-
 
             $resultAlls = $travelDocuments->get($request->columns);
             $results = $travelDocuments->orderBy($request->sort, $order == 'descend' ? 'desc' : 'asc')
@@ -76,7 +75,7 @@ class TravelDocumentController extends Controller
                 'type' => 'failed',
                 'message' => 'Error: ' . $e->getMessage(),
                 'data' => NULL,
-            ], 500); // Use 500 for server errors
+            ], 500);
         }
     }
     public function scan(Request $request)
@@ -433,7 +432,7 @@ class TravelDocumentController extends Controller
             $travelDocument->save();
 
             foreach ($items as $item) {
-                $DataLabelsItem = TravelDocumentLabelTemp::where("po_item_id", $item)->get();
+                $DataLabelsItem = TravelDocumentLabelTemp::where("po_item_id", $item)->where('td_no', '=', null)->get();
 
                 foreach ($DataLabelsItem as $labelItem) {
                     try {
@@ -699,7 +698,14 @@ class TravelDocumentController extends Controller
         $month = $currentDate->format('m');
         $day = $currentDate->format('d');
 
-        $lastTravelDocument = TravelDocument::orderBy('created_at', 'desc')->first();
+        $startOfDay = $currentDate->copy()->startOfDay();
+        $endOfDay = $currentDate->copy()->endOfDay();
+
+        $lastTravelDocument = TravelDocument::where('created_at', '>=', $startOfDay)
+            ->where('created_at', '<', $endOfDay) // Less than the *next* day
+            ->orderBy('created_at', 'desc')
+            ->first();
+
 
         if ($lastTravelDocument) {
             $lastNumber = (int)substr($lastTravelDocument->no, -3);

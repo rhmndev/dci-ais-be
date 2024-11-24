@@ -66,21 +66,29 @@ class ScheduleDeliveryController extends Controller
         try {
             if ($request->hasFile('file')) {
                 // Delete the old file if it exists
-                if (Storage::disk('public')->exists($scheduleDelivery->file_path)) {
-                    Storage::disk('public')->delete($scheduleDelivery->file_path);
-                }
 
-                $file = $request->file('file');
-                $originalFileName = $file->getClientOriginalName();
-                $extension = $file->getClientOriginalExtension();
-                $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
-                $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
-                $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
-                $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
-
-                $scheduleDelivery->filename = $fileName;
                 if ($request->status_schedule == 'revision_requested') {
+                    $file = $request->file('file');
+                    $originalFileName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+                    $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
+                    $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
+                    $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
+
+                    $scheduleDelivery->filename_revised = $fileName;
+
                     $scheduleDelivery->supplier_revised_file_path = $filePath;
+                } else {
+                    $file = $request->file('file');
+                    $originalFileName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+                    $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
+                    $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
+                    $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
+
+                    $scheduleDelivery->filename = $fileName;
                 }
             }
 
@@ -88,6 +96,9 @@ class ScheduleDeliveryController extends Controller
             $scheduleDelivery->status_schedule = $request->status_schedule;
             if ($request->status_schedule == 'confirmed') {
                 if ($scheduleDelivery->supplier_revised_file_path != null) {
+                    if (Storage::disk('public')->exists($scheduleDelivery->file_path)) {
+                        Storage::disk('public')->delete($scheduleDelivery->file_path);
+                    }
                     Storage::disk('public')->copy($scheduleDelivery->supplier_revised_file_path, $scheduleDelivery->file_path);
                     Storage::disk('public')->delete($scheduleDelivery->supplier_revised_file_path);
 

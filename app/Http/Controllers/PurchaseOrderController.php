@@ -291,7 +291,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -315,7 +315,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -381,7 +381,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error uploading schedule delivery: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -428,7 +428,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -463,7 +463,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -498,7 +498,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -528,7 +528,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -546,7 +546,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -565,7 +565,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
     public function getListScheduleDelivered(Request $request)
@@ -594,7 +594,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -685,7 +685,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error print QR Label: ' . $th->getMessage(),
                 'data' => $res_po->po_number
-            ], 500);
+            ], 400);
         }
     }
     public function downloadPDFForSupplier($po_id)
@@ -696,17 +696,12 @@ class PurchaseOrderController extends Controller
 
             $this->markAsDownloaded($res_po->po_number);
             return $this->downloadPDF($res_po->po_number);
-            // return response()->json([
-            //     'type' => 'success',
-            //     'message' => 'PDF downloaded successfully',
-            //     'data' => ['po_number' => $res_po->po_number]
-            // ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Error downloading PDF: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -778,7 +773,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -813,7 +808,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -829,7 +824,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error downloading PDF: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -873,14 +868,14 @@ class PurchaseOrderController extends Controller
                     'type' => 'error',
                     'message' => 'Error creating zip file',
                     'data' => null
-                ], 500);
+                ], 400);
             }
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
