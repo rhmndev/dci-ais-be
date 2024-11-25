@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\PurchaseOrderCreated;
 use App\Http\Resources\PurchaseOrderResource;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use App\Material;
 use App\PoTrackingEvent;
 use App\PurchaseOrder;
 use App\Supplier;
@@ -24,6 +26,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class PurchaseOrderController extends Controller
 {
@@ -199,6 +202,104 @@ class PurchaseOrderController extends Controller
                 "result" => false,
                 "msg_type" => 'error',
                 "message" => 'err: ' . $th->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function SyncExcel(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $filePath = storage_path('app/data-po.xlsx');
+
+            //Check if file exists
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Error: The specified Excel file does not exist.',
+                ], 400);
+            }
+
+            $spreadsheet = IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            $headerRow = $worksheet->getRowIterator()->current();
+            $header = [];
+            foreach ($headerRow->getCellIterator() as $cell) {
+                $header[] = $cell->getValue();
+            }
+
+            $data = [];
+            foreach ($worksheet->getRowIterator() as $row) {
+                if ($row->getRowIndex() === 1) continue;
+
+                $rowData = [];
+                $cellIterator = $row->getCellIterator();
+                foreach ($cellIterator as $cell) {
+                    $rowData[] = $cell->getValue();
+                }
+
+                $data[] = array_combine($header, $rowData);
+            }
+
+
+
+            foreach ($data as $row) {
+                $documentDate = Carbon::instance(Date::excelToDateTimeObject($row['Document Date']));
+
+                // Check if the document date falls within the specified range
+                if ($documentDate->between(Carbon::parse($request->start_date), Carbon::parse($request->end_date))) {
+                    $supplierCode = explode(" ", $row['Vendor/supplying plant'])[0];
+                    $supplier = Supplier::firstOrCreate(['code' => $supplierCode], [
+                        'name' => trim(str_replace($supplierCode, '', $row['Vendor/supplying plant'])), // Extract supplier name
+                    ]);
+                    // Material creation (assuming 'Material' column exists in Excel)
+                    $materialCode = $row['Material'];
+                    $material = Material::firstOrCreate(['code' => $materialCode], [
+                        'description' => $row['Short Text'],  // Assuming 'Short Text' is the description
+                    ]);
+
+                    if (strtoupper($row['Currency']) === 'IDR') { // Currency check
+                        // Create Purchase Order logic (adapt as needed):
+                        $po_number = $row['Purchasing Document']; // Assuming unique per document
+                        $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
+                        $PurchaseOrder->plant_number = $row['Plant'];
+
+
+                        // ... other PO fields (e.g., Plant, Purchasing Group) ...
+
+                        $PurchaseOrder->supplier_id = $supplier->_id;
+                        $PurchaseOrder->supplier_code = $supplier->code;
+                        $PurchaseOrder->order_date = $documentDate->format('Y-m-d');
+                        $PurchaseOrder->save();
+
+                        // Purchase order item creation
+                        $purchaseOrderItem = new PurchaseOrderItem([
+                            'purchase_order_id' => $PurchaseOrder->_id,
+                            'material_id' => $material->_id,
+                            'material_code' => $material->code,
+                            'quantity' => $row['Order Quantity'],
+                            'net_price' => $row['Net price'], // Assuming this is the net price
+                            // ... other item fields
+                        ]);
+                        $purchaseOrderItem->save();
+                    }
+                }
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Excel data synced successfully',
+
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error syncing Excel data: ' . $e->getMessage(),
             ], 400);
         }
     }

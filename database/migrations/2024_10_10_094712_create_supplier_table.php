@@ -20,7 +20,7 @@ class CreateSupplierTable extends Migration
             $table->string('name');
             $table->string('address');
             $table->string('phone');
-            $table->string('email');
+            $table->json('emails')->nullable();
             $table->string('contact');
             $table->string('currency');
             $table->string('created_by')->nullable();

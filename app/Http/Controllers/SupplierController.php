@@ -55,13 +55,13 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'code' => 'required|string',
             'name' => 'required|string',
             'address' => 'required|string',
             'phone' => 'required|string',
-            'email' => 'required|email',
+            'emails' => 'required|array',
+            'emails.*' => 'email',
             'contact' => 'required|string',
         ]);
 
@@ -73,7 +73,7 @@ class SupplierController extends Controller
             $Supplier->name = $this->stringtoupper($request->name);
             $Supplier->address = $request->address;
             $Supplier->phone = $request->phone;
-            $Supplier->email = $request->email;
+            $Supplier->emails = $request->emails;
             $Supplier->contact = $request->contact;
 
             $Supplier->created_by = auth()->user()->username;
@@ -81,18 +81,21 @@ class SupplierController extends Controller
 
             $Supplier->save();
 
-            $user = User::firstOrNew(['username' => $request->email]);
-            $user->email = $request->email;
-            $user->full_name = $Supplier->name;
-            $user->password = bcrypt($request->email);
-            $user->type = 2;
-            $user->role_id = Role::where('name', 'Supplier')->first()->id;
-            $user->role_name = 'Supplier';
-            $user->vendor_code = $request->code;
-            $user->vendor_name = $Supplier->name;
-            $user->created_by = auth()->user()->username;
-            $user->updated_by = auth()->user()->username;
-            $Supplier->user()->save($user);
+            foreach ($request->emails as $email) {
+                $user = User::firstOrNew(['username' => $email]);
+                $user->email = $email;
+                $user->full_name = $Supplier->name;
+                $user->password = bcrypt($email);
+                $user->type = 2;
+                $user->role_id = Role::where('name', 'Supplier')->first()->id;
+                $user->role_name = 'Supplier';
+                $user->vendor_code = $request->code;
+                $user->vendor_name = $Supplier->name;
+                $user->created_by = auth()->user()->username;
+                $user->updated_by = auth()->user()->username;
+
+                $user->save();
+            }
 
             return response()->json([
                 'type' => 'success',
@@ -100,13 +103,10 @@ class SupplierController extends Controller
                 'data' => NULL,
             ], 200);
         } catch (\Exception $e) {
-
             return response()->json([
-
                 'type' => 'failed',
                 'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
-
             ], 400);
         }
     }
@@ -173,7 +173,7 @@ class SupplierController extends Controller
                         $Supplier->address = $Excel['address'];
                         $Supplier->phone = $Excel['phone'];
                         $Supplier->contact = $Excel['contact'];
-                        $Supplier->email = $Excel['email'];
+                        $Supplier->emails =  explode(',', $Excel['emails']);
                         $Supplier->currency = $Excel['currency'];
 
                         $Supplier->created_by = auth()->user()->username;
@@ -185,12 +185,9 @@ class SupplierController extends Controller
                 }
 
                 return response()->json([
-
                     "result" => true,
                     "msg_type" => 'Success',
                     "message" => 'Data stored successfully!',
-                    // "message" => $data,
-
                 ], 200);
             }
         } catch (\Exception $e) {

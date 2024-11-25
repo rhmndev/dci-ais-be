@@ -220,6 +220,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/g/list-schedule-delivered', 'PurchaseOrderController@getListScheduleDelivered');
         Route::get('/purchase-orders/g/list-po-schedule-deliveries', 'PurchaseOrderController@getListPOScheduleDeliveries');
 
+        Route::post('/purchase-orders/a/sync-excel', 'PurchaseOrderController@SyncExcel');
+
         Route::get('/purchase-order/a/{approvalType}', 'PurchaseOrderController@listNeedSigned');
         Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');
         Route::post('/purchase-order/s/checked/{id}/confirm', 'PurchaseOrderController@signedAsChecked');

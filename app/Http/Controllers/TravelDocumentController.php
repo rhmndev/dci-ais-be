@@ -833,7 +833,9 @@ class TravelDocumentController extends Controller
             }
             $travelDocumentItems = $travelDocument->items;
 
+            $scannedItemNumbers = [];
             foreach ($request->scanned_items as $scannedItem) {
+                $scannedItemNumbers[] = $scannedItem['items']['qr_tdi_no'];
                 $item = $travelDocumentItems->first(function ($item) use ($scannedItem) {
                     return $item->qr_tdi_no === $scannedItem['items']['qr_tdi_no'];
                 });
@@ -864,6 +866,27 @@ class TravelDocumentController extends Controller
 
                         $poItem->save();
                     }
+                }
+            }
+
+            foreach ($travelDocumentItems as $item) {
+                $isItemScanned = in_array($item->qr_tdi_no, $scannedItemNumbers);
+
+                if (!$isItemScanned) {
+                    $item->addToTdHistory($travelDocument->no);
+
+                    $scannedItemData = collect($request->scanned_items)->firstWhere('items.qr_tdi_no', $item->qr_tdi_no);
+                    $item->reason_not_scanned = $scannedItemData['reason_not_scanned'] ?? 'Not found in scanned items.';  // Get reason from corresponding scanned item
+                    $item->is_scanned = false;
+                    $item->scanned_at = null;
+                    $item->scanned_by = null;
+                    $item->qty_received = 0;
+                    $item->original_td_no = $travelDocument->no;
+
+                    $item->save();
+                } else {
+                    $item->addToTdHistory($travelDocument->no);
+                    $item->reason_not_scanned = null;
                 }
             }
 

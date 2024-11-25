@@ -151,7 +151,7 @@ class AddDummyPurchaseOrder extends Command
 
     private function createPurchaseOrderItems(PurchaseOrder $purchaseOrder, $faker)
     {
-        $numberOfItems = $this->argument('numberOfItems') ?: $faker->numberBetween(1, 5); // Create 1 to 5 items per order
+        $numberOfItems = $this->argument('numberOfItems') ?: $faker->numberBetween(1, 5);
         $materialIds = Material::pluck('_id')->take(10)->toArray();
         for ($j = 0; $j < $numberOfItems; $j++) {
             $quantity = $this->ask("Enter quantity for item " . ($j + 1) . ":");
@@ -161,12 +161,12 @@ class AddDummyPurchaseOrder extends Command
 
             PurchaseOrderItem::create([
                 'purchase_order_id' => $purchaseOrder->_id,
-                'material_id' => $faker->randomElement($materialIds), // Replace with your material ID generation logic
-                'quantity' => $quantity, // Random 2-digit quantity
-                'unit_type' => $faker->randomElement(['pcs', 'pce']), // Random unit type
-                'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
-                'unit_price_type' => $faker->randomElement(['IDR']), // Random unit type
-                'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
+                'material_id' => $faker->randomElement($materialIds),
+                'quantity' => $quantity,
+                'unit_type' => $faker->randomElement(['pcs', 'pce']),
+                'unit_price' => $faker->randomFloat(2, 900000, 1000000),
+                'unit_price_type' => $faker->randomElement(['IDR']),
+                'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000),
             ]);
         }
     }
