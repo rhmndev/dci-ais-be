@@ -27,13 +27,14 @@ class PurchaseOrderItemsResource extends JsonResource
             'travel_document_items_qty_delivered' => $this->whenLoaded('travelDocumentItem', function () {
                 return $this->travelDocumentItem->sum('qty');
             }),
-            'qty_remaining' => $this->whenLoaded('travelDocumentItem', function () {
-                return $this->quantity - $this->travelDocumentItem
-                    ->where('is_scanned', '!=', true)
-                    ->sum('qty');
-            }),
+            'qty_remaining' => $this->quantity - ($this->qty_delivered ?? 0),
             'travel_document_items_count' => $this->whenLoaded('travelDocumentItem', function () {
                 return $this->travelDocumentItem->count();
+            }),
+            'qty_on_delivery' => $this->whenLoaded('travelDocumentItem', function () {
+                return $this->travelDocumentItem
+                    ->where('is_scanned', '!=', true)
+                    ->sum('qty');
             }),
             'qty_delivered' => $this->qty_delivered ?? 0,
         ];

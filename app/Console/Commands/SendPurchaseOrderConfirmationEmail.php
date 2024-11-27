@@ -19,7 +19,7 @@ class SendPurchaseOrderConfirmationEmail extends Command
      *
      * @var string
      */
-    protected $signature = 'email:send-po-confirmation';
+    protected $signature = 'email:send-po-confirmation {po_number? : The purchase order number (optional)}';
 
     /**
      * The console command description.
@@ -45,9 +45,22 @@ class SendPurchaseOrderConfirmationEmail extends Command
      */
     public function handle()
     {
-        $purchaseOrders = PurchaseOrder::where('status', 'approved')
-            ->where('is_send_email_to_supplier', 0)
-            ->get();
+        $poNumber = $this->argument('po_number');
+
+        if ($poNumber) {
+            $purchaseOrders = PurchaseOrder::where('po_number', $poNumber)
+                ->where('status', 'approved')
+                ->where('is_send_email_to_supplier', 0)
+                ->get();
+            if ($purchaseOrders->isEmpty()) {
+                $this->error("Purchase order with number '{$poNumber}' not found or already processed.");
+                return 1;
+            }
+        } else {
+            $purchaseOrders = PurchaseOrder::where('status', 'approved')
+                ->where('is_send_email_to_supplier', 0)
+                ->get();
+        }
 
         foreach ($purchaseOrders as $POData) {
             $this->sendConfirmationEmail($POData);
@@ -64,7 +77,12 @@ class SendPurchaseOrderConfirmationEmail extends Command
                 ->first();
 
             $noPO = $POData->po_number;
-            $emailTo = $POData->delivery_email;
+            $supplier = $POData->supplier;
+            if (!$supplier) {
+                Log::error("Supplier not found for PO: {$POData->po_number}");
+                return;
+            }
+            $emailTo = $supplier->emails;
 
             $data = [
                 'supplierName' => isset($POData->supplier) ? $POData->supplier->name : $POData->supplier_code,
@@ -81,8 +99,15 @@ class SendPurchaseOrderConfirmationEmail extends Command
             $emailContent = $bodyEmail->render();
 
             // Send to supplier
-            Mail::to($emailTo)->send(new DynamicEmail($template, $data));
-
+            if (is_array($emailTo)) {
+                foreach ($emailTo as $email) {
+                    Mail::to($email)->send(new DynamicEmail($template, $data));
+                }
+            } else if (is_string($emailTo) && !empty($emailTo)) {
+                Mail::to($emailTo)->send(new DynamicEmail($template, $data));
+            } else {
+                Log::warning("No email address found for supplier on PO: {$POData->po_number}");
+            }
             $this->sendInternalConfirmationEmails($POData, $data);
 
             // Log the email

@@ -53,7 +53,7 @@ class AddDummyPurchaseOrder extends Command
         $validStatuses = ['pending', 'approved', 'unapproved', 'waiting for checking', 'waiting for knowing', 'waiting for approval', 'waiting for schedule delivery'];
         if (!in_array($status, $validStatuses)) {
             $this->error("Invalid status. Choose from: " . implode(', ', $validStatuses));
-            return 1; // Indicate an error occurred
+            return 1;
         }
 
         $faker = Faker::create();
@@ -105,6 +105,13 @@ class AddDummyPurchaseOrder extends Command
                     break;
             }
 
+            $supplierCode = $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray());
+            $supplier = Supplier::where('code', $supplierCode)->first();
+
+            if (!$supplier) {
+                $this->error("Supplier with code '{$supplierCode}' not found.");
+                return 1;
+            }
 
             $purchaseOrder = PurchaseOrder::create([
                 'plant_number' => "1601",
@@ -112,11 +119,11 @@ class AddDummyPurchaseOrder extends Command
                 'user' => 'Admin',
                 'user_npk' => '39748',
                 'order_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
-                'delivery_email' => $faker->companyEmail,
+                'delivery_email' => $supplier->emails,
                 'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                 'delivery_address' => $faker->randomElement(ShippingAddress::pluck('full_address')->toArray()),
                 'supplier_id' => $faker->uuid(),
-                'supplier_code' => $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray()),
+                'supplier_code' => $supplier_code != "" ? $supplier_code : $supplier->code,
                 's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 1000, 10000),

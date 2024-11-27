@@ -274,7 +274,7 @@ class TravelDocumentController extends Controller
                     }
                 }
 
-                return $this->tempPrintLabel($poItemId);
+                return $this->tempPrintLabel($request, $poItemId);
             }
         } catch (\Throwable $th) {
             return response()->json([
@@ -644,10 +644,12 @@ class TravelDocumentController extends Controller
             ], 400);
         }
     }
-    public function getPrintedLabels($poItemId)
+    public function getPrintedLabels(Request $request, $poItemId)
     {
         try {
-            $travelDocumentLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->get();
+            $showScannedItem = $request->showScannedItem ?? false;
+
+            $travelDocumentLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->where('is_scanned', '==', $showScannedItem)->get();
 
             return response()->json([
                 'type' => 'success',
@@ -750,9 +752,10 @@ class TravelDocumentController extends Controller
         return response()->json(['pdf_data' => base64_encode($pdfContent)]);
     }
 
-    public function tempPrintLabel($itemId)
+    public function tempPrintLabel(Request $request, $itemId)
     {
-        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->get();
+        $showScannedItem = $request->showScannedItem ?? false;
+        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->where('is_scanned', '==', $showScannedItem)->get();
         $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabels' => $itemLabels, 'is_all' => true])->setPaper('a4');
         $pdfContent = $pdf->output();
         return response()->json(['data' => base64_encode($pdfContent)]);

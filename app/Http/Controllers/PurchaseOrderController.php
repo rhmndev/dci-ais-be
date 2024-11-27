@@ -21,6 +21,7 @@ use App\PurchaseOrderItem;
 use App\PurchaseOrderScheduleDelivery;
 use App\Qr;
 use App\Settings;
+use App\SLock;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
@@ -268,7 +269,10 @@ class PurchaseOrderController extends Controller
                         $po_number = $row['Purchasing Document']; // Assuming unique per document
                         $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
                         $PurchaseOrder->plant_number = $row['Plant'];
-
+                        $PurchaseOrder->purchase_currency_type = $row['Currency'];
+                        $Slock = SLock::firstOrNew(['code' => $row['Storage Location']]);
+                        $Slock->save();
+                        $PurchaseOrder->s_locks_code = $row['Storage Location'];
 
                         // ... other PO fields (e.g., Plant, Purchasing Group) ...
 
@@ -283,7 +287,7 @@ class PurchaseOrderController extends Controller
                             'material_id' => $material->_id,
                             'material_code' => $material->code,
                             'quantity' => $row['Order Quantity'],
-                            'net_price' => $row['Net price'], // Assuming this is the net price
+                            'unit_price' => $row['Net price'],
                             // ... other item fields
                         ]);
                         $purchaseOrderItem->save();
