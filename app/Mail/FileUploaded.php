@@ -32,6 +32,6 @@ class FileUploaded extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.file_uploaded'); // Create this view
+        return $this->view('emails.file_uploaded');
     }
 }

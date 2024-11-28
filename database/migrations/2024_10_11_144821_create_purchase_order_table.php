@@ -19,6 +19,8 @@ class CreatePurchaseOrderTable extends Migration
             $table->string('plant_number');
             $table->string('pr_number');
             $table->string('po_number')->unique();
+            $table->string('po_category');
+            $table->string('po_type');
             $table->string('user');
             $table->string('user_npk');
             $table->date('order_date');

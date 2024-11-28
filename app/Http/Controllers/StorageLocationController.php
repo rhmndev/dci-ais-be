@@ -68,17 +68,17 @@ class StorageLocationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'code' => 'required|string|unique:storage_locations',
-            'name' => 'required|string',
+            'code' => 'required|string',
+            'description' => 'required|string',
         ]);
 
-        $storageLocation = new SLock;
-        $storageLocation->code = $request->code;
-        $storageLocation->name = $request->name;
+        $storageLocation = SLock::firstOrNew(['code' => $request->code]);
+        $storageLocation->description = $request->description;
         $storageLocation->save();
 
         return response()->json([
             'type' => 'success',
+            'message' => 'Storage Location created successfully.',
             'data' => $storageLocation
         ], 201);
     }

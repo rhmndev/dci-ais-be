@@ -12,6 +12,8 @@ class PurchaseOrder extends Model
         'plant_number',
         'pr_number',
         'po_number',
+        'po_category',
+        'po_type',
         'user',
         'user_npk',
         'delivery_email',
