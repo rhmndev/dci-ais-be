@@ -213,7 +213,7 @@ class PurchaseOrderController extends Controller
     {
         $request->validate([
             'status' => 'required|in:pending,waiting for checking,waiting for knowing,waiting for approving,approved,rejected,cancelled,waiting for revision',
-            'revision_type' => 'required_if:status,waiting for revision|in:price,quantity,other',
+            'revision_type' => 'required_if:status,waiting for revision|in:schedule,price,items,other',
             'po_status' => 'required_if:status,approved|in:waiting for schedule delivery,waiting for schedule delivery confirmation,open,closed',
             'notes' => 'required_if:status,rejected,cancelled',
         ]);
