@@ -28,6 +28,8 @@ use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class PurchaseOrderController extends Controller
 {
@@ -204,6 +206,56 @@ class PurchaseOrderController extends Controller
                 "msg_type" => 'error',
                 "message" => 'err: ' . $th->getMessage(),
             ], 400);
+        }
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,waiting for checking,waiting for knowing,waiting for approving,approved,rejected,cancelled,waiting for revision',
+            'revision_type' => 'required_if:status,waiting for revision|in:price,quantity,other',
+            'po_status' => 'required_if:status,approved|in:waiting for schedule delivery,waiting for schedule delivery confirmation,open,closed',
+            'notes' => 'required_if:status,rejected,cancelled',
+        ]);
+
+        try {
+            $purchaseOrder = PurchaseOrder::findOrFail($id);
+            $originalStatus = $purchaseOrder->status;
+
+            $purchaseOrder->status = $request->status;
+
+            if ($request->status === 'waiting for revision') {
+                $purchaseOrder->revision_type = $request->revision_type;
+            } else {
+                $purchaseOrder->revision_type = null;
+            }
+
+            if ($request->status === 'approved') {
+                $purchaseOrder->po_status = $request->po_status;
+            }
+
+            if ($request->status === 'rejected' || $request->status === 'cancelled') {
+                $purchaseOrder->notes = $request->notes;
+            }
+
+            $purchaseOrder->save();
+
+            // Log the status change (highly recommended)
+            Log::info("Purchase Order {$purchaseOrder->po_number} status changed from '{$originalStatus}' to '{$request->status}' by user " . auth()->user()->id);
+
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Purchase order status updated successfully',
+                'data' => $purchaseOrder,
+            ], 200);
+        } catch (\Throwable $th) {
+            // Log the error
+            Log::error("Error updating Purchase Order status: " . $th->getMessage());
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error updating purchase order status. Please check the logs for details.'
+            ], 500);
         }
     }
 
@@ -1129,7 +1181,6 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
             $PurchaseOrder->knowed_at = new \MongoDB\BSON\UTCDateTime();
             $PurchaseOrder->is_knowed = 0;
-            // $PurchaseOrder->knowed_at = 
             $PurchaseOrder->status = "unapproved";
             $PurchaseOrder->save();
 
@@ -1194,5 +1245,44 @@ class PurchaseOrderController extends Controller
                 'data' => 'Error: ' . $th->getMessage()
             ]);
         }
+    }
+
+    public function getPOByStorageLocation(Request $request)
+    {
+        $request->validate([
+            'storage_location' => 'required|string',
+            'month_year' => 'sometimes|string|regex:/^\d{4}(-\d{2})?$/',
+        ]);
+
+        $storageLocation = $request->input('storage_location');
+        $monthYear = $request->input('month_year');
+
+        $cacheKey = 'pos_by_storage_location_' . md5(serialize($request->all()));
+
+        $purchaseOrders = Cache::remember($cacheKey, 60, function () use ($storageLocation, $monthYear) {
+            $query = PurchaseOrder::query();
+
+            $query->where('s_locks_code', $storageLocation);
+
+            if ($monthYear) {
+                $dateParts = explode('-', $monthYear);
+                $year = (int)$dateParts[0];
+
+                $start = Carbon::createFromDate($year, isset($dateParts[1]) ? (int)$dateParts[1] : 1, 1)->startOfDay();
+                $end = isset($dateParts[1])
+                    ? Carbon::createFromDate($year, (int)$dateParts[1], 1)->endOfMonth()->endOfDay()
+                    : Carbon::createFromDate($year, 12, 31)->endOfDay();
+
+                $query->whereBetween('order_date', [new UTCDateTime($start), new UTCDateTime($end)]);
+            }
+
+            return $query->with('supplier', 'items.material')->get();
+        });
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Purchase Orders retrieved successfully',
+            'data' => $purchaseOrders,
+        ], 200);
     }
 }

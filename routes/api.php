@@ -204,7 +204,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/supplier/{supplier_code}', 'PurchaseOrderController@showByCodeSupplier');
         Route::get('/purchase-orders/{id}', 'PurchaseOrderController@show');
         Route::post('/purchase-orders', 'PurchaseOrderController@store');
-        Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
+        Route::put('/purchase-orders/{id}', '@update');
+        Route::put('/purchase-orders/{id}/status', 'PurchaseOrderController@updateStatus');
         Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
         Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
         Route::get('/purchase-orders/d/{po_number}', 'PurchaseOrderController@showPO');
@@ -219,6 +220,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/g/list-need-schedule-delivery', 'PurchaseOrderController@listNeedScheduleDeliveries');
         Route::get('/purchase-orders/g/list-schedule-delivered', 'PurchaseOrderController@getListScheduleDelivered');
         Route::get('/purchase-orders/g/list-po-schedule-deliveries', 'PurchaseOrderController@getListPOScheduleDeliveries');
+        Route::get('/purchase-orders/g/list-po-by-storage-location', 'PurchaseOrderController@getPOByStorageLocation');
 
         Route::post('/purchase-orders/a/sync-excel', 'PurchaseOrderController@SyncExcel');
 
