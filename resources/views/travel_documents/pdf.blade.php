@@ -148,6 +148,10 @@
                         <td>PO Date:</td>
                         <td>{{ $travelDocument->purchaseOrder->order_date ? date('d-m-Y', strtotime($travelDocument->purchaseOrder->order_date)) : '-'}}</td>
                     </tr>
+                    <tr>
+                        <td>Storage Location:</td>
+                        <td>{{ $travelDocument->purchaseOrder->s_locks_code }} - {{ $travelDocument->purchaseOrder->slock->description ?? '-' }}</td>
+                      </tr>
                   </table>
                 </td>
               </tr>

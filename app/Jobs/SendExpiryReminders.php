@@ -2,29 +2,33 @@
 
 namespace App\Jobs;
 
-use App\File;
+use App\Reminder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Notifications\FileExpiryReminder;
+use App\Notifications\ReminderNotification; // Assuming you have this notification class
+use Illuminate\Support\Facades\Log;
 use App\User;
 use Illuminate\Support\Facades\Notification;
-
+use Twilio\Rest\Client;
 
 class SendExpiryReminders implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    protected $reminder;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(Reminder $reminder)
     {
-        //
+        $this->reminder = $reminder;
     }
 
     /**
@@ -34,31 +38,55 @@ class SendExpiryReminders implements ShouldQueue
      */
     public function handle()
     {
-        $files = File::where('notify_expiry', true)
-            ->where('remind_at', '<=', now()) // Check remind_at
-            ->get();
-        foreach ($files as $file) {
-            $user = User::find($file->user_id); // Get the user
+        $reminder = $this->reminder;
+        $user = User::find($reminder->user_id);
 
-            if ($file->notification_method === 'email' || $file->notification_method === 'both') {
-                Notification::send($user, new FileExpiryReminder($file));  // Send email notification
+        if (!$user) {
+            $user = User::where('username', $reminder->username)->first(); // Try finding by username
+            if (!$user) {
+                // Handle the case where the user is not found by either ID or username
+                Log::error("User not found for reminder ID: " . $reminder->id . " and username: " . $reminder->username);
+                return; // Or throw an exception, depending on your error handling strategy
             }
+        }
 
-            if ($file->notification_method === 'whatsapp' || $file->notification_method === 'both') {
-                if ($file->whatsapp_number) {
-                    // Send WhatsApp notification using your preferred library (e.g., Twilio)
-                    // Example (Twilio):
-                    // $message = "Reminder: File '{$file->name}' is expiring soon!";
-                    // // Your Twilio logic to send the WhatsApp message
-                    // // ...
+        Log::info("Sending reminder for ID: " . $reminder->id . " to user: " . $user->username);
+
+        if ($reminder->reminder_method === 'email' || $reminder->reminder_method === 'both') {
+            if ($reminder->emails && is_array($reminder->emails)) { // Check if emails exist and is an array
+                foreach ($reminder->emails as $email) {
+                    Notification::route('mail', $email)->notify(new ReminderNotification($reminder));
+                }
+            } else {
+                // Log an error or handle the case where emails are not available
+                Log::error("No emails found for reminder ID: " . $reminder->id);
+            }
+        }
+
+        if ($reminder->reminder_method === 'whatsapp' || $reminder->reminder_method === 'both') {
+            if ($reminder->whatsapp_number) {
+                $twilioSid = env('TWILIO_SID');
+                $twilioToken = env('TWILIO_AUTH_TOKEN');
+                $twilioWhatsAppNumber = env('TWILIO_WHATSAPP_NUMBER');
+                $recipientNumber = 'whatsapp:+' . $reminder->whatsapp_number;
+
+                $twilio = new Client($twilioSid, $twilioToken);
+                try {
+                    $message = $twilio->messages
+                        ->create($recipientNumber, [
+                            "from" => $twilioWhatsAppNumber,
+                            'body' => $reminder->title . ': ' . $reminder->description, // Include title and description in message
+                        ]);
+                } catch (\Exception $e) {
+
+                    Log::error("Error sending WhatsApp reminder: " . $e->getMessage());
                 }
             }
+        }
 
-            // Update remind_at if necessary (e.g., remind again in a week)
-            if ($file->remind_me_later) { // Only update if remind_me_later is true
-                $file->remind_at = now()->addDays(7); // Or your desired interval
-                $file->save();
-            }
+        if ($reminder->expires_at && $reminder->expires_at < now()) {
+            $reminder->is_reminded = true;
+            $reminder->save();
         }
     }
 }

@@ -239,6 +239,15 @@ class PermissionSeeder extends Seeder
 				"changed_by" => "seeder",
 			],
 			[
+				"name" => "Reminders",
+				"description" => null,
+				"url" => "reminder",
+				"icon" => "home",
+				"order_number" => 6,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
 				"name" => "Settings",
 				"description" => null,
 				"url" => "settings",

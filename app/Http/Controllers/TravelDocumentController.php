@@ -649,7 +649,14 @@ class TravelDocumentController extends Controller
         try {
             $showScannedItem = $request->showScannedItem ?? false;
 
-            $travelDocumentLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->where('is_scanned', '==', $showScannedItem)->get();
+            $travelDocumentLabelTemp = TravelDocumentLabelTemp::where('po_item_id', $poItemId)->where(function ($query) use ($showScannedItem) {  // Correctly use $showScannedItem
+                if (!$showScannedItem) {
+                    $query->where('is_scanned', false)
+                        ->orWhereNull('is_scanned');
+                } else {
+                    $query->where('is_scanned', true);
+                }
+            })->get();
 
             return response()->json([
                 'type' => 'success',

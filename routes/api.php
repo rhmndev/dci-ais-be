@@ -243,6 +243,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
         Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
+        Route::get('/poa/storage-location/get-total-po', 'PurchaseOrderAnalyticsController@getTotalPurchaseOrderByStorageLocation');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
@@ -282,6 +283,15 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/u/{TdId}/confirm', 'TravelDocumentController@confirmScan');
 
                 Route::get('/g/supplier', 'TravelDocumentController@getBySupplierLoggedUser');
+        });
+
+        Route::group(['prefix' => 'reminders'], function () {
+                Route::get('/', 'ReminderController@index')->name('reminders.index');
+                Route::post('/', 'ReminderController@store')->name('reminders.store');
+                Route::get('/{id}', 'ReminderController@show')->name('reminders.show');
+                Route::put('/{id}', 'ReminderController@update')->name('reminders.update');
+                Route::delete('/{id}', 'ReminderController@destroy')->name('reminders.destroy');
+                Route::post('/{id}/test', 'ReminderController@testNotification');
         });
 });
 Route::post('/login', 'AuthController@login');

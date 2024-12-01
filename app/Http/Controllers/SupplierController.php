@@ -63,6 +63,7 @@ class SupplierController extends Controller
             'emails' => 'required|array',
             'emails.*' => 'email',
             'contact' => 'required|string',
+            'is_create_user_account' => 'required|boolean'
         ]);
 
         try {
@@ -81,20 +82,22 @@ class SupplierController extends Controller
 
             $Supplier->save();
 
-            foreach ($request->emails as $email) {
-                $user = User::firstOrNew(['username' => $email]);
-                $user->email = $email;
-                $user->full_name = $Supplier->name;
-                $user->password = bcrypt($email);
-                $user->type = 2;
-                $user->role_id = Role::where('name', 'Supplier')->first()->id;
-                $user->role_name = 'Supplier';
-                $user->vendor_code = $request->code;
-                $user->vendor_name = $Supplier->name;
-                $user->created_by = auth()->user()->username;
-                $user->updated_by = auth()->user()->username;
+            if ($request->is_create_user_account) {
+                foreach ($request->emails as $email) {
+                    $user = User::firstOrNew(['username' => $email]);
+                    $user->email = $email;
+                    $user->full_name = $Supplier->name;
+                    $user->password = bcrypt($email);
+                    $user->type = 2;
+                    $user->role_id = Role::where('name', 'Supplier')->first()->id;
+                    $user->role_name = 'Supplier';
+                    $user->vendor_code = $request->code;
+                    $user->vendor_name = $Supplier->name;
+                    $user->created_by = auth()->user()->username;
+                    $user->updated_by = auth()->user()->username;
 
-                $user->save();
+                    $user->save();
+                }
             }
 
             return response()->json([

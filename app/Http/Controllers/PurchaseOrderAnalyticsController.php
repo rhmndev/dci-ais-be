@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\PurchaseOrder;
 use App\PurchaseOrderAnalytics;
+use App\SLock;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -46,6 +47,8 @@ class PurchaseOrderAnalyticsController extends Controller
 
         $cacheKey = "purchase_order_analytics_by_location_{$groupBy}_{$year}" . ($month ? "_$month" : "")  . (is_array($storageLocations) ? "_" . implode('_', $storageLocations) : "");
         $analytics = Cache::remember($cacheKey, 60, function () use ($groupBy, $year, $month, $storageLocations) {
+            $allStorageLocations = SLock::all()->toArray();
+
             $match = ['purchase_currency_type' => 'IDR'];
             switch ($groupBy) {
                 case 'year':
@@ -59,29 +62,35 @@ class PurchaseOrderAnalyticsController extends Controller
                 $match['s_locks_code'] = ['$in' => $storageLocations];
             }
 
-            $result = PurchaseOrder::raw(function ($collection) use ($match, $groupBy, $year) {
+            $result = PurchaseOrder::raw(function ($collection) use ($match, $groupBy, $year, $allStorageLocations) {
                 $groupStage = [
                     '_id' => [
                         'storageLocationCode' => '$s_locks_code',
                         'year' => ['$year' => '$order_date'],
-                        'month' => ['$month' => '$order_date']
                     ],
-                    'totalAmount' => ['$sum' => '$total_amount'],
-                    'totalOrders' => ['$sum' => 1],
                 ];
                 switch ($groupBy) {
                     case 'year':
+                        //Add year to the $group if grouping by year. This will always exist
                         $groupStage['_id']['year'] = ['$year' => '$order_date'];
                         break;
                     case 'month':
+                        // Same logic for month and year
                         $groupStage['_id']['month'] = ['$month' => '$order_date'];
                         $groupStage['_id']['year'] = ['$year' => '$order_date'];
+
                         break;
                 }
+
+                $groupStage['totalAmount'] = ['$sum' => '$total_amount']; //Always sum total amount
+                $groupStage['totalOrders'] = ['$sum' => 1]; //Always count orders
+
 
                 return $collection->aggregate([
                     ['$match' => $match],
                     ['$group' => $groupStage],
+
+                    // 2. Left join with all storage locations to include all of them
                     [
                         '$lookup' => [
                             'from' => 's_locks',
@@ -90,18 +99,18 @@ class PurchaseOrderAnalyticsController extends Controller
                             'as' => 'storageLocation'
                         ]
                     ],
-                    ['$unwind' => '$storageLocation'],
-                    [
-                        '$project' => [
-                            '_id' => 0,
-                            'storageLocationCode' => '$_id.storageLocationCode',
-                            'storageLocationDescription' => '$storageLocation.description',
-                            'totalAmount' => 1,
-                            'totalOrders' => 1,
-                            'year' => '$_id.year',
-                            'month' => '$_id.month',
-                        ]
-                    ],
+                    ['$unwind' =>  ['path' => '$storageLocation', 'preserveNullAndEmptyArrays' => true]], //Preserve nulls for missing s_locks
+
+                    ['$project' => [
+                        '_id' => 0,
+                        'storageLocationCode' => ['$ifNull' => ['$storageLocation.code', null]], // Handle potentially null code
+                        'storageLocationDescription' => ['$ifNull' => ['$storageLocation.description', null]], //Handle potentially null description
+                        'totalAmount' => ['$ifNull' => ['$totalAmount', 0]],  // Replace null with 0
+                        'totalOrders' => ['$ifNull' => ['$totalOrders', 0]],  // Replace null with 0
+                        'year' => '$_id.year',
+                        'month' => '$_id.month',
+                    ]],
+
 
                     ['$sort' => ['storageLocationCode' => 1]],
                     [
@@ -115,26 +124,23 @@ class PurchaseOrderAnalyticsController extends Controller
                                     ]
                                 ]
                             ],
-                            'data' => [
-                                '$push' => [
-                                    'storageLocationCode' => '$storageLocationCode',
-                                    'storageLocationDescription' => '$storageLocationDescription',
-                                    'totalAmount' => '$totalAmount',
-                                    'totalOrders' => '$totalOrders'
-                                ]
-                            ],
+                            'data' => ['$push' => [
+                                'storageLocationCode' => '$storageLocationCode',
+                                'storageLocationDescription' => '$storageLocationDescription',
+                                'totalAmount' => '$totalAmount',
+                                'totalOrders' => '$totalOrders'
+                            ]],
                             'yearlyData' => ['$push' => ['$cond' => [['$eq' => ['$year', $year]], ['$sum' => '$totalAmount'], 0]]], // Add yearlyData calculation
+                        ]
+                    ],
 
-                        ]
-                    ],
-                    [
-                        '$project' => [
-                            '_id' => 0,
-                            'month_year' => '$_id.month_year',
-                            'data' => 1,
-                            'yearlyData' => 1,
-                        ]
-                    ],
+                    ['$project' => [
+                        '_id' => 0,
+                        'month_year' => '$_id.month_year',
+                        'data' => 1,
+                        'yearlyData' => 1,
+
+                    ]],
                     ['$sort' => ['month_year' => 1]]
 
                 ]);
@@ -242,6 +248,82 @@ class PurchaseOrderAnalyticsController extends Controller
             'type' => 'success',
             'message' => 'Get Purchase Order Analytics By Storage Location',
             'data' => $analytics
+        ]);
+    }
+
+    public function getTotalPurchaseOrderByStorageLocation(Request $request)
+    {
+        $request->validate([
+            'groupBy' => 'required|in:year,month',
+            'year' => 'required_if:groupBy,year,month|numeric',
+            'month' => 'required_if:groupBy,month,date|numeric|between:1,12',
+            'storageLocations' => 'sometimes|array',
+            'storageLocations.*' => 'string',
+        ]);
+
+        $groupBy = $request->groupBy;
+        $year = (int)$request->year;
+        $month = $request->month ? (int)$request->month : null;
+        $storageLocations = $request->storageLocations;
+
+        $cacheKey = "total_purchase_order_by_location_{$groupBy}_{$year}" . ($month ? "_$month" : "") . (is_array($storageLocations) ? "_" . implode('_', $storageLocations) : "");
+
+        $totalPO = Cache::remember($cacheKey, 60, function () use ($groupBy, $year, $month, $storageLocations) {
+            $match = ['purchase_currency_type' => 'IDR'];
+
+            switch ($groupBy) {
+                case 'year':
+                    $match['order_date'] = ['$gte' => new UTCDateTime(Carbon::create($year, 1, 1)->startOfDay()), '$lte' => new UTCDateTime(Carbon::create($year, 12, 31)->endOfDay())];
+                    break;
+                case 'month':
+                    $match['order_date'] = ['$gte' => new UTCDateTime(Carbon::create($year, $month, 1)->startOfDay()), '$lte' => new UTCDateTime(Carbon::create($year, $month, Carbon::create($year, $month)->daysInMonth)->endOfDay())];
+                    break;
+            }
+
+            if (is_array($storageLocations) && count($storageLocations) > 0) {
+                $match['s_locks_code'] = ['$in' => $storageLocations];
+            }
+
+
+            $result = PurchaseOrder::raw(function ($collection) use ($match, $groupBy) {
+                $groupStage = [
+                    '_id' => [
+                        'storageLocationCode' => '$s_locks_code',
+                    ],
+
+                    'totalOrders' => ['$sum' => 1],
+                ];
+
+                return $collection->aggregate([
+                    ['$match' => $match],
+                    ['$group' => $groupStage],
+                    [
+                        '$lookup' => [
+                            'from' => 's_locks',
+                            'localField' => '_id.storageLocationCode',
+                            'foreignField' => 'code',
+                            'as' => 'storageLocation'
+                        ]
+                    ],
+                    ['$unwind' => '$storageLocation'],
+                    [
+                        '$project' => [
+                            '_id' => 0,
+                            'storageLocationCode' => '$_id.storageLocationCode',
+                            'storageLocationDescription' => '$storageLocation.description',
+                            'totalOrders' => 1,
+                        ]
+                    ],
+                ]);
+            });
+
+            return $result;
+        });
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Get Total Purchase Order By Storage Location',
+            'data' => $totalPO,
         ]);
     }
 }
