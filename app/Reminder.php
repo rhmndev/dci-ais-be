@@ -15,6 +15,8 @@ class Reminder extends Model
         'title',
         'description',
         'reminder_datetime',
+        'starred',
+        'category',
         'expires_at',
         'reminder_frequency',
         'frequency_settings',
@@ -23,15 +25,19 @@ class Reminder extends Model
         'emails',
         'files',
         'is_reminded',
+        'ends_at',
+        'max_occurrences'
     ];
 
     protected $casts = [
         // 'reminder_datetime' => 'datetime',
         // 'expires_at' => 'datetime',
+        // 'ends_at' => 'datetime',
         'frequency_settings' => 'array',
         'emails' => 'array',
         'files' => 'array',
         'is_reminded' => 'boolean',
+        'starred' => 'boolean',
     ];
 
     /**

@@ -287,6 +287,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'reminders'], function () {
                 Route::get('/', 'ReminderController@index')->name('reminders.index');
+                Route::get('/my/overview', 'ReminderController@overview')->name('reminders.my.overview');
                 Route::post('/', 'ReminderController@store')->name('reminders.store');
                 Route::get('/{id}', 'ReminderController@show')->name('reminders.show');
                 Route::put('/{id}', 'ReminderController@update')->name('reminders.update');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SendExpiryReminders;
 use App\Reminder;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -25,6 +26,35 @@ class ReminderController extends Controller
                 'message' => 'Error retrieving reminders: ' . $e->getMessage(),
                 'data' => null
             ], 500);
+        }
+    }
+
+    public function overview(Request $request)
+    {
+        try {
+            $userId = $request->user()->id;
+
+            $totalReminders = Reminder::where('user_id', $userId)->count();
+            $upcomingReminders = Reminder::where('user_id', $userId)
+                ->where('reminder_datetime', '>', Carbon::now())
+                ->count();
+            $overdueReminders = Reminder::where('user_id', $userId)
+                ->where('reminder_datetime', '<', Carbon::now())
+                ->count();
+
+            return response()->json([
+                'data' => [
+                    'totalReminders' => $totalReminders,
+                    'upcomingReminders' => $upcomingReminders,
+                    'overdueReminders' => $overdueReminders,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error retrieving overview: ' . $e->getMessage(), // Include error details for debugging
+                'data' => null
+            ], 500); // 500 for server errors
         }
     }
 

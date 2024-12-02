@@ -32,7 +32,7 @@ class PurchaseOrderSignerController extends Controller
         try {
             $providedTypes = collect($payload)->pluck('type')->toArray();
             $missingTypes = array_diff($allTypes, $providedTypes);
-
+            
             foreach ($payload as $signerData) {
                 $request->validate([
                     '*.type' => 'required|in:knowed,checked,approved',
