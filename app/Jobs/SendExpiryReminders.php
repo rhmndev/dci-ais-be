@@ -9,7 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Notifications\FileExpiryReminder;
-use App\Notifications\ReminderNotification; // Assuming you have this notification class
+use App\Notifications\ReminderNotification;
 use Illuminate\Support\Facades\Log;
 use App\User;
 use Illuminate\Support\Facades\Notification;
@@ -38,6 +38,7 @@ class SendExpiryReminders implements ShouldQueue
      */
     public function handle()
     {
+        Log::info("running");
         $reminder = $this->reminder;
         $user = User::find($reminder->user_id);
 
@@ -53,13 +54,15 @@ class SendExpiryReminders implements ShouldQueue
         Log::info("Sending reminder for ID: " . $reminder->id . " to user: " . $user->username);
 
         if ($reminder->reminder_method === 'email' || $reminder->reminder_method === 'both') {
-            if ($reminder->emails && is_array($reminder->emails)) { // Check if emails exist and is an array
-                foreach ($reminder->emails as $email) {
+            $emails = is_array($reminder->emails) ? $reminder->emails : json_decode($reminder->emails, true); // Decode if it's a JSON string
+
+            if ($emails && is_array($emails)) {  // Check if $emails is now a valid array
+                foreach ($emails as $email) {     // Iterate through the decoded emails
                     Notification::route('mail', $email)->notify(new ReminderNotification($reminder));
                 }
             } else {
                 // Log an error or handle the case where emails are not available
-                Log::error("No emails found for reminder ID: " . $reminder->id);
+                Log::error("No valid emails found for reminder ID: " . $reminder->id);
             }
         }
 
@@ -84,9 +87,9 @@ class SendExpiryReminders implements ShouldQueue
             }
         }
 
-        if ($reminder->expires_at && $reminder->expires_at < now()) {
-            $reminder->is_reminded = true;
-            $reminder->save();
-        }
+        // if ($reminder->expires_at && $reminder->expires_at < now()) {
+        //     $reminder->is_reminded = true;
+        //     $reminder->save();
+        // }
     }
 }

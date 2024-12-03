@@ -6,7 +6,10 @@ use App\Jobs\SendExpiryReminders;
 use App\Reminder;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ReminderController extends Controller
 {
@@ -60,48 +63,89 @@ class ReminderController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,_id', // Validate user_id exists in users table
-            'username' => 'required|string',
-            // 'remindable_type' => 'required|string',
+        $request->validate([
+            // 'remindable_type' => 'required',
             // 'remindable_id' => 'required',
-            'title' => 'required|string',
-            'description' => 'nullable|string',
-            'reminder_datetime' => 'required|date',
-            'expires_at' => 'nullable|date',
-            'reminder_frequency' => 'required|in:daily,weekly,monthly,yearly,custom',
-            'frequency_settings' => 'nullable|json',
+            'title' => 'required',
+            'description' => 'nullable',
+            'expires_datetime' => 'required|date',
             'reminder_method' => 'required|in:email,whatsapp,both',
-            'whatsapp_number' => 'nullable|string', // Add validation for whatsapp_number
-            'emails' => 'nullable|array', // Validate emails as an array
-            'files' => 'nullable|array' //optional
+            // 'reminder_frequency' => 'required',
+            // 'frequency_settings' => 'nullable|json',
+            'emails' => 'nullable',
+            'files' => 'nullable'
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'type' => 'failed',
-                'message' => 'Validation failed.',
-                'data' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            $validatedData = $validator->validated();
+            Log::info($request->all());
+            $repeatData = $request->repeat;
+            if (is_string($repeatData)) {
+                $repeatData = json_decode($repeatData, true);
+            }
+            $remindMeAtData = $request->remindMeAt;
+            if (is_string($remindMeAtData)) {
+                $remindMeAtData = json_decode($remindMeAtData, true);
+            }
 
-            // Decode JSON fields if necessary
-            // if (is_string($validatedData['frequency_settings']) && json_decode($validatedData['frequency_settings']) !== null) {
-            //     $validatedData['frequency_settings'] = json_decode($validatedData['frequency_settings'], true);
-            // }
+            $filePaths = [];
 
-            // Same for emails and files
-            // if (is_string($validatedData['emails']) && json_decode($validatedData['emails']) !== null) {
-            //     $validatedData['emails'] = json_decode($validatedData['emails'], true);
-            // }
-            // if (is_string($validatedData['files']) && json_decode($validatedData['files']) !== null) {
-            //     $validatedData['files'] = json_decode($validatedData['files'], true);
-            // }
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $originalFileName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+                    // ... (handle empty filename if needed)
 
-            $reminder = Reminder::create($validatedData);
+                    $fileName = Str::slug($fileNameWithoutExtension, '-') . '_' . time() . '.' . $extension;
+
+                    $filePath = 'reminder-attachments/' . $fileName;  // Relative path within storage/app/public
+
+                    Storage::disk('public')->put($filePath, file_get_contents($file)); // Store the file
+
+                    $filePaths[] = Storage::url($filePath); // Get the URL for accessing the file
+                }
+            }
+            // return response()->json([
+            //     'type' => 'failed',
+            //     'message' => 'Reminder created asd.',
+            //     'data' => $repeatData,
+            //     'data2' => $remindMeAtData
+            // ], 400);
+
+            $reminder = Reminder::create([
+                'user_id' => auth()->user()->id,
+                'username' => auth()->user()->username,
+                'title' => $request->title,
+                'description' => $request->description,
+                'starred' => $request->starred ?? false,
+                'category' => $request->category,
+                'expires_at' => $request->expires_datetime ? Carbon::parse($request->expires_datetime)->toDateTimeString() : null,
+                'is_repeat' => $repeatData['repeat'] ?? false,
+                'repeat_freq' =>  $repeatData['frequency'] ?? null,
+                'repeat_interval' =>  $repeatData['interval'] ?? null,
+                'repeat_reminder_time' =>  $repeatData['reminderTime'] ?? Carbon::now(),
+                'repeat_start_date' =>  $repeatData['startDate'] ?? Carbon::today(),
+                'repeat_day_of_month' => $repeatData['dayOfMonth'] ?? null,
+                'repeat_day_of_week' => $repeatData['daysOfWeek'] ?? null,
+                'repeat_end_type' => $repeatData['endType'] ?? "never",
+                'repeat_end_date' => $repeatData['endDate'] ?? null,
+                'repeat_end_occurrences' => $repeatData['endOccurrences'] ?? 0,
+                'reminder_frequency' => $remindMeAtData['frequencies'] ?? null,
+                'reminder_interval_day' => $remindMeAtData['intervalDay'],
+                'reminder_interval_week' => $remindMeAtData['intervalWeek'],
+                'reminder_interval_month' => $remindMeAtData['intervalMonth'],
+                'reminder_interval_year' => $remindMeAtData['intervalYear'],
+                'reminder_method' => $request->reminder_method,
+                'whatsapp_number' => $request->whatsapp_number ?? null,
+                'emails' => $request->emails ?? null,
+                'files' => $filePaths,
+                'is_reminded' => ($remindMeAtData['frequencies'] && count($remindMeAtData['frequencies'])) ?  true : false,
+                'ends_at' => $request->ends_at,
+                'max_occurrences' => $request->max_occurrences,
+                'notify_until_expired' => $request->notifyUntilExpired,
+                'notify_interval' => $request->notifyInterval,
+                'status' => 'running'
+            ]);
 
             return response()->json([
                 'type' => 'success',
@@ -111,7 +155,7 @@ class ReminderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'failed',
-                'message' => 'Error creating reminder: ' . $e->getMessage(),
+                'message' => 'Error creating reminder: ' . $e,
                 'data' => null
             ], 500);
         }
