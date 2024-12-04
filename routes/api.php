@@ -295,6 +295,9 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/{id}/test', 'ReminderController@testNotification');
                 Route::get('/{id}/files/{filename}', 'ReminderController@downloadReminderFile');
                 Route::put('/{id}/complete', 'ReminderController@completeReminder');
+                Route::get('/g/status/{status}', 'ReminderController@getByStatus');
+                Route::get('/g/all', 'ReminderController@showAll');
+                Route::get('/g/upcoming', 'ReminderController@upcoming');
         });
 });
 Route::post('/login', 'AuthController@login');

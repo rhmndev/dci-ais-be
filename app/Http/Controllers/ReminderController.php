@@ -17,12 +17,15 @@ class ReminderController extends Controller
     {
         try {
             $userId = auth()->user()->_id;
+            $perPage = $request->query('per_page', 10); // Get per_page from query params, default 10
+
             $reminders = Reminder::where('user_id', $userId)
                 ->where(function ($query) {
                     $query->whereNull('status')
                         ->orWhere('status', '!=', 'completed');
                 })
-                ->paginate(10);
+                ->paginate($perPage);
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Reminders retrieved successfully.',
@@ -31,6 +34,54 @@ class ReminderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'failed',
+                'message' => 'Error retrieving reminders: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    public function upcoming(Request $request)
+    {
+        try {
+            $userId = auth()->user()->_id;
+            $perPage = $request->query('per_page', 10);
+
+            $upcomingReminders = Reminder::where('user_id', $userId)
+                ->where('expires_at', '>', Carbon::now())
+                ->where(function ($query) {
+                    $query->whereNull('status')
+                        ->orWhere('status', '!=', 'completed');
+                })
+                ->paginate($perPage);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Upcoming reminders retrieved successfully.',
+                'data' => $upcomingReminders
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error retrieving upcoming reminders: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+
+    public function showAll(Request $request)
+    {
+        try {
+            $perPage = $request->query('per_page', 10);
+            $reminders = Reminder::with('user')->paginate($perPage);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Reminders for user retrieved successfully.',
+                'data' => $reminders
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
                 'message' => 'Error retrieving reminders: ' . $e->getMessage(),
                 'data' => null
             ], 500);
@@ -371,6 +422,27 @@ class ReminderController extends Controller
             return response()->json([
                 'type' => 'failed',
                 'message' => 'Error dispatching test notification: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
+    }
+    public function getByStatus(Request $request, string $status)
+    {
+        try {
+            $userId = auth()->user()->_id;
+            $perPage = $request->query('per_page', 10); // Get per_page from query params, default 10
+            $reminders = Reminder::where('user_id', $userId)
+                ->where('status', $status)
+                ->paginate($perPage);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $reminders
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error retrieving reminders: ' . $e->getMessage(),
                 'data' => null
             ], 500);
         }
