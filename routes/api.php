@@ -293,6 +293,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::put('/{id}', 'ReminderController@update')->name('reminders.update');
                 Route::delete('/{id}', 'ReminderController@destroy')->name('reminders.destroy');
                 Route::post('/{id}/test', 'ReminderController@testNotification');
+                Route::get('/{id}/files/{filename}', 'ReminderController@downloadReminderFile');
+                Route::put('/{id}/complete', 'ReminderController@completeReminder');
         });
 });
 Route::post('/login', 'AuthController@login');

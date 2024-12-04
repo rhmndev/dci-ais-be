@@ -45,6 +45,7 @@ class Reminder extends Model
         'notify_until_expired',
         'notify_interval',
         'status',
+        'completed_at',
     ];
 
     protected $casts = [

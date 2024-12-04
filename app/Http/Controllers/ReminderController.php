@@ -17,7 +17,12 @@ class ReminderController extends Controller
     {
         try {
             $userId = auth()->user()->_id;
-            $reminders = Reminder::where('user_id', $userId)->paginate(10);
+            $reminders = Reminder::where('user_id', $userId)
+                ->where(function ($query) {
+                    $query->whereNull('status')
+                        ->orWhere('status', '!=', 'completed');
+                })
+                ->paginate(10);
             return response()->json([
                 'type' => 'success',
                 'message' => 'Reminders retrieved successfully.',
@@ -39,10 +44,10 @@ class ReminderController extends Controller
 
             $totalReminders = Reminder::where('user_id', $userId)->count();
             $upcomingReminders = Reminder::where('user_id', $userId)
-                ->where('reminder_datetime', '>', Carbon::now())
+                ->where('expires_at', '>', Carbon::now())
                 ->count();
             $overdueReminders = Reminder::where('user_id', $userId)
-                ->where('reminder_datetime', '<', Carbon::now())
+                ->where('expires_at', '<', Carbon::now())
                 ->count();
 
             return response()->json([
@@ -55,9 +60,9 @@ class ReminderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'error',
-                'message' => 'Error retrieving overview: ' . $e->getMessage(), // Include error details for debugging
+                'message' => 'Error retrieving overview: ' . $e->getMessage(),
                 'data' => null
-            ], 500); // 500 for server errors
+            ], 500);
         }
     }
 
@@ -89,8 +94,8 @@ class ReminderController extends Controller
 
             $filePaths = [];
 
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
                     $originalFileName = $file->getClientOriginalName();
                     $extension = $file->getClientOriginalExtension();
                     $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
@@ -102,15 +107,9 @@ class ReminderController extends Controller
 
                     Storage::disk('public')->put($filePath, file_get_contents($file)); // Store the file
 
-                    $filePaths[] = Storage::url($filePath); // Get the URL for accessing the file
+                    $filePaths[] = $filePath;
                 }
             }
-            // return response()->json([
-            //     'type' => 'failed',
-            //     'message' => 'Reminder created asd.',
-            //     'data' => $repeatData,
-            //     'data2' => $remindMeAtData
-            // ], 400);
 
             $reminder = Reminder::create([
                 'user_id' => auth()->user()->id,
@@ -124,7 +123,7 @@ class ReminderController extends Controller
                 'repeat_freq' =>  $repeatData['frequency'] ?? null,
                 'repeat_interval' =>  $repeatData['interval'] ?? null,
                 'repeat_reminder_time' =>  $repeatData['reminderTime'] ?? Carbon::now(),
-                'repeat_start_date' =>  $repeatData['startDate'] ?? Carbon::today(),
+                'repeat_start_date' =>  isset($repeatData['startDate']) ? $repeatData['startDate'] : Carbon::now(),
                 'repeat_day_of_month' => $repeatData['dayOfMonth'] ?? null,
                 'repeat_day_of_week' => $repeatData['daysOfWeek'] ?? null,
                 'repeat_end_type' => $repeatData['endType'] ?? "never",
@@ -251,6 +250,66 @@ class ReminderController extends Controller
                 'message' => 'Error deleting reminder: ' . $e->getMessage(),  // Specific error message
                 'data' => null
             ], 500); // 500 for server errors
+        }
+    }
+
+    public function downloadReminderFile($id, $filename)
+    {
+        try {
+            $reminder = Reminder::findOrFail($id);
+
+            // Validate that the filename exists in the reminder's files array. This is important for security to prevent arbitrary file access.
+            if (!in_array($filename, $reminder->files)) {
+                return response()->json(['type' => 'error', 'message' => 'File not found in this reminder.'], 404);
+            }
+
+
+            $filePath = storage_path('app/public/' . str_replace("storage/reminder-attachments/", '', $filename));
+
+
+            if (Storage::disk('public')->exists(str_replace("storage/", '', $filename))) {
+                return response()->download($filePath, basename($filename));
+            } else {
+                return response()->json(['type' => 'error', 'message' => 'File not found.'], 404);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['type' => 'error', 'message' => 'Error downloading file: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function completeReminder(Request $request, $reminderId)
+    {
+        try {
+            $reminder = Reminder::findOrFail($reminderId);
+
+            // Check if the reminder belongs to the authenticated user (important!)
+            if ($reminder->user_id != auth()->user()->id) {
+                return response()->json(['type' => 'error', 'message' => 'Unauthorized.'], 403);
+            }
+
+            // Perform the completion logic.  This might involve:
+            // 1. Changing a status field (e.g., 'completed' or 'closed')
+            $reminder->status = 'completed'; // Or any status you want
+            $reminder->completed_at = Carbon::now();
+
+            // 2. Stopping any recurring schedules if needed. (Depends on your implementation)
+            // if ($reminder->is_repeat){
+            //    // handle cancelling repeat logic
+            //}
+
+            $reminder->save();
+
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Reminder marked as complete.',
+                'data' => $reminder
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error completing reminder: ' . $e->getMessage()
+            ], 500);
         }
     }
 
