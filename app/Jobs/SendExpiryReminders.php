@@ -38,7 +38,6 @@ class SendExpiryReminders implements ShouldQueue
      */
     public function handle()
     {
-        Log::info("running");
         $reminder = $this->reminder;
         $user = User::find($reminder->user_id);
 

@@ -58,7 +58,7 @@ class ReminderNotification extends Notification
         if ($reminder->files && is_array($reminder->files)) {
             // Assuming 'files' contains URLs or paths to files you want to attach
             foreach ($reminder->files as $file) {
-                $mailMessage->attach($file);
+                $mailMessage->attach(storage_path('app/public/' . $file));
             }
         }
 

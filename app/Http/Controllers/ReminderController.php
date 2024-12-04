@@ -44,10 +44,16 @@ class ReminderController extends Controller
 
             $totalReminders = Reminder::where('user_id', $userId)->count();
             $upcomingReminders = Reminder::where('user_id', $userId)
-                ->where('expires_at', '>', Carbon::now())
+                ->where('expires_at', '>', Carbon::now())->where(function ($query) {
+                    $query->whereNull('status')
+                        ->orWhere('status', '!=', 'completed');
+                })
                 ->count();
             $overdueReminders = Reminder::where('user_id', $userId)
-                ->where('expires_at', '<', Carbon::now())
+                ->where('expires_at', '<', Carbon::now())->where(function ($query) {
+                    $query->whereNull('status')
+                        ->orWhere('status', '!=', 'completed');
+                })
                 ->count();
 
             return response()->json([
@@ -190,7 +196,34 @@ class ReminderController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            // ... validation rules
+            'title' => 'required',
+            'description' => 'nullable',
+            'expires_datetime' => 'nullable|date',
+            'reminder_method' => 'required|in:email,whatsapp,both',
+            'whatsapp_number' => 'nullable',
+            'emails' => 'nullable',
+            'files' => 'nullable',
+            'starred' => 'boolean',
+            'category' => 'nullable',
+            'is_repeat' => 'boolean',
+            'repeat_freq' => 'nullable|in:daily,weekly,monthly,yearly',
+            'repeat_interval' => 'nullable|numeric',
+            'repeat_reminder_time' => 'nullable|date_format:H:i',
+            'repeat_start_date' => 'nullable|date',
+            'repeat_day_of_month' => 'nullable|numeric',
+            'repeat_day_of_week' => 'nullable|array',
+            'repeat_end_type' => 'nullable|in:never,endDate,endOccurrences',
+            'repeat_end_date' => 'nullable|date',
+            'repeat_end_occurrences' => 'nullable|numeric',
+            'reminder_frequency' => 'nullable|array',
+            'reminder_interval_day' => 'nullable|numeric',
+            'reminder_interval_week' => 'nullable|numeric',
+            'reminder_interval_month' => 'nullable|numeric',
+            'reminder_interval_year' => 'nullable|numeric',
+            'ends_at' => 'nullable|date',
+            'max_occurrences' => 'nullable|numeric',
+            'notify_until_expired' => 'boolean',
+            'notify_interval' => 'nullable|numeric'
         ]);
 
         if ($validator->fails()) {
