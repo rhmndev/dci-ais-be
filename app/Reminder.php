@@ -39,6 +39,7 @@ class Reminder extends Model
         'whatsapp_number',
         'emails',
         'files',
+        'existingFiles',
         'is_reminded',
         'ends_at',
         'max_occurrences',
