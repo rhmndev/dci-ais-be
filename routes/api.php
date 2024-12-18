@@ -335,27 +335,6 @@ Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');
 
 Route::get('/send-whatsapp', 'WhatsAppController@sendWhatsAppMessage');
 
-
-Route::get('/debug-po', function () {
-        // $purchaseOrders = PurchaseOrder::where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())
-        //         ->where('created_at', '<', Carbon::now()->subDays(7)->endOfDay())
-        //         ->where(function ($query) {
-        //                 $query->where('status', 'waiting for checking')
-        //                         ->orWhere('status', 'waiting for knowing')
-        //                         ->orWhere('status', 'waiting for approval');
-        //         })
-        //         ->get();
-
-        $purchaseOrders = PurchaseOrder::where(function ($query) {
-                $query->where('status', 'waiting for checking')
-                        ->orWhere('status', 'waiting for knowing')
-                        ->orWhere('status', 'waiting for approval');
-        })
-                ->get();
-
-        return response()->json(['data' => $purchaseOrders, 'date' => Carbon::now()->subMinutes(1)->toDateTimeString()]);
-});
-
 Route::post('/send-po-reminder', function () {
         \App\Jobs\SendPOReminder::dispatch(); // Dispatch the job
         return response()->json(['message' => 'PO Reminder emails queued for sending.']);

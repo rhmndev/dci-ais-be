@@ -250,7 +250,8 @@ class TravelDocumentController extends Controller
                         'inspection_date' => $request->inspection_date,
                         'qty' => $qtyForThisItem,
                         'qr_path' => $this->generateAndStoreQRCodeForItemLabel($itemNumber),
-                        'pack' => $currentPackage['data']->package_number
+                        'pack' => $currentPackage['data']->package_number,
+                        'is_scanned' => false,
                     ]);
                     $travelDocumentLabelTemp->save();
                     $currentPackage['items'][] = $travelDocumentLabelTemp;
@@ -671,9 +672,10 @@ class TravelDocumentController extends Controller
             ], 400);
         }
     }
-    public function getPrintedPackageLabels($poItemId)
+    public function getPrintedPackageLabels(Request $request, $poItemId)
     {
         try {
+            // $isQRScanned = $request->isQRScanned ?? false;
             $TravelDocumentLabelPackageTemp = TravelDocumentLabelPackageTemp::with('packageItems')->where('po_item_id', $poItemId)->get();
 
             return response()->json([
@@ -762,7 +764,8 @@ class TravelDocumentController extends Controller
     public function tempPrintLabel(Request $request, $itemId)
     {
         $showScannedItem = $request->showScannedItem ?? false;
-        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->where('is_scanned', '==', $showScannedItem)->get();
+        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->where('is_scanned', '===', $showScannedItem)->get();
+        return response()->json(['itemLabels' => $itemLabels]);
         $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabels' => $itemLabels, 'is_all' => true])->setPaper('a4');
         $pdfContent = $pdf->output();
         return response()->json(['data' => base64_encode($pdfContent)]);

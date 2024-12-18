@@ -15,6 +15,7 @@ use App\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class EmailController extends Controller
@@ -440,17 +441,25 @@ class EmailController extends Controller
                 ->where('is_active', true)
                 ->first();
 
-            // $template = EmailTemplate::where('template_type', 'purchase_order_send_schedule_to_supplier_for_internal')
-            //     ->where('is_active', true)
-            //     ->first();
-
             if (!$template) {
                 return response()->json(['message' => 'Template not found'], 404);
             }
 
             $POData = PurchaseOrder::where('po_number', $noPO)->first();
-            $deliveryEmail = $request->input('to') ? $request->to : $POData->delivery_email;
-            $emailTo = $deliveryEmail;
+
+            $supplierEmails = $POData->supplier->emails ?? [];
+            $supplierEmails = array_filter($supplierEmails);
+
+            if ($request->has('to')) {
+                $deliveryEmail = $request->input('to');
+                $emailTo = $deliveryEmail;
+            } else {
+                if (count($supplierEmails) > 0) {
+                    $emailTo = $supplierEmails;
+                } else {
+                    $emailTo = $POData->delivery_email;
+                }
+            }
 
             // check if POData not signed
             if (isset($POData->is_knowed) && isset($POData->is_checked) && isset($POData->is_approved) && $POData->is_knowed == 1 && $POData->is_checked == 1 && $POData->is_approved == 1) {

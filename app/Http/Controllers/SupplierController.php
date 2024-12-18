@@ -63,7 +63,7 @@ class SupplierController extends Controller
             'emails' => 'required|array',
             'emails.*' => 'email',
             'contact' => 'required|string',
-            'is_create_user_account' => 'required|boolean'
+            'is_create_user_account' => 'required'
         ]);
 
         try {
