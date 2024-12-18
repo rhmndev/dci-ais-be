@@ -45,14 +45,20 @@ class ReminderController extends Controller
         try {
             $userId = auth()->user()->_id;
             $perPage = $request->query('per_page', 10);
+            $limit = $request->query('limit', null);
 
-            $upcomingReminders = Reminder::where('user_id', $userId)
+            $query = Reminder::where('user_id', $userId)
                 ->where('expires_at', '>', Carbon::now())
+                ->where('expires_at', '<=', Carbon::now()->addDays(30))
                 ->where(function ($query) {
                     $query->whereNull('status')
                         ->orWhere('status', '!=', 'completed');
-                })
-                ->paginate($perPage);
+                })->orderBy('expires_at', 'asc');;
+            if ($limit) {
+                $query->take($limit);
+            }
+
+            $upcomingReminders = $query->paginate($perPage);
 
             return response()->json([
                 'type' => 'success',
@@ -95,7 +101,9 @@ class ReminderController extends Controller
 
             $totalReminders = Reminder::where('user_id', $userId)->count();
             $upcomingReminders = Reminder::where('user_id', $userId)
-                ->where('expires_at', '>', Carbon::now())->where(function ($query) {
+                ->where('expires_at', '>', Carbon::now())
+                ->where('expires_at', '<=', Carbon::now()->addDays(30))
+                ->where(function ($query) {
                     $query->whereNull('status')
                         ->orWhere('status', '!=', 'completed');
                 })
@@ -280,7 +288,7 @@ class ReminderController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'type' => 'failed',
-                'message' => 'Validation failed.',  // More specific message
+                'message' => 'Validation failed.',
                 'data' => $validator->errors()
             ], 422);
         }
@@ -295,7 +303,56 @@ class ReminderController extends Controller
                 ], 404);
             }
 
-            $reminder->update($validator->validated());
+            $validatedData = $validator->validated();
+
+            $filePaths = [];
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $originalFileName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+                    $fileName = Str::slug($fileNameWithoutExtension, '-') . '_' . time() . '.' . $extension;
+                    $filePath = 'reminder-attachments/' . $fileName;
+                    Storage::disk('public')->put($filePath, file_get_contents($file));
+                    $filePaths[] = $filePath;
+                }
+            }
+
+            if ($request->has('existingFiles')) {
+                $filePaths = array_merge($filePaths, $request->input('existingFiles', []));
+            }
+
+            $validatedData['files'] = $filePaths;
+
+            $repeatData = $request->repeat;
+            if (is_string($repeatData)) {
+                $repeatData = json_decode($repeatData, true);
+            }
+
+            $remindMeAtData = $request->remindMeAt;
+            if (is_string($remindMeAtData)) {
+                $remindMeAtData = json_decode($remindMeAtData, true);
+            }
+
+            $reminder->update([
+                'title' => $validatedData['title'],
+                'description' => $validatedData['description'],
+                'expires_at' => $validatedData['expires_datetime'] ? Carbon::parse($validatedData['expires_datetime'])->toDateTimeString() : null,
+                'reminder_method' => $validatedData['reminder_method'],
+                'whatsapp_number' => $validatedData['whatsapp_number'] ?? null,
+                'emails' => $validatedData['emails'] ?? null,
+                'files' => $validatedData['files'],
+                'starred' => $validatedData['starred'] ?? false,
+                'category' => $validatedData['category'] ?? null,
+
+                'is_repeat' => $repeatData['repeat'] ?? false,
+                'repeat_freq' => $repeatData['frequency'] ?? null,
+                'repeat_interval' => $repeatData['interval'] ?? null,
+                'repeat_reminder_time' => $repeatData['reminderTime'] ?? null, // Make sure the format is correct
+                'repeat_start_date' => isset($repeatData['startDate']) ? Carbon::parse($repeatData['startDate'])->toDateTimeString() : null,
+                'repeat_day_of_month' => $repeatData['dayOfMonth'] ?? null,
+                'repeat_day_of_week' => $repeatData['daysOfWeek'] ?? null,
+            ]);
 
             return response()->json([
                 'type' => 'success',
