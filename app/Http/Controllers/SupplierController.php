@@ -58,16 +58,16 @@ class SupplierController extends Controller
         $request->validate([
             'code' => 'required|string',
             'name' => 'required|string',
-            'address' => 'required|string',
-            'phone' => 'required|string',
-            'emails' => 'required|array',
+            'can_have_account' => 'required|boolean',
+            'address' => 'exclude_if:can_have_account,false|string',
+            'phone' => 'exclude_if:can_have_account,false|string',
+            'emails' => 'exclude_if:can_have_account,false|required|array',
             'emails.*' => 'email',
-            'contact' => 'required|string',
-            'is_create_user_account' => 'required'
+            'contact' => 'exclude_if:can_have_account,false|string',
+            'is_create_user_account' => 'exclude_if:can_have_account,false'
         ]);
 
         try {
-
             $Supplier = Supplier::firstOrNew(['code' => $request->code]);
 
             $Supplier->code = $this->stringtoupper($request->code);
@@ -76,13 +76,15 @@ class SupplierController extends Controller
             $Supplier->phone = $request->phone;
             $Supplier->emails = $request->emails;
             $Supplier->contact = $request->contact;
+            $Supplier->currency = $request->currency;
+            $Supplier->can_have_account = $request->can_have_account;
 
             $Supplier->created_by = auth()->user()->username;
             $Supplier->updated_by = auth()->user()->username;
 
             $Supplier->save();
 
-            if ($request->is_create_user_account) {
+            if ($request->is_create_user_account && $request->can_have_account) {
                 foreach ($request->emails as $email) {
                     $user = User::firstOrNew(['username' => $email]);
                     $user->email = $email;

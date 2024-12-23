@@ -18,13 +18,14 @@ class CreateSupplierTable extends Migration
             $table->bigIncrements('id');
             $table->string('code')->unique();
             $table->string('name');
-            $table->string('address');
+            $table->string('address')->nullable();
             $table->string('phone');
             $table->json('emails')->nullable();
             $table->string('contact');
             $table->string('currency');
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
+            $table->boolean('can_have_account')->default(true);
             $table->string('user_id')->nullable();
             $table->timestamps();
         });

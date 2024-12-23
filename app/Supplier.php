@@ -18,6 +18,7 @@ class Supplier extends Model
         'currency',
         'created_by',
         'updated_by',
+        'can_have_account',
         'user_id',
     ];
 

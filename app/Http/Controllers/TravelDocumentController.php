@@ -764,8 +764,17 @@ class TravelDocumentController extends Controller
     public function tempPrintLabel(Request $request, $itemId)
     {
         $showScannedItem = $request->showScannedItem ?? false;
-        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->where('is_scanned', '===', $showScannedItem)->get();
-        return response()->json(['itemLabels' => $itemLabels]);
+        $itemLabels = TravelDocumentLabelTemp::with('purchaseOrder', 'purchaseOrder.supplier', 'purchaseOrderItem', 'purchaseOrderItem.material')->where('po_item_id', $itemId)->where(function ($query) use ($showScannedItem) {
+            if (isset($showScannedItem)) {
+                $query->where('is_scanned', $showScannedItem);
+            } else {
+                $query->where(function ($q) {
+                    $q->where('is_scanned', false)
+                        ->orWhereNull('is_scanned');
+                });
+            }
+        })->get();
+        // return response()->json(['itemLabels' => $itemLabels]);
         $pdf = PDF::loadView('travel_documents.item-labels', ['itemLabels' => $itemLabels, 'is_all' => true])->setPaper('a4');
         $pdfContent = $pdf->output();
         return response()->json(['data' => base64_encode($pdfContent)]);

@@ -15,6 +15,9 @@ class CreateSupplierAliasesTable extends Migration
     {
         Schema::create('supplier_aliases', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('code_alias');
+            $table->unsignedBigInteger('supplier_id');
+            $table->string('alias');
             $table->timestamps();
         });
     }
