@@ -11,6 +11,7 @@ class SLock extends Model
     protected $fillable = [
         'code',
         'description',
+        'capacity',
     ];
 
     public function purchaseOrders()

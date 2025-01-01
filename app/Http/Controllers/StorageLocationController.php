@@ -60,10 +60,12 @@ class StorageLocationController extends Controller
         $request->validate([
             'code' => 'required|string',
             'description' => 'required|string',
+            'capacity' => 'numeric',
         ]);
 
         $storageLocation = SLock::firstOrNew(['code' => $request->code]);
         $storageLocation->description = $request->description;
+        $storageLocation->capacity = $request->capacity;
         $storageLocation->save();
 
         return response()->json([
@@ -118,6 +120,8 @@ class StorageLocationController extends Controller
         $storageLocation = SLock::findOrFail($id);
         $storageLocation->code = $request->code;
         $storageLocation->name = $request->name;
+        $storageLocation->description = $request->description;
+        $storageLocation->capacity = $request->capacity;
         $storageLocation->save();
 
         return response()->json([

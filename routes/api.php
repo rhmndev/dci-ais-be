@@ -339,3 +339,12 @@ Route::post('/send-po-reminder', function () {
         \App\Jobs\SendPOReminder::dispatch(); // Dispatch the job
         return response()->json(['message' => 'PO Reminder emails queued for sending.']);
 });
+
+Route::get('/test-arduino', function () {
+        // return number
+        return response()->json(['data' => [
+                'material_id' => "02C106SWH1RAW",
+                'stock' => "123",
+                'rack' => "A1-1-1",
+        ]]);
+});
