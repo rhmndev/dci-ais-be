@@ -108,6 +108,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/customer/{id}', 'CustomerController@destroy');
         Route::post('/customerimport', 'CustomerController@import');
         Route::get('/customer/{id}/parts/list', 'CustomerController@listParts');
+        Route::get('/customer/g/customer-alias-list', 'CustomerController@getCustomerAliasList');
 
         #region Master Parts Components Customer
         Route::get('/part-component', 'PartComponentController@index');
@@ -285,21 +286,32 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/g/supplier', 'TravelDocumentController@getBySupplierLoggedUser');
         });
 
-        Route::group(['prefix' => 'reminders'], function () {
-                Route::get('/', 'ReminderController@index')->name('reminders.index');
-                Route::get('/my/overview', 'ReminderController@overview')->name('reminders.my.overview');
-                Route::post('/', 'ReminderController@store')->name('reminders.store');
-                Route::get('/{id}', 'ReminderController@show')->name('reminders.show');
-                Route::post('/{id}', 'ReminderController@update')->name('reminders.update');
-                Route::delete('/{id}', 'ReminderController@destroy')->name('reminders.destroy');
-                Route::post('/{id}/test', 'ReminderController@testNotification');
-                Route::get('/{id}/files/{filename}', 'ReminderController@downloadReminderFile');
-                Route::put('/{id}/complete', 'ReminderController@completeReminder');
-                Route::get('/g/status/{status}', 'ReminderController@getByStatus');
-                Route::get('/g/all', 'ReminderController@showAll');
-                Route::get('/g/upcoming', 'ReminderController@upcoming');
+        Route::group(['prefix' => 'schedule-delivery'], function () {
+                Route::get('/', 'WhsScheduleDeliveryController@index');
+                Route::post('/a/import', 'CustomerScheduleDeliveryListController@importScheduleDeliveries');
+                Route::post('/a/destroy/{id}', 'CustomerScheduleDeliveryListController@destroy');
+                Route::post('/a/create-list', 'CustomerScheduleDeliveryListController@createList');
+
+                Route::post('/a/customer-import', 'CustomerScheduleDeliveryListController@importCustomer');
+                Route::get('/g/customer-cycle-list', 'CustomerScheduleDeliveryListController@getCustomerCycleList');
+                Route::get('/g/customer-pickuptime-list', 'CustomerScheduleDeliveryListController@getCustomerPickupTimeList');
+        });
+
+        Route::group(['prefix' => 'stock-slocks'], function () {
+                Route::post('/a/import', 'StockSlockController@import');
+        });
+        Route::group(['prefix' => 'tracking-boxes'], function () {
+                Route::post('/', 'TrackingBoxController@store');
+                Route::get('/g/summary-period', 'TrackingBoxController@getSummaryByPeriod');
         });
 });
+
+Route::group(['prefix' => 'rack'], function () {
+        Route::get('/', 'RackController@index');
+        Route::get('/g/segment-list', 'RackController@getSegmentList');
+        Route::get('/{id}/g/qrcode', 'RackController@generateQrCode');
+});
+
 Route::post('/login', 'AuthController@login');
 Route::post('/resetpassword', 'AuthController@resetpassword');
 Route::get('/resetpassword/{token}', 'AuthController@show');
@@ -335,11 +347,54 @@ Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');
 
 Route::get('/send-whatsapp', 'WhatsAppController@sendWhatsAppMessage');
 
-Route::post('/send-po-reminder', function () {
-        \App\Jobs\SendPOReminder::dispatch(); // Dispatch the job
-        return response()->json(['message' => 'PO Reminder emails queued for sending.']);
+Route::group(['prefix' => 'boxes'], function () {
+        Route::get('/', 'BoxController@index');
+        Route::get('/g/boxes-details', 'BoxController@getBoxDetails');
+        Route::post('/', 'BoxController@store');
+        Route::get('/show/{id}', 'BoxController@show');
+        Route::get('/g/details', 'BoxController@showDetails');
+        Route::put('/{id}', 'BoxController@update');
+        Route::delete('/{id}', 'BoxController@destroy');
+        Route::post('/a/import', 'BoxController@import');
+        Route::get('/g/color-data', 'BoxController@getColorData');
+        Route::get('/g/color-codes', 'BoxController@getColorCodes');
+        Route::get('/g/type-codes', 'BoxController@getTypeBoxes');
+        Route::get('/g/count-boxes-by-type', 'BoxController@countBoxesByType');
+        Route::get('/g/timeline', 'BoxController@getTimelineBox');
+        Route::get('/g/getAnalyticDataBox', 'BoxController@getAnalyticDataBox');
+        Route::get('/g/getStatusChartData', 'BoxController@getStatusChartData');
 });
 
+Route::group(['prefix' => 'stock-slocks'], function () {
+        Route::get('/', 'StockSlockController@index');
+        Route::post('/', 'StockSlockController@store');
+        Route::get('/show/{id}', 'StockSlockController@show');
+        Route::put('/{id}', 'StockSlockController@update');
+        Route::post('/a/destroy /{id}', 'StockSlockController@destroy');
+        // Route::post('/a/import', 'StockSlockController@import');
+});
+
+Route::group(['prefix' => 'tracking-boxes'], function () {
+        Route::get('/', 'TrackingBoxController@index');
+        Route::get('/show/{id}', 'TrackingBoxController@show');
+        Route::post('/update/{id}', 'TrackingBoxController@update');
+        Route::get('/box/status', 'TrackingBoxController@getBoxStatus');
+        Route::delete('/{id}', 'TrackingBoxController@destroy');
+        Route::get('/g/data-customer', 'TrackingBoxController@getDataOrderCustomer');
+        Route::get('/g/data-customer-ahm', 'TrackingBoxController@getDataOrderCustomerAHM');
+        Route::get('/g/data-dn-customer', 'TrackingBoxController@getDNCustomer');
+
+        Route::get('/g/dn-customer', 'TrackingBoxController@showDN');
+        Route::get('/g/history', 'TrackingBoxController@historyBox');
+});
+
+Route::get('/customer-schedule-delivery-lists', 'CustomerScheduleDeliveryListController@index');
+Route::get('/delivery-schedule', 'CustomerScheduleDeliveryListController@getDeliverySchedules');
+
+
+Route::get('/dn/g/compare', 'CompareDeliveryNoteController@getCompareDN');
+Route::get('/g/currently-box-status', 'CompareDeliveryNoteController@getCurrentlyTrackingBoxStatus');
+Route::get('/kanbans/g/kanban-details', 'CompareDeliveryNoteController@getKanban');
 Route::get('/test-arduino', function () {
         // return number
         return response()->json(['data' => [

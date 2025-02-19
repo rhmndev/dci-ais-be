@@ -19,10 +19,11 @@ class CustomerImport implements ToModel, WithHeadingRow, WithCalculatedFormulas
             'code' => $row[0],
             'name' => $row[1],
             'codename' => $row[2],
-            'address' => $row[3],
-            'phone' => $row[4],
-            'email' => $row[5],
-            'contact' => $row[6],
+            'plant' => $row[3],
+            'address' => $row[4],
+            'phone' => $row[5],
+            'email' => $row[6],
+            'contact' => $row[7],
         ]);
     }
 

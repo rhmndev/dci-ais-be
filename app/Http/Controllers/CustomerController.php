@@ -49,7 +49,6 @@ class CustomerController extends Controller
             ], 400);
         }
     }
-
     public function show(Request $request, $id)
     {
         $Customer = Customer::findOrFail($id);
@@ -91,6 +90,7 @@ class CustomerController extends Controller
             $Customer = Customer::firstOrNew(['code' => $request->code]);
             $Customer->code = $request->code;
             $Customer->name = $request->name;
+            $Customer->plant = $request->plant;
             $Customer->code_name = $request->code_name;
             $Customer->address = $request->address;
             $Customer->phone = $request->phone;
@@ -128,16 +128,13 @@ class CustomerController extends Controller
         ]);
 
         try {
-
             if ($files = $request->file('file')) {
-
                 //store file into document folder
                 $Excels = Excel::toArray(new CustomerImport, $files);
                 $Excels = $Excels[0];
                 // $Excels = json_decode(json_encode($Excels[0]), true);
 
                 foreach ($Excels as $Excel) {
-
                     if ($Excel['code'] != null) {
 
                         //store your file into database
@@ -145,10 +142,11 @@ class CustomerController extends Controller
                         $Customer->code = $this->stringtoupper(strval($Excel['code']));
                         $Customer->name = $this->stringtoupper($Excel['name']);
                         $Customer->code_name = $this->stringtoupper($Excel['codename']);
-                        $Customer->address = $Excel['address'];
-                        $Customer->phone = $Excel['phone'];
-                        $Customer->contact = $Excel['contact'];
-                        $Customer->email = $Excel['email'];
+                        $Customer->plant = $this->stringtoupper($Excel['plant']);
+                        $Customer->address = $Excel['address'] ?? '';
+                        $Customer->phone = $Excel['phone'] ?? '';
+                        $Customer->contact = $Excel['contact'] ?? '';
+                        $Customer->email = $Excel['email'] ?? '';
 
                         $Customer->created_by = auth()->user()->username;
                         $Customer->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -209,6 +207,20 @@ class CustomerController extends Controller
         return response()->json([
             'type' => 'success',
             'data' => $parts
+        ], 200);
+    }
+
+    public function getCustomerAliasList(Request $request)
+    {
+        if ($request->has('pluck_code_name')) {
+            $Customer = Customer::groupBy('code_name')->pluck('code_name');
+        } else {
+            $Customer = Customer::select('code', 'code_name')->get();
+        }
+
+        return response()->json([
+            'type' => 'success',
+            'data' => $Customer
         ], 200);
     }
 }

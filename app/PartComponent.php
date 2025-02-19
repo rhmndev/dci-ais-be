@@ -104,6 +104,6 @@ class PartComponent extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customer_id'); // Adjust foreign key if needed
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 }

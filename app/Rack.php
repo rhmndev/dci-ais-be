@@ -12,7 +12,13 @@ class Rack extends Model
         'segment',
         'position',
         'barcode',
+        'qrcode',
         'status',
         'is_active'
     ];
+
+    public function SegmentRack()
+    {
+        return $this->belongsTo(SegmentRack::class, 'segment', 'code');
+    }
 }
