@@ -330,7 +330,7 @@ class TrackingBoxController extends Controller
 
                 if ($latestTracking && in_array($latestTracking->status, ['out', 'delivery'])) {
                     $request->merge([
-                        'kanban' => $latestTracking->kanban,
+                        'kanban' => $latestTracking->kanban ?? null,
                         'destination_code' => $latestTracking->destination_code,
                         'destination_aliases' => $latestTracking->destination_aliases,
                         'date_time' => Carbon::now()->toDateTimeString(),
@@ -356,23 +356,30 @@ class TrackingBoxController extends Controller
 
             if (in_array($request->input('status'), ['delivery', 'out'])) {
                 $request->validate([
-                    'kanban' => 'required|string',
+                    'customer' => 'required|string',
                 ]);
 
-                $kanban = $request->input('kanban');
-                $compareDeliveryNote = CompareDeliveryNote::where('kbn_no', $kanban)->first();
-                $compareDeliveryNoteAHM = CompareDeliveryNoteAHM::where('job_seq', $kanban)->first();
+                $customer = $request->input('customer');
 
-                if ($compareDeliveryNote) {
-                    $customer = $compareDeliveryNote->orderCustomer->customer;
-                    $plant = $compareDeliveryNote->orderCustomer->plant;
-                    $request->merge(['destination_code' => 'ADM', 'destination_aliases' => 'ADM', 'dn_number' => $compareDeliveryNote->dn_no, 'customer' => $customer, 'plant' => $plant]);
-                } elseif ($compareDeliveryNoteAHM) {
-                    $request->merge(['destination_code' => 'AHM', 'destination_aliases' => 'AHM', 'dn_number' => $compareDeliveryNoteAHM->dn_no]);
-                } else {
-                    return response()->json([
-                        'error' => 'Kanban not found in CompareDeliveryNote or CompareDeliveryNoteAHM'
-                    ], 404);
+                $kanban = $request->input('kanban');
+
+                $request->merge(['destination_code' => $customer, 'destination_aliases' => $customer]);
+
+                if ($kanban != null) {
+                    $compareDeliveryNote = CompareDeliveryNote::where('kbn_no', $kanban)->first();
+                    $compareDeliveryNoteAHM = CompareDeliveryNoteAHM::where('job_seq', $kanban)->first();
+
+                    if ($compareDeliveryNote) {
+                        $customerOrder = $compareDeliveryNote->orderCustomer->customer;
+                        $plant = $compareDeliveryNote->orderCustomer->plant;
+                        $request->merge(['dn_number' => $compareDeliveryNote->dn_no, 'customer' => $customerOrder, 'plant' => $plant]);
+                    } elseif ($compareDeliveryNoteAHM) {
+                        $request->merge(['dn_number' => $compareDeliveryNoteAHM->dn_no]);
+                    } else {
+                        return response()->json([
+                            'error' => 'Kanban not found in CompareDeliveryNote or CompareDeliveryNoteAHM'
+                        ], 404);
+                    }
                 }
             }
 
@@ -479,8 +486,9 @@ class TrackingBoxController extends Controller
     public function destroy($id): JsonResponse
     {
         try {
-            TrackingBox::findOrFail($id)->delete();
-            return response()->json(null, 204);
+            $trackingBox = TrackingBox::findOrFail($id);
+            $trackingBox->delete();
+            return response()->json(['message' => 'Tracking box deleted successfully'], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to delete tracking box'], 500);
         }
@@ -495,7 +503,7 @@ class TrackingBoxController extends Controller
         try {
             $customer = $request->input('customer');
             $plant = $request->input('plant');
-            $trackingBoxes = TrackingBox::with('Box')->where('destination_code', 'ADM')
+            $trackingBoxes = TrackingBox::with('Box')->where('destination_aliases', $plant)
                 ->orderBy('date_time', 'desc')
                 ->get();
             // $trackingBoxes = TrackingBox::where('customer', $customer)->where('plant', $plant)->get();
@@ -503,6 +511,39 @@ class TrackingBoxController extends Controller
             return response()->json($trackingBoxes, 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to retrieve box history'], 500);
+        }
+    }
+
+    public function getCurrentDeliveryBoxes(Request $request): JsonResponse
+    {
+        try {
+            $plant = $request->input('plant');
+            $query = TrackingBox::query();
+
+            if ($plant) {
+                $query->where('destination_aliases', $plant);
+            }
+
+            // Get the latest tracking record for each box
+            $latestTrackingBoxes = $query->orderBy('number_box')
+                ->orderBy('date_time', 'desc')
+                ->get()
+                ->unique('number_box');
+
+            // Filter the boxes where the last status is 'delivery' or 'out'
+            $deliveryBoxes = $latestTrackingBoxes->filter(function ($trackingBox) {
+                return in_array($trackingBox->status, ['delivery', 'out']);
+            });
+
+            return response()->json([
+                'message' => 'Successfully retrieved current delivery boxes',
+                'data' => $deliveryBoxes->values(),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to retrieve current delivery boxes',
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 

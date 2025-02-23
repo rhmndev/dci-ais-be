@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Box;
+use App\Customer;
 use App\Imports\BoxesImport;
 use App\TrackingBox;
 use Illuminate\Http\JsonResponse;
@@ -137,7 +138,14 @@ class BoxController extends Controller
 
             if ($request->has('type_box')) {
                 $typeBox = $request->input('type_box');
-                array_unshift($pipeline, ['$match' => ['type_box' => $typeBox]]);
+                array_unshift($pipeline, [
+                    '$match' => [
+                        '$or' => [
+                            ['type_box' => (int)$typeBox],
+                            ['type_box' => (string)$typeBox]
+                        ]
+                    ]
+                ]);
             }
 
             $boxCounts = Box::raw(function ($collection) use ($pipeline) {
@@ -160,8 +168,9 @@ class BoxController extends Controller
     {
         try {
             $total = 0;
-            $totalBoxOutAdm = 0;
-            $totalBoxOutAhm = 0;
+            foreach (Customer::getCustomerList() as $key => $value) {
+                $totalBoxOut[$value['code_name']] = 0;
+            }
             $query = Box::query();
 
             if ($request->has('type_box')) {
@@ -175,27 +184,44 @@ class BoxController extends Controller
             $boxes = $query->get();
             $total = $boxes->count();
 
-            $debug = [];
             foreach ($boxes as $box) {
                 $latestTracking = TrackingBox::where('number_box', $box->number_box)
                     ->orderBy('date_time', 'desc')
                     ->first();
 
                 if ($latestTracking && in_array($latestTracking->status, ['out', 'delivery'])) {
-                    if ($latestTracking->destination_code === 'ADM') {
-                        $totalBoxOutAdm++;
-                    } elseif ($latestTracking->destination_code === 'AHM') {
-                        $totalBoxOutAhm++;
+                    if (isset($totalBoxOut[$latestTracking->destination_code])) {
+                        $totalBoxOut[$latestTracking->destination_code]++;
+                    } else {
+                        $totalBoxOut[$latestTracking->destination_code] = 1;
                     }
                 }
             }
 
-            return response()->json([
+            $totalBoxInArea = $total - array_sum($totalBoxOut);
+
+            foreach (Customer::getCustomerList() as $key => $value) {
+                if (isset($totalBoxOut[$value['code_name']])) {
+                    if (isset($totalOut['total_box_out_' . $value['customer']])) {
+                        $totalOut['total_box_out_' . $value['customer']] += $totalBoxOut[$value['code_name']];
+                    } else {
+                        $totalOut['total_box_out_' . $value['customer']] = $totalBoxOut[$value['code_name']];
+                    }
+                } else {
+                    $totalOut['total_box_out_' . $value['customer']] = 0;
+                }
+            }
+
+            $result = [
                 'total_box' => $total,
-                'total_box_in_area' => $total - $totalBoxOutAdm - $totalBoxOutAhm,
-                'total_box_out_adm' => $totalBoxOutAdm,
-                'total_box_out_ahm' => $totalBoxOutAhm
-            ], 200);
+                'total_box_in_area' => $totalBoxInArea
+            ];
+
+            foreach (Customer::getCustomerList() as $key => $value) {
+                $result['total_box_out_' . $value['customer']] = $totalOut['total_box_out_' . $value['customer']];
+            }
+
+            return response()->json($result, 200);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to retrieve analytic data',

@@ -99,6 +99,21 @@ class RackController extends Controller
         return response()->json(null, 204);
     }
 
+    public function createSegment(Request $request)
+    {
+        $request->validate([
+            'plant' => 'required',
+            'code' => 'string',
+            'name' => 'required',
+            'slock' => 'required',
+        ]);
+
+        $segment = SegmentRack::create($request->all());
+        $segment->is_active = true;
+        $segment->save();
+        return response()->json($segment, 201);
+    }
+
     public function getSegmentList(Request $request)
     {
         $segments = SegmentRack::query();
@@ -117,5 +132,12 @@ class RackController extends Controller
             'message' => 'success',
             'data' => $segments
         ]);
+    }
+
+    public function deleteSegment($id)
+    {
+        $segment = SegmentRack::findOrFail($id);
+        $segment->delete();
+        return response()->json(null, 204);
     }
 }

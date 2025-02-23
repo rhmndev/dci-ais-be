@@ -10,6 +10,7 @@ class CustomerScheduleDeliveryCycle extends Model
         'customer_id',
         'customer_name',
         'customer_plant',
+        'customer_alias',
         'cycle',
     ];
 }

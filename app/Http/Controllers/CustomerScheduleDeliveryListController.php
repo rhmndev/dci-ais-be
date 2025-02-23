@@ -8,6 +8,7 @@ use App\CustomerScheduleDeliveryPickupTime;
 use App\Http\Resources\CustomerScheduleDeliveryListResources;
 use App\Imports\DeliveriesImport;
 use App\Imports\CustomerDeliveriesImport;
+use App\Imports\CustomerScheduleDeliveryCycleImport;
 use App\Imports\ScheduleDeliveriesImport;
 use App\OrderCustomer;
 use App\WhsScheduleDelivery;
@@ -222,6 +223,60 @@ class CustomerScheduleDeliveryListController extends Controller
         }
     }
 
+    public function destroyCustomerScheduleDeliveryList($id)
+    {
+        try {
+            $list = CustomerScheduleDeliveryList::findOrFail($id);
+            $list->delete();
+
+            return response()->json([
+                'message' => 'List deleted successfully',
+                'data' => $list,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete list',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroyCustomerScheduleDeliveryPickupTime($id)
+    {
+        try {
+            $time = CustomerScheduleDeliveryPickupTime::findOrFail($id);
+            $time->delete();
+
+            return response()->json([
+                'message' => 'Pickup time deleted successfully',
+                'data' => $time,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete pickup time',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroyCustomerScheduleDeliveryCycle($id)
+    {
+        try {
+            $cycle = CustomerScheduleDeliveryCycle::findOrFail($id);
+            $cycle->delete();
+
+            return response()->json([
+                'message' => 'Cycle deleted successfully',
+                'data' => $cycle,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete cycle',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function destroy($id)
     {
         try {
@@ -247,7 +302,7 @@ class CustomerScheduleDeliveryListController extends Controller
         ]);
 
         try {
-            $data = Excel::toArray(new CustomerDeliveriesImport, $request->file('file'));
+            $data = Excel::toArray(new CustomerScheduleDeliveryCycleImport, $request->file('file'));
 
             $customers = [];
             foreach ($data[0] as $index => $row) {
@@ -277,6 +332,93 @@ class CustomerScheduleDeliveryListController extends Controller
 
             return response()->json([
                 'message' => 'Customers imported successfully',
+                'data' => $customers,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to import customers',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function importCustomerCycle(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        try {
+            $data = Excel::toArray(new CustomerDeliveriesImport, $request->file('file'));
+
+            $customers = [];
+            foreach ($data[0] as $index => $row) {
+                if ($index == 0) {
+                    continue;
+                }
+                $dataCustomer = CustomerScheduleDeliveryCycle::updateOrCreate(
+                    [
+                        'customer_id' => $row[0] ?? null,
+                        'customer_plant' => $row[2] ?? null,
+                        'cycle' => $row[4] ?? null,
+                    ],
+                    [
+                        'customer_name' => $row[1] ?? null,
+                        'customer_plant' => $row[2] ?? null,
+                        'customer_alias' => $row[3] ?? null,
+                        'cycle' => $row[4] ?? null,
+                    ]
+                );
+
+                $customers[] = $dataCustomer;
+            }
+
+            return response()->json([
+                'message' => 'Customers cycle imported successfully',
+                'data' => $customers,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to import customers',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function importCustomerPickupTime(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        try {
+            $data = Excel::toArray(new CustomerDeliveriesImport, $request->file('file'));
+
+            $customers = [];
+            foreach ($data[0] as $index => $row) {
+                if ($index == 0) {
+                    continue;
+                }
+
+                $dataCustomer = CustomerScheduleDeliveryPickupTime::updateOrCreate(
+                    [
+                        'customer_id' => $row[0] ?? null,
+                        'customer_plant' => $row[2] ?? null,
+                        'type' => $row[5] ?? null,
+                        'part_type' => $row[6] ?? null,
+                    ],
+                    [
+                        'customer_name' => $row[1] ?? null,
+                        'customer_plant' => $row[2] ?? null,
+                        'customer_alias' => $row[3] ?? null,
+                        'pickup_time' => '11:30',
+                        'type' => $row[5] ?? null,
+                        'part_type' => $row[6] ?? null,
+                    ]
+                );
+
+                $customers[] = $dataCustomer;
+            }
+            return response()->json([
+                'message' => 'Customers cycle imported successfully',
                 'data' => $customers,
             ], 200);
         } catch (\Exception $e) {
@@ -351,6 +493,30 @@ class CustomerScheduleDeliveryListController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to retrieve customer cycle list',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function deleteSelected(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+        ]);
+
+        try {
+            $deliveries = CustomerScheduleDeliveryList::whereIn('_id', $request->ids)->get();
+            foreach ($deliveries as $delivery) {
+                $delivery->delete();
+            }
+
+            return response()->json([
+                'message' => 'Deliveries deleted successfully',
+                'data' => $deliveries,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete deliveries',
                 'message' => $e->getMessage(),
             ], 500);
         }

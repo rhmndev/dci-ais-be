@@ -13,8 +13,9 @@ class StockSlock extends Model
         'val_stock_value',
         'valuated_stock',
         'uom',
-        'take_in_at',
-        'take_out_at',
+        'time_income',
+        'last_time_take_in',
+        'last_time_take_out',
         'user_id',
     ];
 }

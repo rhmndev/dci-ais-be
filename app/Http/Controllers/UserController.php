@@ -399,7 +399,7 @@ class UserController extends Controller
         try {
             $user = auth()->user(); // Get the authenticated user
             if ($user) {
-                $permissions = $user->getPermissions;
+                $permissions = $user->role->permissions->pluck('slug');
 
                 return response()->json([
                     'type' => 'success',
