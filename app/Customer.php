@@ -13,6 +13,7 @@ class Customer extends Model
         return [
             ['code_name' => 'P1P1', 'customer' => 'AHM'],
             ['code_name' => 'P1P2', 'customer' => 'AHM'],
+            ['code_name' => 'P2P1', 'customer' => 'AHM'],
             ['code_name' => 'P2P2', 'customer' => 'AHM'],
             ['code_name' => 'P3P4', 'customer' => 'AHM'],
             ['code_name' => 'P3P1', 'customer' => 'AHM'],

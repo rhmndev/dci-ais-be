@@ -193,7 +193,6 @@ class TravelDocumentController extends Controller
                         'data' => NULL
                     ], 400);
                 }
-
                 $totalItemLabels = ceil($reqTotalQtyDelivery / $qtyPerPackage);
 
                 $itemLabels = [];
