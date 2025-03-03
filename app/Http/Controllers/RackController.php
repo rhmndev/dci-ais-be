@@ -48,27 +48,38 @@ class RackController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'code' => 'required|unique:racks',
             'code_slock' => 'required',
             'name' => 'required',
             'segment' => 'required',
             'position' => 'required',
-            'is_active' => 'required|boolean',
         ]);
 
+        $code = $request->segment . '.' . $request->code_slock . '.' . $request->position;
+
         $rack = Rack::create($request->all());
+        $rack->code = $code;
+        $rack->save();
+        $rack->generateQrCode();
+
         return response()->json($rack, 201);
     }
 
     public function generateQrCode($id)
     {
-        $rack = Rack::findOrFail($id);
-        $qrCode = QrCode::size(300)->generate($rack->code);
+        try {
+            $rack = Rack::findOrFail($id);
+            $rack->generateQrCode();
 
-        return response()->json([
-            'message' => 'QR code generated successfully',
-            'data' => base64_encode($qrCode),
-        ]);
+            return response()->json([
+                'message' => 'QR Code generated successfully',
+                'data' => $rack,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error' => 'Failed to generate QR Code',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     public function show($id)
@@ -92,11 +103,34 @@ class RackController extends Controller
         return response()->json($rack);
     }
 
+    public function updateSegment(Request $request, $id)
+    {
+        $request->validate([
+            'plant' => 'required',
+            'code' => 'string',
+            'name' => 'required',
+            'slock' => 'required',
+        ]);
+
+        $segment = SegmentRack::findOrFail($id);
+        $segment->update($request->all());
+        return response()->json($segment);
+    }
+
     public function destroy($id)
     {
-        $rack = Rack::findOrFail($id);
-        $rack->delete();
-        return response()->json(null, 204);
+        try {
+            $rack = Rack::findOrFail($id);
+            $rack->delete();
+            return response()->json([
+                'message' => 'Rack deleted successfully'
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error' => 'Failed to delete rack',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
     }
 
     public function createSegment(Request $request)

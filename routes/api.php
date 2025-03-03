@@ -81,6 +81,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/materiallist', 'MaterialController@list');
         Route::post('/material', 'MaterialController@store');
         Route::post('/material/{id}', 'MaterialController@store');
+        Route::put('/material/{id}', 'MaterialController@update');
         Route::delete('/material/{id}', 'MaterialController@destroy');
         Route::post('/materialimport', 'MaterialController@import');
         Route::get('/materialexport', 'MaterialController@export');
@@ -288,12 +289,18 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'schedule-delivery'], function () {
                 Route::get('/', 'WhsScheduleDeliveryController@index');
+                Route::post('/a/customer-delivery-cycle', 'WhsScheduleDeliveryController@createCustomerDeliveryCycle');
+                Route::put('/u/customer-delivery-cycle/{id}', 'WhsScheduleDeliveryController@updateCustomerDeliveryCycle');
+                Route::post('/a/customer-pickup-time', 'CustomerScheduleDeliveryListController@createCustomerPickupTime');
+                Route::put('/u/customer-pickup-time/{id}', 'CustomerScheduleDeliveryListController@updateCustomerPickupTime');
                 Route::post('/a/import', 'CustomerScheduleDeliveryListController@importScheduleDeliveries');
                 Route::post('/a/destroy/{id}', 'CustomerScheduleDeliveryListController@destroy');
                 Route::post('/a/destroy-customer-schedule-delivery/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryList');
                 Route::post('/a/destroy-customer-pickup-time/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryPickupTime');
                 Route::post('/a/destroy-customer-cycle/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryCycle');
                 Route::post('/a/create-list', 'CustomerScheduleDeliveryListController@createList');
+
+                Route::post('/a/destroy-selected', 'CustomerScheduleDeliveryListController@destroySelected');
 
                 Route::post('/a/customer-import', 'CustomerScheduleDeliveryListController@importCustomer');
                 Route::post('/a/customer-cycle-import', 'CustomerScheduleDeliveryListController@importCustomerCycle');
@@ -306,17 +313,34 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'stock-slocks'], function () {
                 Route::post('/a/import', 'StockSlockController@import');
+                Route::post('/a/take-out', 'StockSlockController@takeOut');
+                Route::post('/a/put-in', 'StockSlockController@putIn');
+                Route::post('/a/destroy/{id}', 'StockSlockController@destroy');
+
+                Route::get('/g/history', 'StockSlockController@getHistory');
         });
         Route::group(['prefix' => 'tracking-boxes'], function () {
                 Route::post('/', 'TrackingBoxController@store');
                 Route::get('/g/summary-period', 'TrackingBoxController@getSummaryByPeriod');
         });
+
+        Route::group(['prefix' => 'rack'], function () {
+                Route::delete('/{id}', 'RackController@destroy');
+        });
+
+        Route::group(['prefix' => 'planning-productions'], function () {
+                Route::get('/', 'PlanningProductionController@index');
+                Route::post('/', 'PlanningProductionController@store');
+                Route::put('/{id}', 'PlanningProductionController@update');
+        });
 });
 
 Route::group(['prefix' => 'rack'], function () {
         Route::get('/', 'RackController@index');
+        Route::post('/', 'RackController@store');
         Route::post('/a/segment/create', 'RackController@createSegment');
         Route::post('/a/segment/delete/{id}', 'RackController@deleteSegment');
+        Route::post('/a/segment/update/{id}', 'RackController@updateSegment');
         Route::get('/g/segment-list', 'RackController@getSegmentList');
         Route::get('/{id}/g/qrcode', 'RackController@generateQrCode');
 });
@@ -379,7 +403,6 @@ Route::group(['prefix' => 'stock-slocks'], function () {
         Route::post('/', 'StockSlockController@store');
         Route::get('/show/{id}', 'StockSlockController@show');
         Route::put('/{id}', 'StockSlockController@update');
-        Route::post('/a/destroy/{id}', 'StockSlockController@destroy');
         // Route::post('/a/import', 'StockSlockController@import');
 });
 

@@ -519,9 +519,14 @@ class TrackingBoxController extends Controller
         try {
             $plant = $request->input('plant');
             $query = TrackingBox::query();
+            $withBoxDetail = $request->boolean('show_box_detail', false);
 
             if ($plant) {
                 $query->where('destination_aliases', $plant);
+            }
+
+            if ($withBoxDetail) {
+                $query->with('Box');
             }
 
             // Get the latest tracking record for each box

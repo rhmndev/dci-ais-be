@@ -204,6 +204,16 @@ class CustomerScheduleDeliveryListController extends Controller
                         'material' => $row['material'] ?? null,
                         'shpt' => $row['shpt'] ?? null,
                         'ac_gi_date' => isset($row['ac_gi_date']) ? \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['ac_gi_date'])->format('Y-m-d') : null,
+                        'time' => $row['time'] ? \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['time'])->format('H:i') : null,
+                        'dlvt' => $row['dlvt'] ?? null,
+                        'ship_to' => $row['ship_to'] ?? null,
+                        'name_ship_to' => $row['name_ship_to'] ?? null,
+                        'ref_doc' => $row['ref_doc'] ?? null,
+                        'dchl' => $row['dchl'] ?? null,
+                        'sloc' => $row['sloc'] ?? null,
+                        'sorg' => $row['sorg'] ?? null,
+                        'quantity_dn' => $row['quantity_dn'] ?? null,
+                        'status_dn' => $row['status_dn'] ?? null,
                         'created_by' => $row['created_by'] ?? auth()->user()->npk,
                     ]
                 );
@@ -237,6 +247,88 @@ class CustomerScheduleDeliveryListController extends Controller
             return response()->json([
                 'error' => 'Failed to delete list',
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function createCustomerPickupTime(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required',
+            'customer_name' => 'required|string',
+            'customer_plant' => 'required|string',
+            'pickup_time' => 'required|string',
+            'type' => 'required|string',
+            'part_type' => 'required|string',
+        ]);
+
+        try {
+            $customer_id = (int) $request->customer_id;
+            $dataCustomer = CustomerScheduleDeliveryPickupTime::updateOrCreate(
+                [
+                    'customer_id' => $customer_id,
+                    'customer_plant' => $request->customer_plant,
+                    'type' => $request->type,
+                    'part_type' => $request->part_type,
+                ],
+                [
+                    'customer_name' => $request->customer_name,
+                    'customer_plant' => $request->customer_plant,
+                    'customer_alias' => $request->customer_alias ?? $request->customer_plant,
+                    'pickup_time' => $request->pickup_time,
+                    'type' => $request->type,
+                    'part_type' => $request->part_type,
+                ]
+            );
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Pickup time created successfully',
+                'data' => $dataCustomer,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => $th->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
+    public function updateCustomerPickupTime(Request $request, $id)
+    {
+        $request->validate([
+            'customer_id' => 'required',
+            'customer_name' => 'required|string',
+            'customer_plant' => 'required|string',
+            'pickup_time' => 'required|string',
+            'type' => 'required|string',
+            'part_type' => 'required|string',
+        ]);
+
+        try {
+            $customer_id = (int) $request->customer_id;
+            $dataCustomer = CustomerScheduleDeliveryPickupTime::findOrFail($id);
+            $dataCustomer->update([
+                'customer_id' => $customer_id,
+                'customer_name' => $request->customer_name,
+                'customer_plant' => $request->customer_plant,
+                'customer_alias' => $request->customer_alias ?? $request->customer_plant,
+                'pickup_time' => $request->pickup_time,
+                'type' => $request->type,
+                'part_type' => $request->part_type,
+            ]);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Pickup time updated successfully',
+                'data' => $dataCustomer,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => $th->getMessage(),
+                'data' => []
             ], 500);
         }
     }
@@ -290,6 +382,30 @@ class CustomerScheduleDeliveryListController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to delete delivery',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroySelected(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+        ]);
+
+        try {
+            $deliveries = WhsScheduleDelivery::whereIn('_id', $request->ids)->get();
+            foreach ($deliveries as $delivery) {
+                $delivery->delete();
+            }
+
+            return response()->json([
+                'message' => 'Deliveries deleted successfully',
+                'data' => $deliveries,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to delete deliveries',
                 'message' => $e->getMessage(),
             ], 500);
         }

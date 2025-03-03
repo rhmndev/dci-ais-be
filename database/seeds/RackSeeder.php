@@ -15,14 +15,14 @@ class RackSeeder extends Seeder
      */
     public function run()
     {
-        $sLocks = SLock::all();
+        $sLocks = SLock::where('code', 'like', '%RAW01%')->get();
         $segments = SegmentRack::all();
 
         foreach ($sLocks as $sLock) {
             foreach ($segments as $segment) {
-                for ($i = 1; $i <= 3; $i++) {
+                for ($i = 1; $i <= 4; $i++) {
                     for ($j = 1; $j <= 3; $j++) {
-                        for ($k = 1; $k <= 3; $k++) {
+                        for ($k = 1; $k <= 2; $k++) {
                             Rack::create([
                                 'code' => $segment->code . '.' . $sLock->code . '.' . $i . '.' . $j . '.' . $k,
                                 'code_slock' => $sLock->code,

@@ -13,9 +13,16 @@ class StockSlock extends Model
         'val_stock_value',
         'valuated_stock',
         'uom',
+        'date_income',
         'time_income',
         'last_time_take_in',
         'last_time_take_out',
         'user_id',
+        'is_success',
     ];
+
+    public function material()
+    {
+        return $this->belongsTo(Material::class, 'material_code', 'code');
+    }
 }

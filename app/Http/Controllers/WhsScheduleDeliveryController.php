@@ -30,4 +30,49 @@ class WhsScheduleDeliveryController extends Controller
             ], 500);
         }
     }
+
+    public function createCustomerDeliveryCycle(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required',
+            'part_id' => 'required',
+            'schedule_date' => 'required',
+            'po_no' => 'required',
+            'delivery' => 'required',
+        ]);
+
+        try {
+            $data = $request->all();
+            $data['created_by'] = auth()->user()->id;
+            $data['updated_by'] = auth()->user()->id;
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Data has been created',
+                'data' => $data
+            ], 401);
+
+            $whsScheduleDelivery = WhsScheduleDelivery::updateOrCreate(
+                [
+                    'customer_id' => $request->customer_id,
+                    'part_id' => $request->part_id,
+                    'schedule_date' => $request->schedule_date,
+                    'po_no' => $request->po_no,
+                    'delivery' => $request->delivery,
+                ],
+                // $data
+            );
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Data has been created',
+                'data' => $whsScheduleDelivery
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => $th->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
 }
