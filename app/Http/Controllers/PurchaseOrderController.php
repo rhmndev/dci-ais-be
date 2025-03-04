@@ -1,0 +1,1288 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\ForecastQty;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
+use App\Mail\PurchaseOrderCreated;
+use App\Http\Resources\PurchaseOrderResource;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use App\Material;
+use App\PoTrackingEvent;
+use App\PurchaseOrder;
+use App\Supplier;
+use App\PurchaseOrderActivities;
+use App\PurchaseOrderItem;
+use App\PurchaseOrderScheduleDelivery;
+use App\Qr;
+use App\Settings;
+use App\SLock;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use MongoDB\BSON\UTCDateTime;
+use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade as PDF;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+
+class PurchaseOrderController extends Controller
+{
+    public function index(Request $request)
+    {
+        $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $order = ($request->order != null) ? $request->order : 'ascend';
+        $status = ($request->status != null) ? $request->status : '';
+        $startDate = $request->startDate;
+        $endDate = $request->endDate;
+        try {
+            $PurchaseOrder = new PurchaseOrder;
+            $data = array();
+            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status, $startDate, $endDate);
+            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $startDate, $endDate);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => PurchaseOrderResource::collection($results),
+                'dataAll' => $resultAlls,
+                'total' => count($resultAlls),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
+    public function getBySupplierLoggedUser(Request $request)
+    {
+        $request->validate([
+            'columns' => 'required',
+            'perpage' => 'required|numeric',
+            'page' => 'required|numeric',
+            'sort' => 'required|string',
+            'status' => 'nullable|string',
+            'order' => 'string',
+        ]);
+        try {
+            $user = auth()->user();
+            if ($user->role_name == 'supplier' || $user->role_name == 'Supplier') {
+                $supplier_code = $user->vendor_code;
+
+                $keyword = ($request->keyword != null) ? $request->keyword : '';
+                $order = ($request->order != null) ? $request->order : 'ascend';
+                $status = ($request->status != null) ? $request->status : 'approved';
+
+                $PurchaseOrder = new PurchaseOrder;
+                $data = array();
+                $resultAlls = $PurchaseOrder->getBySupplierCodeData($keyword, $request->columns, $request->sort, $order, $status, $supplier_code);
+                $results = $PurchaseOrder->getBySupplierCodeDataPagination($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $supplier_code);
+
+                return response()->json([
+                    'type' => 'success',
+                    'data' => PurchaseOrderResource::collection($results),
+                    'dataAll' => $resultAlls,
+                    'total' => count($resultAlls),
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User is not a supplier.',
+                    'data' => $user,
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
+    public function showByCodeSupplier(Request $request, $supplier_code)
+    {
+        $request->validate([
+            'columns' => 'required',
+            'perpage' => 'required|numeric',
+            'page' => 'required|numeric',
+            'sort' => 'required|string',
+            'status' => 'nullable|string',
+            'order' => 'string',
+        ]);
+        try {
+            $keyword = ($request->keyword != null) ? $request->keyword : '';
+            $order = ($request->order != null) ? $request->order : 'ascend';
+            $status = ($request->status != null) ? $request->status : '';
+
+            $PurchaseOrder = new PurchaseOrder;
+            $data = array();
+            $resultAlls = $PurchaseOrder->getBySupplierCodeData($keyword, $request->columns, $request->sort, $order, $status, $supplier_code);
+            $results = $PurchaseOrder->getBySupplierCodeDataPagination($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $supplier_code);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => PurchaseOrderResource::collection($results),
+                'dataAll' => $resultAlls,
+                'total' => count($resultAlls),
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $th->getMessage(),
+            ], 400);
+        }
+    }
+
+    // Create a new Purchase Order
+    public function store(Request $request)
+    {
+        $request->validate([
+            // 'po_number' => 'required|string|unique:purchase_order,po_number',
+            'nomor_type' => 'required|bool',
+            'order_date' => 'required|string|date',
+            'supplier_id' => 'required|exists:supplier,_id',
+            'items' => 'required|array',
+            'items.*.material_id' => 'required|exists:materials,_id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0.01',
+            'items.*.unit_price_type' => 'required|string',
+        ]);
+
+        try {
+            // Calculate total amount
+            $totalAmount = 0;
+            foreach ($request->items as $item) {
+                $totalAmount += $item['quantity'] * $item['unit_price'];
+            }
+
+            // Get the number of existing Purchase Orders
+            $numberOfPOs = PurchaseOrder::count();
+            $nextPONumber = 'PO-' . str_pad($numberOfPOs + 1, 5, '0', STR_PAD_LEFT); // Generate PO-00001, PO-00002, etc.
+
+            // Fetch supplier
+            $supplier = Supplier::find($request->supplier_id);
+
+            // Create the Purchase Order
+            $purchaseOrder = new PurchaseOrder([
+                'po_number' => $nextPONumber,
+                'supplier_id' => $supplier->_id,
+                'order_date' => $request->orderDate,
+                'delivery_date' => $request->deliveryDate,
+                'total_amount' => $totalAmount,
+                'status' => 'pending',
+                'created_by' => auth()->user()->id,
+            ]);
+
+            $purchaseOrder->save();
+
+            // save items of purchase order to purchase order items
+            foreach ($request->items as $item) {
+                $purchaseOrderItem = new PurchaseOrderItem([
+                    'purchase_order_id' => $purchaseOrder->_id,
+                    'material_id' => $item['material_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                ]);
+
+                $purchaseOrderItem->save();
+            }
+
+            // Send an email notification
+            // Mail::to($supplier->email)->send(new PurchaseOrderCreated($purchaseOrder));
+
+            return response()->json(['message' => 'Purchase order created successfully', 'data' => $purchaseOrder], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $th->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,waiting for checking,waiting for knowing,waiting for approving,approved,rejected,cancelled,waiting for revision',
+            'revision_type' => 'required_if:status,waiting for revision|in:schedule,price,items,other',
+            'po_status' => 'required_if:status,approved|in:waiting for schedule delivery,waiting for schedule delivery confirmation,open,closed',
+            'notes' => 'required_if:status,rejected,cancelled',
+        ]);
+
+        try {
+            $purchaseOrder = PurchaseOrder::findOrFail($id);
+            $originalStatus = $purchaseOrder->status;
+
+            $purchaseOrder->status = $request->status;
+
+            if ($request->status === 'waiting for revision') {
+                $purchaseOrder->revision_type = $request->revision_type;
+            } else {
+                $purchaseOrder->revision_type = null;
+            }
+
+            if ($request->status === 'approved') {
+                $purchaseOrder->po_status = $request->po_status;
+            }
+
+            if ($request->status === 'rejected' || $request->status === 'cancelled') {
+                $purchaseOrder->notes = $request->notes;
+            }
+
+            $purchaseOrder->save();
+
+            // Log the status change (highly recommended)
+            Log::info("Purchase Order {$purchaseOrder->po_number} status changed from '{$originalStatus}' to '{$request->status}' by user " . auth()->user()->id);
+
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Purchase order status updated successfully',
+                'data' => $purchaseOrder,
+            ], 200);
+        } catch (\Throwable $th) {
+            // Log the error
+            Log::error("Error updating Purchase Order status: " . $th->getMessage());
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error updating purchase order status. Please check the logs for details.'
+            ], 500);
+        }
+    }
+
+    public function SyncExcel(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $filePath = storage_path('app/data-po.xlsx');
+
+            //Check if file exists
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Error: The specified Excel file does not exist.',
+                ], 400);
+            }
+
+            $spreadsheet = IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            $headerRow = $worksheet->getRowIterator()->current();
+            $header = [];
+            foreach ($headerRow->getCellIterator() as $cell) {
+                $header[] = $cell->getValue();
+            }
+
+            $data = [];
+            foreach ($worksheet->getRowIterator() as $row) {
+                if ($row->getRowIndex() === 1) continue;
+
+                $rowData = [];
+                $cellIterator = $row->getCellIterator();
+                foreach ($cellIterator as $cell) {
+                    $rowData[] = $cell->getValue();
+                }
+
+                $data[] = array_combine($header, $rowData);
+            }
+
+
+
+            foreach ($data as $row) {
+                $documentDate = Carbon::instance(Date::excelToDateTimeObject($row['Document Date']));
+
+                // Check if the document date falls within the specified range
+                if ($documentDate->between(Carbon::parse($request->start_date), Carbon::parse($request->end_date))) {
+                    $supplierCode = explode(" ", $row['Vendor/supplying plant'])[0];
+                    $supplier = Supplier::firstOrCreate(['code' => $supplierCode], [
+                        'name' => trim(str_replace($supplierCode, '', $row['Vendor/supplying plant'])), // Extract supplier name
+                    ]);
+                    // Material creation (assuming 'Material' column exists in Excel)
+                    $materialCode = $row['Material'];
+                    $material = Material::firstOrCreate(['code' => $materialCode], [
+                        'description' => $row['Short Text'],  // Assuming 'Short Text' is the description
+                    ]);
+
+                    if (strtoupper($row['Currency']) === 'IDR') { // Currency check
+                        // Create Purchase Order logic (adapt as needed):
+                        $po_number = $row['Purchasing Document']; // Assuming unique per document
+                        $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
+                        $PurchaseOrder->plant_number = $row['Plant'];
+                        $PurchaseOrder->purchase_currency_type = $row['Currency'];
+                        $Slock = SLock::firstOrNew(['code' => $row['Storage Location']]);
+                        $Slock->save();
+                        $PurchaseOrder->s_locks_code = $row['Storage Location'];
+
+                        // ... other PO fields (e.g., Plant, Purchasing Group) ...
+
+                        $PurchaseOrder->supplier_id = $supplier->_id;
+                        $PurchaseOrder->supplier_code = $supplier->code;
+                        $PurchaseOrder->order_date = $documentDate->format('Y-m-d');
+                        $PurchaseOrder->save();
+
+                        // Purchase order item creation
+                        $purchaseOrderItem = new PurchaseOrderItem([
+                            'purchase_order_id' => $PurchaseOrder->_id,
+                            'material_id' => $material->_id,
+                            'material_code' => $material->code,
+                            'quantity' => $row['Order Quantity'],
+                            'unit_price' => $row['Net price'],
+                            // ... other item fields
+                        ]);
+                        $purchaseOrderItem->save();
+                    }
+                }
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Excel data synced successfully',
+
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error syncing Excel data: ' . $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function SyncSAP(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+
+            $Settings = new Settings;
+            $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+            $code = $code_sap[1]['name'];
+
+            $date = date('Y-m-d\TH:i:s', strtotime($request->date));
+
+            // $client = new Client;
+            // $json = $client->get("http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '$code' and Ersda eq datetime'$date'&\$format=json&sap-300", [
+            //     'auth' => [
+            //         // 'wcs-abap',
+            //         // 'Wilmar12'
+            //         'DCI-DGT01',
+            //         'DCI0001'
+            //     ],
+            // ]);
+            // $results = json_decode($json->getBody())->d->results;
+
+            // if (count($results) > 0) {
+
+            //     foreach ($results as $result) {
+
+            //         $po_number = $this->stringtoupper($result->Matnr);
+
+            //         $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
+
+            //         $PurchaseOrder->created_by = auth()->user()->username;
+            //         $PurchaseOrder->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+            //         $PurchaseOrder->updated_by = auth()->user()->username;
+            //         $PurchaseOrder->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+            //         $PurchaseOrder->save();
+            //     }
+
+            //     return response()->json([
+
+            //         "result" => true,
+            //         "msg_type" => 'success',
+            //         "message" => 'Sync SAP Success. ' . count($results) . ' data synced',
+
+            //     ], 200);
+            // } else {
+
+            //     return response()->json([
+
+            //         "result" => false,
+            //         "msg_type" => 'failed',
+            //         "message" => 'Data not found',
+
+            //     ], 400);
+            // }
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $e,
+
+            ], 400);
+        }
+    }
+
+    public function show(Request $request, $id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $this->markAsSeen($PurchaseOrder->po_number);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => new PurchaseOrderResource($PurchaseOrder)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function showPO(Request $request, $po_number)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            if ($PurchaseOrder->items != '') {
+                foreach ($PurchaseOrder->items as $item) {
+                    $item->material = isset($item->material) ? $item->material : '';
+                }
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => new PurchaseOrderResource($PurchaseOrder)
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function uploadScheduleDelivery(Request $request, $po_number)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|mimes:xlsx,csv,xls',
+                'description' => 'nullable|string',
+                'show_to_supplier' => 'required|boolean',
+                'is_send_email_to_supplier' => 'required|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => $validator->errors()->first(),
+                    'data' => $request->all()
+                ], 422);
+            }
+
+            $file = $request->file('file');
+            $originalFileName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileNameWithoutExtension = pathinfo($originalFileName, PATHINFO_FILENAME);
+            $fileNameSlug = Str::slug($fileNameWithoutExtension, '-');
+            $fileName = $fileNameSlug . '_' . time() . '.' . $extension;
+            $filePath = $file->storeAs('schedule_deliveries', $fileName, 'public');
+
+            // Create and save the schedule delivery record
+            $scheduleDelivery = new PurchaseOrderScheduleDelivery([
+                'po_number' => $po_number,
+                'filename' => $fileName,
+                'description' => $request->description,
+                'file_path' => $filePath,
+                'show_to_supplier' => $request->show_to_supplier ?? false,
+                'is_send_email_to_supplier' => $request->is_send_email_to_supplier ?? 0,
+                'created_by' => auth()->user()->npk,
+                'updated_by' => auth()->user()->npk,
+                'status_schedule' => 'waiting for confirmation'
+            ]);
+            $scheduleDelivery->save();
+
+            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            EmailController::sendEmailPurchaseOrderSchedule($request, $po_number);
+
+            // $msg = $purchaseOrder->po_number . ' schedule delivery has been updated.';
+            // $receipt_number = 'whatsapp:+6285156376462';
+            // WhatsAppController::sendWhatsAppMessage($receipt_number, $msg);
+
+            // change status po to open
+            $purchaseOrder->schedule_updated_at = Carbon::now();
+            $purchaseOrder->po_status = 'waiting for schedule delivery confirmation';
+            $purchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Schedule delivery uploaded successfully',
+                'data' => $scheduleDelivery,
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error uploading schedule delivery: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function createTrackingEvent(Request $request, $poId)
+    {
+        $request->validate([
+            'event' => 'required|string',
+            'occurred_at' => 'nullable|date', // You might want to make this required
+            'notes' => 'nullable|string'
+        ]);
+
+        $po = PurchaseOrder::findOrFail($poId);
+
+        $event = PoTrackingEvent::create([
+            'po_id' => $po->id,
+            'event' => $request->event,
+            'occurred_at' => $request->occurred_at ? Carbon::parse($request->occurred_at) : Carbon::now(),
+            'notes' => $request->notes
+        ]);
+
+        return response()->json(['message' => 'Tracking event created!', 'event' => $event], 201);
+    }
+
+    public function getTrackingEvents($poId)
+    {
+        $po = PurchaseOrder::findOrFail($poId);
+        $events = $po->trackingEvents()->orderBy('occurred_at', 'asc')->get();
+
+        return response()->json(['events' => $events], 200);
+    }
+
+    public function showScheduleDeliveries(Request $request, $po_number)
+    {
+        try {
+            $PurchaseOrderScheduleDeliveries = PurchaseOrder::where('po_number', $po_number)->first()->scheduleDeliveries;
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrderScheduleDeliveries
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function markAsSeen($po_number)
+    {
+        try {
+            $purchaseOrderActivity = PurchaseOrderActivities::where('po_number', $po_number)->first();
+            if ($purchaseOrderActivity) {
+                // $purchaseOrderActivity->po_id = $purchaseOrderActivity->purchaseOrder->_id;
+                $purchaseOrderActivity->seen += 1;
+                $purchaseOrderActivity->last_seen_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+                $purchaseOrderActivity->save();
+            } else {
+                $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+                $po_id = $PurchaseOrder->_id;
+                // Create a new record if it doesn't exist
+                PurchaseOrderActivities::create([
+                    'po_id' => $po_id,
+                    'po_number' => $po_number,
+                    'seen' => 1,
+                    'last_seen_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
+                    'downloaded' => 0,
+                    'last_downloaded_at' => ''
+                ]);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'data' => 'PO No.: ' . $po_number . ' has been marked as seen.'
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 400);
+        }
+    }
+
+    public function markAsDownloaded($po_number)
+    {
+        try {
+            $purchaseOrderActivity = PurchaseOrderActivities::where('po_number', $po_number)->first();
+            if ($purchaseOrderActivity) {
+                // $purchaseOrderActivity->po_id = $purchaseOrderActivity->purchaseOrder->_id;
+                $purchaseOrderActivity->downloaded += 1;
+                $purchaseOrderActivity->last_downloaded_at = new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3));
+                $purchaseOrderActivity->save();
+            } else {
+                $PurchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+                $po_id = $PurchaseOrder->_id;
+                // Create a new record if it doesn't exist
+                PurchaseOrderActivities::create([
+                    'po_id' => $purchaseOrderActivity,
+                    'po_number' => $po_number,
+                    'seen' => 0,
+                    'last_seen_at' => null,
+                    'downloaded' => 1,
+                    'last_downloaded_at' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3))
+                ]);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'data' => 'Success'
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 400);
+        }
+    }
+
+    public function listNeedScheduleDeliveries(Request $request)
+    {
+        try {
+            $keyword = ($request->keyword != null) ? $request->keyword : '';
+            $order = ($request->order != null) ? $request->order : 'ascend';
+
+            $purchaseOrders = PurchaseOrder::with('supplier', 'scheduleDeliveries')->where('status', 'approved')
+                ->whereDoesntHave('scheduleDeliveries')
+                ->when($keyword, function ($query) use ($keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('po_number', 'like', '%' . $keyword . '%');
+                        // ->orWhere('supplier_code', 'like', '%' . $keyword . '%');
+                    });
+                })
+                ->orderBy('approved_at', $order == 'descend' ? 'desc' : 'asc')
+                ->paginate($request->perpage ?? 10);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $purchaseOrders
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 400);
+        }
+    }
+
+    public function getScheduleDeliveriesByPoId(Request $request, $id)
+    {
+        try {
+            $ScheduleDelivery = PurchaseOrder::with('scheduleDeliveries')->where('_id', $id)->first()->scheduleDeliveries;
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $ScheduleDelivery
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 400);
+        }
+    }
+
+    public function getListPOScheduleDeliveries()
+    {
+        try {
+            $purchaseOrders = PurchaseOrder::with('scheduleDeliveries', 'supplier')->where('status', 'approved')
+                ->get();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $purchaseOrders
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 400);
+        }
+    }
+    public function getListScheduleDelivered(Request $request)
+    {
+        try {
+            $keyword = ($request->keyword != null) ? $request->keyword : '';
+            $order = ($request->order != null) ? $request->order : 'desc';
+
+            $purchaseOrders = PurchaseOrder::with('supplier', 'scheduleDeliveries')->where('status', 'approved')
+                ->whereHas('scheduleDeliveries')
+                ->when($keyword, function ($query) use ($keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('po_number', 'like', '%' . $keyword . '%');
+                        // ->orWhere('supplier_code', 'like', '%' . $keyword . '%');
+                    });
+                })
+                ->orderBy('schedule_updated_at', $order == 'desc' ? 'desc' : 'asc')
+                ->paginate($request->perpage ?? 10);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $purchaseOrders
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'data' => 'Error: ' . $th->getMessage()
+            ], 400);
+        }
+    }
+
+    public function getDashboardData()
+    {
+        return response()->json([
+            'activities' => [
+                ['time' => '20:33', 'description' => 'Ubah Desain Cetakan Pesanan Pembelian'],
+            ],
+            'upcomingActivities' => [],
+            'salesTrend' => [
+                ['date' => 'Sen', 'sales' => 0],
+                ['date' => 'Sel', 'sales' => 0],
+                ['date' => 'Rab', 'sales' => 0],
+                ['date' => 'Kam', 'sales' => 0],
+                ['date' => 'Jum', 'sales' => 0],
+                ['date' => 'Sab', 'sales' => 0],
+                ['date' => 'Min', 'sales' => 0],
+            ],
+            'cashFlow' => [
+                ['date' => '6 Okt', 'cash' => 0],
+                ['date' => '7 Okt', 'cash' => 0],
+                ['date' => '8 Okt', 'cash' => 0],
+                ['date' => '9 Okt', 'cash' => 0],
+                ['date' => '10 Okt', 'cash' => 0],
+                ['date' => '11 Okt', 'cash' => 0],
+                ['date' => '12 Okt', 'cash' => 0],
+            ],
+            'companyExpenses' => ['total' => 0],
+            'profitAndLoss' => [
+                'revenue' => 0,
+                'hpp' => 0,
+                'expenses' => 0,
+            ],
+            'sales' => [
+                'revenue' => 0,
+                'unpaid' => 0,
+            ],
+            'purchases' => [
+                'total' => 0,
+                'unpaid' => 0,
+            ],
+        ]);
+    }
+
+    public function showToSupplier($po_number)
+    {
+        $res_po = Crypt::decryptString($po_number);
+        try {
+            $PurchaseOrder = PurchaseOrder::where('po_number', $res_po)->first();
+
+            $this->markAsSeen($PurchaseOrder->po_number);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrder
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function printLabelQRForSupplier($po_id)
+    {
+        try {
+            $res_po = PurchaseOrder::findOrFail($po_id);
+
+            $qrCode = QrCode::create($res_po->po_number);
+            $qrCode->setSize(300); // Set QR code size
+
+            // Create the writer to output as PNG
+            $writer = new PngWriter();
+
+            // Generate the QR code image data
+            $qrCodeData = $writer->write($qrCode);
+
+            // Pass the QR code image data to your view
+            return view('purchase_orders.qr-label', [
+                'po' => $res_po,
+                'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error print QR Label: ' . $th->getMessage(),
+                'data' => $res_po->po_number
+            ], 400);
+        }
+    }
+    public function downloadPDFForSupplier($po_id)
+    {
+        // $res_po = Crypt::decryptString($po_number);
+        $res_po = PurchaseOrder::findOrFail($po_id);
+        try {
+
+            $this->markAsDownloaded($res_po->po_number);
+            return $this->downloadPDF($res_po->po_number);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error downloading PDF: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function printQrLabel($poNumber)
+    {
+        $po = PurchaseOrder::where('po_number', $poNumber)->firstOrFail();
+
+        // Create the QR code instance
+        $qrCode = QrCode::create($po->po_number);
+        $qrCode->setSize(300); // Set QR code size
+
+        // Create the writer to output as PNG
+        $writer = new PngWriter();
+
+        // Generate the QR code image data
+        $qrCodeData = $writer->write($qrCode);
+
+        // Pass the QR code image data to your view
+        return view('purchase_orders.qr-label', [
+            'po' => $po,
+            'qrCode' => $qrCodeData->getDataUri(), // Get data URI for embedding in HTML
+        ]);
+    }
+
+    public function generateAndStoreQRCode($poNumber)
+    {
+        $filename = '';
+        try {
+            $po = PurchaseOrder::where('po_number', $poNumber)->firstOrFail();
+            $qr = Qr::GenerateQR('purchase_order', $poNumber);
+            $filename = $qr->path;
+            $po->qr_uuid = $qr->uuid;
+            $po->save();
+        } catch (\Throwable $th) {
+            //throw $th;
+
+        }
+
+        return $filename;
+    }
+
+    public function downloadPDF($po_number)
+    {
+        try {
+            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            $forecastQties = ForecastQty::where('is_active', 1)->get();
+
+            if (!$purchaseOrder) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order not found',
+                    'data' => null
+                ], 404);
+            }
+
+            // check status purchase order
+            if (!isset($purchaseOrder->status)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order status not found',
+                    'data' => null
+                ], 404);
+            }
+
+            $pdf = PDF::loadView('purchase_orders.pdf2', ['forecastQties' => $forecastQties, 'purchaseOrder' => new PurchaseOrderResource($purchaseOrder)]);
+            return $pdf->download('' . $purchaseOrder->po_number . '.pdf');
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function printPO($po_number)
+    {
+        try {
+            $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+            $forecastQties = ForecastQty::where('is_active', 1)->get();
+
+            if (!$purchaseOrder) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order not found',
+                    'data' => null
+                ], 404);
+            }
+
+            // check status purchase order
+            if (!isset($purchaseOrder->status)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Purchase order status not found',
+                    'data' => null
+                ], 404);
+            }
+
+            $pdf = PDF::loadView('purchase_orders.pdf2', ['forecastQties' => $forecastQties, 'purchaseOrder' => new PurchaseOrderResource($purchaseOrder)]);
+            $result = $pdf->output();
+            return response()->json(['pdf_data' => base64_encode($result)]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function printPOForSupplier($po_id)
+    {
+        try {
+            $res_po = PurchaseOrder::findOrFail($po_id);
+
+            $this->markAsDownloaded($res_po->po_number);
+            return $this->printPO($res_po->po_number);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error downloading PDF: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function downloadMultiplePDF(Request $request)
+    {
+        $request->validate([
+            'po_numbers' => 'required|array',
+        ]);
+
+        try {
+            $zip = new \ZipArchive();
+            $zipFileName = 'purchase_orders_' . date('YmdHis') . '.zip';
+            $zipPath = storage_path('app/public/temp/' . $zipFileName);
+
+            if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($request->po_numbers as $po_number) {
+                    $purchaseOrder = PurchaseOrder::where('po_number', $po_number)->first();
+
+                    if ($purchaseOrder) {
+                        $pdf = PDF::loadView('purchase_orders.pdf2', ['purchaseOrder' => $purchaseOrder]);
+                        $pdfFileName = $purchaseOrder->po_number . '.pdf';
+                        $pdf->save(storage_path('app/public/temp/' . $pdfFileName));
+
+                        $zip->addFile(storage_path('app/public/temp/' . $pdfFileName), $pdfFileName);
+                    }
+                }
+
+                $zip->close();
+
+                // Delete temporary PDF files
+                foreach ($request->po_numbers as $po_number) {
+                    $pdfFileName = $po_number . '.pdf';
+                    if (file_exists(storage_path('app/public/temp/' . $pdfFileName))) {
+                        unlink(storage_path('app/public/temp/' . $pdfFileName));
+                    }
+                }
+
+                return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+            } else {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Error creating zip file',
+                    'data' => null
+                ], 400);
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error: ' . $th->getMessage(),
+                'data' => null
+            ], 400);
+        }
+    }
+
+    public function listNeedSigned(Request $request, $approvalType)
+    {
+        try {
+            $PurchaseOrder = "";
+
+            switch ($approvalType) {
+                case "knowed":
+                    $PurchaseOrder = PurchaseOrder::whereNull('purchase_knowed_by')
+                        ->orWhere(function ($query) {
+                            $query->where('purchase_knowed_by', '!=', null)
+                                ->where('purchase_knowed_by', '=', '')
+                                ->where('is_checked', '=', 1);
+                        })
+                        ->get();
+                    break;
+
+                case "checked":
+                    $PurchaseOrder = PurchaseOrder::whereNull('purchase_checked_by')
+                        ->orWhere(function ($query) {
+                            $query->where('purchase_checked_by', '!=', null)
+                                ->where('purchase_checked_by', '=', '');
+                        })
+                        ->get();
+                    break;
+
+                case "approved":
+                    $PurchaseOrder = PurchaseOrder::whereNull('purchase_agreement_by')
+                        ->orWhere(function ($query) {
+                            $query->where('purchase_agreement_by', '!=', null)
+                                ->where('purchase_agreement_by', '=', '')
+                                ->where('is_knowed', '=', 1)
+                                ->where('is_checked', '=', 1);
+                        })
+                        ->get();
+                    break;
+
+                default:
+                    return response()->json([
+                        'type' => 'error',
+                        'message' => '',
+                        'data' => "Type not found!"
+                    ]);
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => $PurchaseOrder
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+
+    public function signedAsKnowed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
+            $PurchaseOrder->knowed_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_knowed = 1;
+            // $PurchaseOrder->knowed_at = 
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to knowed."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsChecked($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_checked_by = auth()->user()->npk;
+            $PurchaseOrder->checked_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_checked = 1;
+            // $PurchaseOrder->checked_at = 
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to checked."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsApproved(Request $request, $id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_agreement_by = auth()->user()->npk;
+            $PurchaseOrder->approved_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_approved = 1;
+            $PurchaseOrder->status = "approved";
+            $PurchaseOrder->save();
+
+            // Send an email notification
+            EmailController::sendEmailPurchaseOrderConfirmation($request, $PurchaseOrder->po_number);
+
+            $msg = $PurchaseOrder->po_number . ' sudah di approved dan PO sudah dikirim ke supplier.';
+            $receipt_number = 'whatsapp:+6285156376462';
+            WhatsAppController::sendWhatsAppMessage($request, $receipt_number, $msg);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was confirmed to approved."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsKnowedUnconfirmed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
+            $PurchaseOrder->knowed_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_knowed = 0;
+            $PurchaseOrder->status = "unapproved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was set to unconfirmed to knowed."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsCheckedUnconfirmed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_checked_by = auth()->user()->npk;
+            $PurchaseOrder->checked_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_checked = 0;
+            // $PurchaseOrder->checked_at = 
+            $PurchaseOrder->status = "unapproved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was unconfirmed to checked."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+    public function signedAsApprovedUnconfirmed($id)
+    {
+        try {
+            $PurchaseOrder = PurchaseOrder::findOrFail($id);
+
+            $PurchaseOrder->purchase_agreement_by = auth()->user()->npk;
+            $PurchaseOrder->approved_at = new \MongoDB\BSON\UTCDateTime();
+            $PurchaseOrder->is_approved = 0;
+            $PurchaseOrder->status = "unapproved";
+            $PurchaseOrder->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => '',
+                'data' => "Purchase Order " . $PurchaseOrder->po_number . " was unconfirmed to approved."
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => '',
+                'data' => 'Error: ' . $th->getMessage()
+            ]);
+        }
+    }
+
+    public function getPOByStorageLocation(Request $request)
+    {
+        $request->validate([
+            'storage_location' => 'required|string',
+            'month_year' => 'sometimes|string|regex:/^\d{4}(-\d{2})?$/',
+        ]);
+
+        $storageLocation = $request->input('storage_location');
+        $monthYear = $request->input('month_year');
+
+        $cacheKey = 'pos_by_storage_location_' . md5(serialize($request->all()));
+
+        $purchaseOrders = Cache::remember($cacheKey, 60, function () use ($storageLocation, $monthYear) {
+            $query = PurchaseOrder::query();
+
+            $query->where('s_locks_code', $storageLocation);
+
+            if ($monthYear) {
+                $dateParts = explode('-', $monthYear);
+                $year = (int)$dateParts[0];
+
+                $start = Carbon::createFromDate($year, isset($dateParts[1]) ? (int)$dateParts[1] : 1, 1)->startOfDay();
+                $end = isset($dateParts[1])
+                    ? Carbon::createFromDate($year, (int)$dateParts[1], 1)->endOfMonth()->endOfDay()
+                    : Carbon::createFromDate($year, 12, 31)->endOfDay();
+
+                $query->whereBetween('order_date', [new UTCDateTime($start), new UTCDateTime($end)]);
+            }
+
+            return $query->with('supplier', 'items.material')->get();
+        });
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Purchase Orders retrieved successfully',
+            'data' => $purchaseOrders,
+        ], 200);
+    }
+}

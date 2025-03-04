@@ -9,26 +9,27 @@ class Material extends Model
     //
     protected $fillable = ['code'];
 
-    public function getAllData($keyword, $columns, $sort, $order)
+    public function getAllData($keyword, $columns, $sort, $order, $category = null)
     {
 
         $query = Material::query();
-        
-        if(!empty($keyword)){
+
+        if (!empty($keyword)) {
 
             foreach ($columns as $index => $column) {
 
                 if ($index == 0) {
 
-                    $query = $query->where($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->where($column, 'like', '%' . $keyword . '%');
                 } else {
 
-                    $query = $query->orWhere($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
                 }
-
             }
+        }
+
+        if ($category) {
+            $query->where('category', $category);
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
@@ -38,27 +39,28 @@ class Material extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $category = null)
     {
 
         $query = Material::query();
         $skip = $perpage * ($page - 1);
-        
-        if(!empty($keyword)){
+
+        if (!empty($keyword)) {
 
             foreach ($columns as $index => $column) {
 
                 if ($index == 0) {
 
-                    $query = $query->where($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->where($column, 'like', '%' . $keyword . '%');
                 } else {
 
-                    $query = $query->orWhere($column, 'like', '%'.$keyword.'%');
-
+                    $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
                 }
-
             }
+        }
+
+        if ($category) {
+            $query->where('category', $category);
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
@@ -66,7 +68,6 @@ class Material extends Model
         $data = $query->take((int)$perpage)->skip((int)$skip)->get();
 
         return $data;
-
     }
 
     public function checkMaterial($code)
@@ -76,5 +77,10 @@ class Material extends Model
         $query = $query->where('code', $code)->get();
 
         return $query;
+    }
+
+    public function materialType()
+    {
+        return $this->hasOne(MaterialType::class, 'name', 'type');
     }
 }

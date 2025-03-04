@@ -18,6 +18,14 @@ class DatabaseSeeder extends Seeder
         $this->call(ScaleSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(UserSeeder::class);
-        
+        $this->call(CustomerSeeder::class);
+        $this->call(StatusPartComponentSeeder::class);
+        $this->call(LineNumberSeeder::class);
+        $this->call(SupplierSeeder::class);
+        $this->call(EmailTemplateSeeder::class);
+        $this->call(ShippingAddressesSeeder::class);
+        $this->call(MaterialTypeSeeder::class);
+        $this->call(SLockSeeder::class);
+        // $this->call(PurchaseOrderSeeder::class);
     }
 }

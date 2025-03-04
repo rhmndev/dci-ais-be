@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use App\Permission;
+use Illuminate\Support\Str;
 
 class PermissionSeeder extends Seeder
 {
@@ -43,11 +44,20 @@ class PermissionSeeder extends Seeder
 						"changed_by" => "seeder",
 					],
 					[
+						"name" => "Customer",
+						"description" => null,
+						"url" => "customer",
+						"icon" => null,
+						"order_number" => 2,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
 						"name" => "Vendor",
 						"description" => null,
 						"url" => "vendor",
 						"icon" => null,
-						"order_number" => 2,
+						"order_number" => 3,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					],
@@ -56,7 +66,7 @@ class PermissionSeeder extends Seeder
 						"description" => null,
 						"url" => "material",
 						"icon" => null,
-						"order_number" => 3,
+						"order_number" => 4,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					],
@@ -65,10 +75,28 @@ class PermissionSeeder extends Seeder
 						"description" => null,
 						"url" => "news",
 						"icon" => null,
-						"order_number" => 4,
+						"order_number" => 5,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
-					]
+					],
+					[
+						"name" => "Part Component",
+						"description" => null,
+						"url" => "part_component",
+						"icon" => null,
+						"order_number" => 6,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
+						"name" => "Supplier",
+						"description" => null,
+						"url" => "supplier",
+						"icon" => null,
+						"order_number" => 7,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
 				]
 			],
 			[
@@ -85,36 +113,146 @@ class PermissionSeeder extends Seeder
 				"description" => null,
 				"url" => "transaction",
 				"icon" => "exchange-alt",
-				"order_number" => 4,
+				"order_number" => 5,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+				"children" => [
+					// [
+					// 	"name" => "Prepreration Delivery Vendor",
+					// 	"description" => null,
+					// 	"url" => "receiving-vendor",
+					// 	"icon" => null,
+					// 	"order_number" => 1,
+					// 	"created_by" => "seeder",
+					// 	"changed_by" => "seeder",
+					// ],
+					// [
+					// 	"name" => "Receiving Material",
+					// 	"description" => null,
+					// 	"url" => "receiving",
+					// 	"icon" => null,
+					// 	"order_number" => 2,
+					// 	"created_by" => "seeder",
+					// 	"changed_by" => "seeder",
+					// ],
+					[
+						"name" => "Receiving Checkpoint",
+						"description" => null,
+						"url" => "receiving-checkpoint",
+						"icon" => null,
+						"order_number" => 3,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
+						"name" => "Reporting Inspection",
+						"description" => null,
+						"url" => "inspeksilaporan",
+						"icon" => null,
+						"order_number" => 4,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					]
+				]
+			],
+			[
+				"name" => "Purchase Order",
+				"description" => null,
+				"url" => "purchase-order",
+				"icon" => "shopping-cart",
+				"order_number" => 6,
 				"created_by" => "seeder",
 				"changed_by" => "seeder",
 				"children" => [
 					[
-						"name" => "Prepreration Delivery Vendor",
+						"name" => "Purchase Order",
 						"description" => null,
-						"url" => "receiving-vendor",
+						"url" => "purchase-order",
 						"icon" => null,
 						"order_number" => 1,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					],
 					[
-						"name" => "Receiving Material",
+						"name" => "Order Approvals",
 						"description" => null,
-						"url" => "receiving",
+						"url" => "OrderApproval",
 						"icon" => null,
 						"order_number" => 2,
 						"created_by" => "seeder",
 						"changed_by" => "seeder",
 					],
+					[
+						"name" => "Approvals",
+						"description" => null,
+						"url" => "Approval",
+						"icon" => null,
+						"order_number" => 3,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
+						"name" => "Monitoring Purchase Order",
+						"description" => null,
+						"url" => "MonitoringPO",
+						"icon" => null,
+						"order_number" => 4,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
+						"name" => "Delivery Schedule",
+						"description" => null,
+						"url" => "delivery-schedule",
+						"icon" => null,
+						"order_number" => 5,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					],
+					[
+						"name" => "Settings PO",
+						"description" => null,
+						"url" => "purchase-order-settings",
+						"icon" => null,
+						"order_number" => 6,
+						"created_by" => "seeder",
+						"changed_by" => "seeder",
+					]
 				]
+			],
+			[
+				"name" => "PO Order Delivery",
+				"description" => null,
+				"url" => "supplier-area",
+				"icon" => "shopping-cart",
+				"order_number" => 3,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
+				"name" => "Warehouse Area",
+				"description" => null,
+				"url" => "warehouse-area",
+				"icon" => "home",
+				"order_number" => 3,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
+			],
+			[
+				"name" => "Reminders",
+				"description" => null,
+				"url" => "reminder",
+				"icon" => "home",
+				"order_number" => 6,
+				"created_by" => "seeder",
+				"changed_by" => "seeder",
 			],
 			[
 				"name" => "Settings",
 				"description" => null,
 				"url" => "settings",
 				"icon" => "cogs",
-				"order_number" => 5,
+				"order_number" => 7,
 				"created_by" => "seeder",
 				"changed_by" => "seeder",
 				"children" => [
@@ -150,8 +288,16 @@ class PermissionSeeder extends Seeder
 		];
 
 		foreach (collect($permissions) as $permission) {
+			$slug = Str::slug($permission['name']);
+			$counter = 1;
+			while (Permission::where('slug', $slug)->exists()) {
+				$slug = Str::slug($permission['name']) . '-' . $counter;
+				$counter++;
+			}
+
 			$data = new Permission;
 			$data->name = $permission['name'];
+			$data->slug = $slug;
 			$data->description = $permission['description'];
 			$data->url = $permission['url'];
 			$data->icon = $permission['icon'];
@@ -164,8 +310,17 @@ class PermissionSeeder extends Seeder
 
 			if (!empty($permission['children'])) {
 				foreach ($permission['children'] as $child) {
+					$childSlug = Str::slug($child['name']);
+					$childCounter = 1;
+
+					while (Permission::where('slug', $childSlug)->exists()) {
+						$childSlug = Str::slug($child['name']) . '-' . $childCounter;
+						$childCounter++;
+					}
+
 					$data2 = new Permission;
 					$data2->name = $child['name'];
+					$data2->slug = $childSlug;
 					$data2->description = $child['description'];
 					$data2->url = $child['url'];
 					$data2->icon = $child['icon'];

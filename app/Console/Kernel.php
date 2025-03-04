@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use Carbon\Carbon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -13,7 +14,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        \App\Console\Commands\AddDummyPurchaseOrder::class,
     ];
 
     /**
@@ -26,6 +27,15 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')
         //          ->hourly();
+        // $schedule->command('purchase-order:calculate-analytics')->monthly();
+        // $schedule->command('sap:sync-purchase-orders')->everyFiveMinutes();
+        $schedule->command('email:send-po-confirmation')->everyMinute();
+        $schedule->command('purchase-order:send-reminder')->daily();
+        // $schedule->command('purchase-order:send-reminder')->everyMinute();
+        // $schedule->command('reminder:check-expiry')->everyMinute();
+        // $schedule->command('purchase-order:send-reminder')->daily()->when(function () {
+        //     return Carbon::now()->dayOfWeek === Carbon::MONDAY; // Run every Monday for the 7-day check
+        // });
     }
 
     /**
@@ -35,7 +45,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

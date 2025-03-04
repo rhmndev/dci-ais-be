@@ -19,16 +19,30 @@ class Role extends Model
     {
         $query = new Role;
 
-        if ($type == 1){
+        switch ($type) {
+            case 0:
+                $query = $query->where('name', 'Admin');
+                break;
+            case 1:
+                $query = $query->where('name', 'Vendor');
+                break;
+            case 3:
+                $query = $query->where('name', 'Purchasing');
+                break;
+            case 4:
+                $query = $query->where('name', 'Warehouse');
+                break;
 
-            $query = $query->where('name', 'Vendor');
-
-        } else {
-
-            $query = $query->where('name', 'Admin');
-
+            default:
+                $query = $query->where('name', 'Supplier');
+                break;
         }
 
         return $query->first();
+    }
+
+    public function headOfDepartment()
+    {
+        return $this->belongsTo(User::class, 'head_of_department_id');
     }
 }

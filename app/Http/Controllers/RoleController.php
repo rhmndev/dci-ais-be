@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Permission;
 use Illuminate\Http\Request;
 use App\Role;
 
@@ -10,42 +11,37 @@ class RoleController extends Controller
     public function index(Request $request)
     {
         $skip = $request->perpage * ($request->page - 1);
-        $roles = Role::where(function($where) use ($request){
-            
-                        if (!empty($request->keyword)) {
-                            foreach ($request->columns as $index => $column) {
-                                if ($index == 0) {
-                                    $where->where($column, 'like', '%'.$request->keyword.'%');
-                                } else {
-                                    $where->orWhere($column, 'like', '%'.$request->keyword.'%');
-                                }
-                            }
-                                
-                        }
-
-                    })
-                    ->when(!empty($request->sort), function($query) use ($request){
-                        $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
-                    })
-                    ->take((int)$request->perpage)
-                    ->skip((int)$skip)
-                    ->get();
-
-        $total = Role::where(function($where) use ($request){
-            
+        $roles = Role::where(function ($where) use ($request) {
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
                     if ($index == 0) {
-                        $where->where($column, 'like', '%'.$request->keyword.'%');
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
                     } else {
-                        $where->orWhere($column, 'like', '%'.$request->keyword.'%');
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
                     }
                 }
-                    
             }
-
         })
-        ->count();
+            ->when(!empty($request->sort), function ($query) use ($request) {
+                $query->orderBy($request->sort, $request->order == 'ascend' ? 'asc' : 'desc');
+            })
+            ->take((int)$request->perpage)
+            ->skip((int)$skip)
+            ->get();
+
+        $total = Role::where(function ($where) use ($request) {
+
+            if (!empty($request->keyword)) {
+                foreach ($request->columns as $index => $column) {
+                    if ($index == 0) {
+                        $where->where($column, 'like', '%' . $request->keyword . '%');
+                    } else {
+                        $where->orWhere($column, 'like', '%' . $request->keyword . '%');
+                    }
+                }
+            }
+        })
+            ->count();
 
         return response()->json([
             'type' => 'success',
@@ -64,15 +60,20 @@ class RoleController extends Controller
 
         $permissions = [];
 
-        foreach ($request->permissions as $index => $permission) {
+        foreach ($request->permissions as $permissionId => $allow) {
+            $permis_data = Permission::findOrFail($permissionId);
+
             $permissions[] = [
-                'permission_id' => $index,
-                'allow' => $permission
+                'permission_id' => $permissionId,
+                'slug' => $permis_data->slug,
+                'allow' => $allow
             ];
         }
 
         $role->name = $request->name;
         $role->description = $request->description;
+        $role->has_head_of_department = $request->has_head_of_department ?? false;
+        $role->head_of_department_id = $request->head_of_department_id ?? null;
         $role->permissions = $permissions;
         $role->created_by = auth()->user()->username;
         $role->changed_by = auth()->user()->username;
@@ -80,7 +81,8 @@ class RoleController extends Controller
 
         return response()->json([
             'type' => 'success',
-            'message' => 'Data saved successfully!'
+            'message' => 'Data saved successfully!',
+            'data' => $role->permissions
         ], 201);
     }
 
@@ -90,7 +92,9 @@ class RoleController extends Controller
 
         $permissions = [];
         foreach ($role->permissions as $permission) {
-            $permissions[$permission['permission_id']] = $permission['allow'];
+            if (isset($permission['permission_id'])) {
+                $permissions[$permission['permission_id']] = $permission['allow'];
+            }
         }
 
         $role->perms = $permissions;
@@ -111,15 +115,20 @@ class RoleController extends Controller
 
         $permissions = [];
 
-        foreach ($request->permissions as $index => $permission) {
+        foreach ($request->permissions as $permissionId => $allow) {
+            $permis_data = Permission::findOrFail($permissionId);
+
             $permissions[] = [
-                'permission_id' => $index,
-                'allow' => $permission
+                'permission_id' => $permissionId,
+                'slug' => $permis_data->slug,
+                'allow' => $allow
             ];
         }
 
         $role->name = $request->name;
         $role->description = $request->description;
+        $role->has_head_of_department = $request->has_head_of_department ?? false;
+        $role->head_of_department_id = $request->head_of_department_id ?? null;
         $role->permissions = $permissions;
         $role->changed_by = auth()->user()->username;
         $role->save();
@@ -142,16 +151,16 @@ class RoleController extends Controller
 
     public function list(Request $request)
     {
-        $roles = Role::when($request->keyword, function($query) use ($request) {
-                        if (!empty($request->keyword)) {
-                            $query->where('name', 'like', '%'.$request->keyword.'%');
-                        }
-                    })->take(10)
-                    ->get();
+        $roles = Role::when($request->keyword, function ($query) use ($request) {
+            if (!empty($request->keyword)) {
+                $query->where('name', 'like', '%' . $request->keyword . '%');
+            }
+        })->take(10)
+            ->get();
 
         return response()->json([
-        'type' => 'success',
-        'data' => $roles
+            'type' => 'success',
+            'data' => $roles
         ], 200);
     }
 }

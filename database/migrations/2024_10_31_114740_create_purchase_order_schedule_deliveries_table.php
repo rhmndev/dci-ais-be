@@ -1,0 +1,44 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreatePurchaseOrderScheduleDeliveriesTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('purchase_order_schedule_deliveries', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('po_number');
+            $table->string('filename');
+            $table->string('description')->nullable();
+            $table->longText('file_path');
+            $table->boolean('show_to_supplier')->default(false);
+            $table->boolean('is_send_email_to_supplier')->default(false);
+            $table->string('status_schedule');
+            $table->string('supplier_confirmed');
+            $table->string('supplier_revision_notes')->nullable();
+            $table->longText('supplier_revised_file_path')->nullable();
+            $table->timestamp('supplier_confirmed_at')->nullable();
+            $table->string('created_by');
+            $table->string('updated_by');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('purchase_order_schedule_deliveries');
+    }
+}

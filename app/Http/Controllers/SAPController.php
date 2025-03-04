@@ -15,7 +15,6 @@ use Carbon\Carbon;
 
 class SAPController extends Controller
 {
-    //
     public function getVendor(Request $request)
     {
 

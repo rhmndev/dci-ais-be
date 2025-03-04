@@ -17,14 +17,13 @@
         style="@import url(https://fonts.googleapis.com/css?family=Rubik:300,400,500,700|Open+Sans:300,400,600,700); font-family: 'Open Sans', sans-serif;">
         <tr>
             <td>
-                <table style="background-color: #f2f3f8; max-width:670px;  margin:0 auto;" width="100%" border="0"
-                    align="center" cellpadding="0" cellspacing="0">
+                <table style="background-color: #f2f3f8; max-width:670px;  margin:0 auto;" width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
                     <tr>
                         <td style="height:80px;">&nbsp;</td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            <img src="https://www.dharmap.com/assets/subco/images/logo%20dci.png" title="logo" alt="logo">
+                            <img src="https://media.licdn.com/dms/image/v2/C560BAQE13m_saMfn7g/company-logo_200_200/company-logo_200_200/0/1661152322194?e=2147483647&v=beta&t=BcpoGiGZF55vlEU0edwg4f0FMyZh7_NzsUdhTjZW89M" title="logo" alt="logo">
                         </td>
                     </tr>
                     <tr>

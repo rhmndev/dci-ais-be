@@ -19,9 +19,12 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Admin',
                 'description' => 'Administrator',
-                'permissions' => $permissions->map(function($perm){
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
+                'permissions' => $permissions->map(function ($perm) {
                     return [
                         'permission_id' => $perm->id,
+                        'slug' => $perm->slug,
                         'allow' => true
                     ];
                 })->toArray(),
@@ -31,19 +34,93 @@ class RoleSeeder extends Seeder
             [
                 'name' => 'Vendor',
                 'description' => 'Vendor',
-                'permissions' => $permissions->map(function($perm){
-                    if ( $perm->url == 'dashboard' || $perm->url == 'transaction' || $perm->url == 'receiving-vendor' ){
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard' || $perm->url == 'transaction' || $perm->url == 'receiving-vendor') {
 
                         return [
                             'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
                             'allow' => true
                         ];
-
                     }
                 })->toArray(),
                 'created_by' => 'seeder',
                 'updated_by' => 'seeder'
-            ]
+            ],
+            [
+                'name' => 'Supplier',
+                'description' => 'Supplier',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard' || $perm->url == 'supplier-area') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                'name' => 'Purchasing',
+                'description' => 'Purchasing',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard' || $perm->url == 'purchase-order' || $perm->url == 'MonitoringPO' || $perm->url == 'delivery-schedule') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                'name' => 'Warehouse',
+                'description' => 'Warehouse',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard' || $perm->url == 'warehouse-area' || $perm->url == 'delivery-schedule' || $perm->url == 'receiving-checkpoint') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
+            [
+                'name' => 'Director',
+                'description' => 'Director',
+                'has_head_of_department' => false,
+                'head_of_department_id' => null,
+                'permissions' => $permissions->map(function ($perm) {
+                    if ($perm->url == 'dashboard') {
+
+                        return [
+                            'permission_id' => $perm->id,
+                            'slug' => $perm->slug,
+                            'allow' => true
+                        ];
+                    }
+                })->toArray(),
+                'created_by' => 'seeder',
+                'updated_by' => 'seeder'
+            ],
         ];
 
         foreach ($datas as $data) {
@@ -55,7 +132,6 @@ class RoleSeeder extends Seeder
             $role->created_by = $data['created_by'];
             $role->updated_by = $data['updated_by'];
             $role->save();
-
         }
     }
 }

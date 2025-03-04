@@ -6,11 +6,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\UsersImport;
+use App\Mail\PasswordChangedNotification;
 use App\User;
 use App\Vendor;
 use Carbon\Carbon;
 use Image;
 use Excel;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -66,6 +68,35 @@ class UserController extends Controller
             'type' => 'success',
             'data' =>  $user
         ]);
+    }
+
+    public function list(Request $request)
+    {
+
+        $keyword = ($request->keyword != null) ? $request->keyword : '';
+        $type = $request->type != null ? $request->type : '';
+        $data = array();
+
+        try {
+
+            $User = new User;
+            $results = $User->getList($keyword, $type);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Success.',
+                'data' => $results,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                'type' => 'failed',
+                'message' => 'Err: ' . $e . '.',
+                'data' => NULL,
+
+            ], 400);
+        }
     }
 
     public function store(Request $request)
@@ -255,7 +286,6 @@ class UserController extends Controller
 
                 ], 200);
             }
-            
         } catch (\Exception $e) {
 
             return response()->json([
@@ -284,10 +314,36 @@ class UserController extends Controller
         ], 200);
     }
 
-    // private function IsNullOrEmptyString($str)
-    // {
-    //     return (!isset($str) || trim($str) === '');
-    // }
+    private function IsNullOrEmptyString($str)
+    {
+        return (!isset($str) || trim($str) === '');
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+        try {
+            $user = $request->user();
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['message' => 'Current password incorrect.'], 400);
+            }
+
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            Mail::to($user->email)->send(new PasswordChangedNotification($user));
+
+            return response()->json(['message' => 'Password changed successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error changing password: ' . $e->getMessage(),  // Or a more user-friendly message
+            ], 500);  // 500 for server errors
+        }
+    }
 
     private function phoneNumber($number)
     {
@@ -309,5 +365,60 @@ class UserController extends Controller
         }
 
         return $number;
+    }
+
+    public function myData(Request $request)
+    {
+        try {
+            $user = auth()->user(); // Get the authenticated user
+
+            if ($user) {
+                return response()->json([
+                    'type' => 'success',
+                    'message' => 'User data retrieved successfully.',
+                    'data' => $user,
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User not authenticated.',
+                    'data' => null,
+                ], 401);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error retrieving user data: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    public function getMyPermissions(Request $request)
+    {
+        try {
+            $user = auth()->user(); // Get the authenticated user
+            if ($user) {
+                $permissions = $user->role->permissions->pluck('slug');
+
+                return response()->json([
+                    'type' => 'success',
+                    'message' => 'User permissions retrieved successfully.',
+                    'data' => $permissions,
+                ], 200);
+            } else {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'User not authenticated.',
+                    'data' => null,
+                ], 401);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error retrieving user permissions: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
     }
 }
