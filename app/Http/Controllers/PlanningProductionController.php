@@ -12,10 +12,14 @@ class PlanningProductionController extends Controller
         try {
             $perPage = $request->get('per_page', 15);
 
-            $planningProductions = PlanningProduction::orderBy('code', 'desc')->orderBy('time', 'asc');
+            $planningProductions = PlanningProduction::query();
 
             if ($request->has('code')) {
                 $planningProductions->where('code', $request->code);
+            }
+
+            if ($request->has('sortBy') && in_array(strtolower($request->sortOrder), ['asc', 'desc'])) {
+                $planningProductions->orderBy($request->sortBy, strtolower($request->sortOrder));
             }
 
             $planningProductions = $planningProductions->paginate($perPage);
