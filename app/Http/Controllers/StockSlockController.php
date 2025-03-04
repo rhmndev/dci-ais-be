@@ -243,7 +243,7 @@ class StockSlockController extends Controller
         if ($remainingStock <= 0) {
             $stockSlock->delete();
         } else {
-            $stockSlock->update(['valuated_stock' => $remainingStock]);
+            $stockSlock->update(['valuated_stock' => $remainingStock, 'last_time_take_out' => Carbon::now()->toDateTimeString()]);
         }
 
         $logStockSlock->update(['is_success' => true]);

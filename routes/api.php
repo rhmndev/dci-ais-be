@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
 
 Route::group(['middleware' => ['auth:api']], function () {
 
+        Route::get('/check-token', 'AuthController@checkToken');
+
         Route::get('/getmydata', 'UserController@myData');
 
         #region Dashboard
