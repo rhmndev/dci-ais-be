@@ -15,6 +15,12 @@ class CreateWhatsappTemplateTable extends Migration
     {
         Schema::create('whatsapp_template', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('template_name');
+            $table->enum('template_type', [
+                'purchase_order_to_vendor',
+                'welcome',
+                'password_reset',
+            ]);
             $table->timestamps();
         });
     }

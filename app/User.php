@@ -5,10 +5,11 @@ namespace App;
 use Jenssegers\Mongodb\Auth\User as Authenticable;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticable
 {
-    use HasRoles;
+    use HasRoles, Notifiable;
 
     protected $hidden = [
         'password',

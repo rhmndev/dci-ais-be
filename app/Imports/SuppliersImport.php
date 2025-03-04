@@ -15,12 +15,14 @@ class SuppliersImport implements ToModel, WithHeadingRow, WithCalculatedFormulas
 
     public function model(array $row)
     {
+        $emails = array_map('trim', explode(',', $row['emails']));
+
         return new Supplier([
             'code' => $row[0],
             'name' => $row[1],
             'address' => $row[2],
             'phone' => $row[3],
-            'email' => $row[4],
+            'emails' => $emails,
             'contact' => $row[5],
             'currency' => $row[6]
         ]);

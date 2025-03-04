@@ -23,6 +23,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/dashboard', 'DashboardController@index');
         Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
+        Route::put('/admin/reset-password/{id}', 'AdminController@resetPassword');
 
         Route::group(['middleware' => ['checkPermission:user']], function () {
                 #region Master User
@@ -80,6 +81,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/materiallist', 'MaterialController@list');
         Route::post('/material', 'MaterialController@store');
         Route::post('/material/{id}', 'MaterialController@store');
+        Route::put('/material/{id}', 'MaterialController@update');
         Route::delete('/material/{id}', 'MaterialController@destroy');
         Route::post('/materialimport', 'MaterialController@import');
         Route::get('/materialexport', 'MaterialController@export');
@@ -107,6 +109,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/customer/{id}', 'CustomerController@destroy');
         Route::post('/customerimport', 'CustomerController@import');
         Route::get('/customer/{id}/parts/list', 'CustomerController@listParts');
+        Route::get('/customer/g/customer-alias-list', 'CustomerController@getCustomerAliasList');
 
         #region Master Parts Components Customer
         Route::get('/part-component', 'PartComponentController@index');
@@ -203,7 +206,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/supplier/{supplier_code}', 'PurchaseOrderController@showByCodeSupplier');
         Route::get('/purchase-orders/{id}', 'PurchaseOrderController@show');
         Route::post('/purchase-orders', 'PurchaseOrderController@store');
-        Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
+        Route::put('/purchase-orders/{id}', '@update');
+        Route::put('/purchase-orders/{id}/status', 'PurchaseOrderController@updateStatus');
         Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
         Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
         Route::get('/purchase-orders/d/{po_number}', 'PurchaseOrderController@showPO');
@@ -218,6 +222,9 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/g/list-need-schedule-delivery', 'PurchaseOrderController@listNeedScheduleDeliveries');
         Route::get('/purchase-orders/g/list-schedule-delivered', 'PurchaseOrderController@getListScheduleDelivered');
         Route::get('/purchase-orders/g/list-po-schedule-deliveries', 'PurchaseOrderController@getListPOScheduleDeliveries');
+        Route::get('/purchase-orders/g/list-po-by-storage-location', 'PurchaseOrderController@getPOByStorageLocation');
+
+        Route::post('/purchase-orders/a/sync-excel', 'PurchaseOrderController@SyncExcel');
 
         Route::get('/purchase-order/a/{approvalType}', 'PurchaseOrderController@listNeedSigned');
         Route::post('/purchase-order/s/knowed/{id}/confirm', 'PurchaseOrderController@signedAsKnowed');
@@ -231,12 +238,14 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/purchase-orders/{poId}/tracking-events', 'PurchaseOrderController@getTrackingEvents');
 
         Route::get('/schedule-deliveries', 'ScheduleDeliveryController@index');
-        Route::put('/schedule-deliveries/{id}', 'ScheduleDeliveryController@update');
+        Route::post('/schedule-deliveries/{id}', 'ScheduleDeliveryController@update');
         Route::get('/schedule-deliveries/download/{id}', 'ScheduleDeliveryController@downloadScheduleDelivery');
+        Route::get('/schedule-deliveries/revision/download/{id}', 'ScheduleDeliveryController@downloadRevisionScheduleDelivery');
         Route::delete('/schedule-deliveries/{id}', 'ScheduleDeliveryController@destroy');
 
         Route::get('/purchase-order-analytics', 'PurchaseOrderAnalyticsController@index');
         Route::get('/poa/storage-location', 'PurchaseOrderAnalyticsController@getPurchaseOrderAnalyticsByStorageLocation');
+        Route::get('/poa/storage-location/get-total-po', 'PurchaseOrderAnalyticsController@getTotalPurchaseOrderByStorageLocation');
 
         Route::get('/c/my-signer', 'PurchaseOrderSignerController@mySigner');
         Route::apiResource('/purchase-order-signers', 'PurchaseOrderSignerController');
@@ -250,15 +259,19 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/send-test-email', 'EmailController@sendTestEmail');
 
         Route::group(['prefix' => 'travel-documents'], function () {
+                Route::get('/list', 'TravelDocumentController@index');
                 Route::get('/{id}', 'TravelDocumentController@show');
+                Route::get('/g/scan', 'TravelDocumentController@scan');
                 Route::get('/item/{id}', 'TravelDocumentController@showItem');
                 // Route::post('/{id}', 'TravelDocumentController@update');
                 Route::get('/delivery-orders/g/{no}', 'TravelDocumentController@getDeliveryOrders');
                 Route::post('/by-po', 'TravelDocumentController@byPO');
                 Route::post('/{poId}/get-print-items-label', 'TravelDocumentController@getPrintedItemsLabelsForSupplier');
                 Route::post('/{poItemId}/get-print-label', 'TravelDocumentController@getPrintedLabels');
+                Route::post('/{poItemId}/get-print-package-label', 'TravelDocumentController@getPrintedPackageLabels');
                 Route::post('/{poId}/{poItemId}/print-label', 'TravelDocumentController@generateItemLabels');
                 Route::post('/{poItemId}/print-label-temp', 'TravelDocumentController@tempPrintLabel');
+                Route::post('/{poItemId}/print-package-label-temp', 'TravelDocumentController@tempPrintPackageLabel');
                 Route::post('/{itemNumberId}/print-label-temp-by-id', 'TravelDocumentController@tempPrintLabelById');
                 Route::post('/create/{poId}', 'TravelDocumentController@create');
                 // Route::get('/{id}/download', 'TravelDocumentController@download');
@@ -273,7 +286,65 @@ Route::group(['middleware' => ['auth:api']], function () {
 
                 Route::get('/g/supplier', 'TravelDocumentController@getBySupplierLoggedUser');
         });
+
+        Route::group(['prefix' => 'schedule-delivery'], function () {
+                Route::get('/', 'WhsScheduleDeliveryController@index');
+                Route::post('/a/customer-delivery-cycle', 'WhsScheduleDeliveryController@createCustomerDeliveryCycle');
+                Route::put('/u/customer-delivery-cycle/{id}', 'WhsScheduleDeliveryController@updateCustomerDeliveryCycle');
+                Route::post('/a/customer-pickup-time', 'CustomerScheduleDeliveryListController@createCustomerPickupTime');
+                Route::put('/u/customer-pickup-time/{id}', 'CustomerScheduleDeliveryListController@updateCustomerPickupTime');
+                Route::post('/a/import', 'CustomerScheduleDeliveryListController@importScheduleDeliveries');
+                Route::post('/a/destroy/{id}', 'CustomerScheduleDeliveryListController@destroy');
+                Route::post('/a/destroy-customer-schedule-delivery/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryList');
+                Route::post('/a/destroy-customer-pickup-time/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryPickupTime');
+                Route::post('/a/destroy-customer-cycle/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryCycle');
+                Route::post('/a/create-list', 'CustomerScheduleDeliveryListController@createList');
+
+                Route::post('/a/destroy-selected', 'CustomerScheduleDeliveryListController@destroySelected');
+
+                Route::post('/a/customer-import', 'CustomerScheduleDeliveryListController@importCustomer');
+                Route::post('/a/customer-cycle-import', 'CustomerScheduleDeliveryListController@importCustomerCycle');
+                Route::post('/a/customer-pickuptime-import', 'CustomerScheduleDeliveryListController@importCustomerPickupTime');
+                Route::get('/g/customer-cycle-list', 'CustomerScheduleDeliveryListController@getCustomerCycleList');
+                Route::get('/g/customer-pickuptime-list', 'CustomerScheduleDeliveryListController@getCustomerPickupTimeList');
+
+                Route::post('/a/delete-selected', 'CustomerScheduleDeliveryListController@deleteSelected');
+        });
+
+        Route::group(['prefix' => 'stock-slocks'], function () {
+                Route::post('/a/import', 'StockSlockController@import');
+                Route::post('/a/take-out', 'StockSlockController@takeOut');
+                Route::post('/a/put-in', 'StockSlockController@putIn');
+                Route::post('/a/destroy/{id}', 'StockSlockController@destroy');
+
+                Route::get('/g/history', 'StockSlockController@getHistory');
+        });
+        Route::group(['prefix' => 'tracking-boxes'], function () {
+                Route::post('/', 'TrackingBoxController@store');
+                Route::get('/g/summary-period', 'TrackingBoxController@getSummaryByPeriod');
+        });
+
+        Route::group(['prefix' => 'rack'], function () {
+                Route::delete('/{id}', 'RackController@destroy');
+        });
+
+        Route::group(['prefix' => 'planning-productions'], function () {
+                Route::get('/', 'PlanningProductionController@index');
+                Route::post('/', 'PlanningProductionController@store');
+                Route::put('/{id}', 'PlanningProductionController@update');
+        });
 });
+
+Route::group(['prefix' => 'rack'], function () {
+        Route::get('/', 'RackController@index');
+        Route::post('/', 'RackController@store');
+        Route::post('/a/segment/create', 'RackController@createSegment');
+        Route::post('/a/segment/delete/{id}', 'RackController@deleteSegment');
+        Route::post('/a/segment/update/{id}', 'RackController@updateSegment');
+        Route::get('/g/segment-list', 'RackController@getSegmentList');
+        Route::get('/{id}/g/qrcode', 'RackController@generateQrCode');
+});
+
 Route::post('/login', 'AuthController@login');
 Route::post('/resetpassword', 'AuthController@resetpassword');
 Route::get('/resetpassword/{token}', 'AuthController@show');
@@ -309,23 +380,60 @@ Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');
 
 Route::get('/send-whatsapp', 'WhatsAppController@sendWhatsAppMessage');
 
+Route::group(['prefix' => 'boxes'], function () {
+        Route::get('/', 'BoxController@index');
+        Route::get('/g/boxes-details', 'BoxController@getBoxDetails');
+        Route::post('/', 'BoxController@store');
+        Route::get('/show/{id}', 'BoxController@show');
+        Route::get('/g/details', 'BoxController@showDetails');
+        Route::put('/{id}', 'BoxController@update');
+        Route::delete('/{id}', 'BoxController@destroy');
+        Route::post('/a/import', 'BoxController@import');
+        Route::get('/g/color-data', 'BoxController@getColorData');
+        Route::get('/g/color-codes', 'BoxController@getColorCodes');
+        Route::get('/g/type-codes', 'BoxController@getTypeBoxes');
+        Route::get('/g/count-boxes-by-type', 'BoxController@countBoxesByType');
+        Route::get('/g/timeline', 'BoxController@getTimelineBox');
+        Route::get('/g/getAnalyticDataBox', 'BoxController@getAnalyticDataBox');
+        Route::get('/g/getStatusChartData', 'BoxController@getStatusChartData');
+});
 
-Route::get('/debug-po', function () {
-        // $purchaseOrders = PurchaseOrder::where('created_at', '>=', Carbon::now()->subDays(7)->startOfDay())
-        //         ->where('created_at', '<', Carbon::now()->subDays(7)->endOfDay())
-        //         ->where(function ($query) {
-        //                 $query->where('status', 'waiting for checking')
-        //                         ->orWhere('status', 'waiting for knowing')
-        //                         ->orWhere('status', 'waiting for approval');
-        //         })
-        //         ->get();
+Route::group(['prefix' => 'stock-slocks'], function () {
+        Route::get('/', 'StockSlockController@index');
+        Route::post('/', 'StockSlockController@store');
+        Route::get('/show/{id}', 'StockSlockController@show');
+        Route::put('/{id}', 'StockSlockController@update');
+        // Route::post('/a/import', 'StockSlockController@import');
+});
 
-        $purchaseOrders = PurchaseOrder::where(function ($query) {
-                $query->where('status', 'waiting for checking')
-                        ->orWhere('status', 'waiting for knowing')
-                        ->orWhere('status', 'waiting for approval');
-        })
-                ->get();
+Route::group(['prefix' => 'tracking-boxes'], function () {
+        Route::get('/', 'TrackingBoxController@index');
+        Route::get('/show/{id}', 'TrackingBoxController@show');
+        Route::delete('/{id}', 'TrackingBoxController@destroy');
+        Route::post('/update/{id}', 'TrackingBoxController@update');
+        Route::get('/box/status', 'TrackingBoxController@getBoxStatus');
+        Route::delete('/{id}', 'TrackingBoxController@destroy');
+        Route::get('/g/data-customer', 'TrackingBoxController@getDataOrderCustomer');
+        Route::get('/g/data-customer-ahm', 'TrackingBoxController@getDataOrderCustomerAHM');
+        Route::get('/g/data-dn-customer', 'TrackingBoxController@getDNCustomer');
 
-        return response()->json(['data' => $purchaseOrders, 'date' => Carbon::now()->subMinutes(1)->toDateTimeString()]);
+        Route::get('/g/dn-customer', 'TrackingBoxController@showDN');
+        Route::get('/g/history', 'TrackingBoxController@historyBox');
+        Route::get('/g/current-delivery-boxes', 'TrackingBoxController@getCurrentDeliveryBoxes');
+});
+
+Route::get('/customer-schedule-delivery-lists', 'CustomerScheduleDeliveryListController@index');
+Route::get('/delivery-schedule', 'CustomerScheduleDeliveryListController@getDeliverySchedules');
+
+
+Route::get('/dn/g/compare', 'CompareDeliveryNoteController@getCompareDN');
+Route::get('/g/currently-box-status', 'CompareDeliveryNoteController@getCurrentlyTrackingBoxStatus');
+Route::get('/kanbans/g/kanban-details', 'CompareDeliveryNoteController@getKanban');
+Route::get('/test-arduino', function () {
+        // return number
+        return response()->json(['data' => [
+                'material_id' => "02C106SWH1RAW",
+                'stock' => "123",
+                'rack' => "A1-1-1",
+        ]]);
 });

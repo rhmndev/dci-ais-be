@@ -26,18 +26,24 @@ class MaterialController extends Controller
             'page' => 'required|numeric',
             'sort' => 'required|string',
             'order' => 'string',
+            'category' => 'nullable|string',
         ]);
 
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
+        $category = $request->category;
 
         try {
 
             $Material = new Material;
             $data = array();
 
-            $resultAlls = $Material->getAllData($keyword, $request->columns, $request->sort, $order);
-            $results = $Material->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order);
+            $resultAlls = $Material->getAllData($keyword, $request->columns, $request->sort, $order, $category);
+            $results = $Material->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $category);
+
+            if ($request->has('showall')) {
+                $results = $resultAlls;
+            }
 
             return response()->json([
                 'type' => 'success',
@@ -129,6 +135,39 @@ class MaterialController extends Controller
         }
     }
 
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'minQty' => 'nullable|numeric',
+            'maxQty' => 'nullable|numeric',
+            'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
+        ]);
+
+        try {
+            $Material = Material::findOrFail($id);
+
+            $Material->minQty = $request->minQty;
+            $Material->maxQty = $request->maxQty;
+
+            $Material->updated_by = auth()->user()->username;
+            $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+
+            $Material->save();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Data updated successfully!',
+                'data' => NULL,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $th->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
     public function SyncSAP(Request $request)
     {
         $data = array();
@@ -211,6 +250,7 @@ class MaterialController extends Controller
 
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
+            'category' => 'nullable|string'
         ]);
 
         try {
@@ -233,6 +273,10 @@ class MaterialController extends Controller
                         $Material->type = $this->stringtoupper($Excel['type']);
                         $Material->unit = $this->stringtoupper($Excel['unit_uom']);
                         $Material->photo = null;
+
+                        $Material->category = $this->stringtoupper($request->category ?? null);
+                        $Material->minQty = $this->stringtoupper($Excel['min_qty']);
+                        $Material->maxQty = $this->stringtoupper($Excel['max_qty']);
 
                         $Material->created_by = auth()->user()->username;
                         $Material->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());

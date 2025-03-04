@@ -9,7 +9,7 @@ class Material extends Model
     //
     protected $fillable = ['code'];
 
-    public function getAllData($keyword, $columns, $sort, $order)
+    public function getAllData($keyword, $columns, $sort, $order, $category = null)
     {
 
         $query = Material::query();
@@ -28,6 +28,10 @@ class Material extends Model
             }
         }
 
+        if ($category) {
+            $query->where('category', $category);
+        }
+
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');
 
         $data = $query->get();
@@ -35,7 +39,7 @@ class Material extends Model
         return $data;
     }
 
-    public function getData($keyword, $columns, $perpage, $page, $sort, $order)
+    public function getData($keyword, $columns, $perpage, $page, $sort, $order, $category = null)
     {
 
         $query = Material::query();
@@ -53,6 +57,10 @@ class Material extends Model
                     $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
                 }
             }
+        }
+
+        if ($category) {
+            $query->where('category', $category);
         }
 
         $query = $query->orderBy($sort, $order == 'ascend' ? 'asc' : 'desc');

@@ -52,10 +52,11 @@ class TravelDocumentResource extends JsonResource
                                 'qr_tdi_no' => $item->qr_tdi_no,
                                 'lot_production_number' => $item->lot_production_number,
                                 'inspector_name' => $item->tempLabelItem->inspector_name ?: "-",
-                                'inspector_date' => $item->tempLabelItem->inspector_date ?: "-",
+                                'inspector_date' => $item->tempLabelItem->inspection_date ?: "-",
                                 'is_scanned' => $item->is_scanned,
                                 'scanned_at' => $item->scanned_at,
                                 'scanned_by' => $item->scanned_by,
+                                'package' => $item->tempLabelItem->pack,
                             ];
                         }),
                     ];

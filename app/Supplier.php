@@ -13,13 +13,24 @@ class Supplier extends Model
         'name',
         'address',
         'phone',
-        'email',
+        'emails',
         'contact',
         'currency',
         'created_by',
         'updated_by',
+        'can_have_account',
         'user_id',
     ];
+
+    public function getEmailsAttribute($value)
+    {
+        return json_decode($value, true) ?? [];
+    }
+
+    public function setEmailsAttribute($value)
+    {
+        $this->attributes['emails'] = json_encode($value);
+    }
 
     public function getAllData($keyword, $columns, $sort, $order)
     {

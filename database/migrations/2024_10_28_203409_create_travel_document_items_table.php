@@ -25,6 +25,7 @@ class CreateTravelDocumentItemsTable extends Migration
             $table->boolean('is_scanned')->default(0);
             $table->date('scanned_at')->nullable();
             $table->string('scanned_by')->nullable();
+            $table->string('condition')->nullable();
             $table->string('notes')->nullable();
             $table->timestamps();
         });

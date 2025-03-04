@@ -50,16 +50,6 @@ class StorageLocationController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -68,17 +58,19 @@ class StorageLocationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'code' => 'required|string|unique:storage_locations',
-            'name' => 'required|string',
+            'code' => 'required|string',
+            'description' => 'required|string',
+            'capacity' => 'numeric',
         ]);
 
-        $storageLocation = new SLock;
-        $storageLocation->code = $request->code;
-        $storageLocation->name = $request->name;
+        $storageLocation = SLock::firstOrNew(['code' => $request->code]);
+        $storageLocation->description = $request->description;
+        $storageLocation->capacity = $request->capacity;
         $storageLocation->save();
 
         return response()->json([
             'type' => 'success',
+            'message' => 'Storage Location created successfully.',
             'data' => $storageLocation
         ], 201);
     }
@@ -128,6 +120,8 @@ class StorageLocationController extends Controller
         $storageLocation = SLock::findOrFail($id);
         $storageLocation->code = $request->code;
         $storageLocation->name = $request->name;
+        $storageLocation->description = $request->description;
+        $storageLocation->capacity = $request->capacity;
         $storageLocation->save();
 
         return response()->json([

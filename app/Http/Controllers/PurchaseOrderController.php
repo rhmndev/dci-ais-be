@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\PurchaseOrderCreated;
 use App\Http\Resources\PurchaseOrderResource;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use App\Material;
 use App\PoTrackingEvent;
 use App\PurchaseOrder;
 use App\Supplier;
@@ -18,11 +20,16 @@ use App\PurchaseOrderActivities;
 use App\PurchaseOrderItem;
 use App\PurchaseOrderScheduleDelivery;
 use App\Qr;
+use App\Settings;
+use App\SLock;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use MongoDB\BSON\UTCDateTime;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class PurchaseOrderController extends Controller
 {
@@ -31,11 +38,13 @@ class PurchaseOrderController extends Controller
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $order = ($request->order != null) ? $request->order : 'ascend';
         $status = ($request->status != null) ? $request->status : '';
+        $startDate = $request->startDate;
+        $endDate = $request->endDate;
         try {
             $PurchaseOrder = new PurchaseOrder;
             $data = array();
-            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status);
-            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status);
+            $resultAlls = $PurchaseOrder->getAllData($keyword, $request->columns, $request->sort, $order, $status, $startDate, $endDate);
+            $results = $PurchaseOrder->getData($keyword, $request->columns, $request->perpage, $request->page, $request->sort, $order, $status, $startDate, $endDate);
 
             return response()->json([
                 'type' => 'success',
@@ -200,6 +209,228 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,waiting for checking,waiting for knowing,waiting for approving,approved,rejected,cancelled,waiting for revision',
+            'revision_type' => 'required_if:status,waiting for revision|in:schedule,price,items,other',
+            'po_status' => 'required_if:status,approved|in:waiting for schedule delivery,waiting for schedule delivery confirmation,open,closed',
+            'notes' => 'required_if:status,rejected,cancelled',
+        ]);
+
+        try {
+            $purchaseOrder = PurchaseOrder::findOrFail($id);
+            $originalStatus = $purchaseOrder->status;
+
+            $purchaseOrder->status = $request->status;
+
+            if ($request->status === 'waiting for revision') {
+                $purchaseOrder->revision_type = $request->revision_type;
+            } else {
+                $purchaseOrder->revision_type = null;
+            }
+
+            if ($request->status === 'approved') {
+                $purchaseOrder->po_status = $request->po_status;
+            }
+
+            if ($request->status === 'rejected' || $request->status === 'cancelled') {
+                $purchaseOrder->notes = $request->notes;
+            }
+
+            $purchaseOrder->save();
+
+            // Log the status change (highly recommended)
+            Log::info("Purchase Order {$purchaseOrder->po_number} status changed from '{$originalStatus}' to '{$request->status}' by user " . auth()->user()->id);
+
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Purchase order status updated successfully',
+                'data' => $purchaseOrder,
+            ], 200);
+        } catch (\Throwable $th) {
+            // Log the error
+            Log::error("Error updating Purchase Order status: " . $th->getMessage());
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error updating purchase order status. Please check the logs for details.'
+            ], 500);
+        }
+    }
+
+    public function SyncExcel(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $filePath = storage_path('app/data-po.xlsx');
+
+            //Check if file exists
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Error: The specified Excel file does not exist.',
+                ], 400);
+            }
+
+            $spreadsheet = IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            $headerRow = $worksheet->getRowIterator()->current();
+            $header = [];
+            foreach ($headerRow->getCellIterator() as $cell) {
+                $header[] = $cell->getValue();
+            }
+
+            $data = [];
+            foreach ($worksheet->getRowIterator() as $row) {
+                if ($row->getRowIndex() === 1) continue;
+
+                $rowData = [];
+                $cellIterator = $row->getCellIterator();
+                foreach ($cellIterator as $cell) {
+                    $rowData[] = $cell->getValue();
+                }
+
+                $data[] = array_combine($header, $rowData);
+            }
+
+
+
+            foreach ($data as $row) {
+                $documentDate = Carbon::instance(Date::excelToDateTimeObject($row['Document Date']));
+
+                // Check if the document date falls within the specified range
+                if ($documentDate->between(Carbon::parse($request->start_date), Carbon::parse($request->end_date))) {
+                    $supplierCode = explode(" ", $row['Vendor/supplying plant'])[0];
+                    $supplier = Supplier::firstOrCreate(['code' => $supplierCode], [
+                        'name' => trim(str_replace($supplierCode, '', $row['Vendor/supplying plant'])), // Extract supplier name
+                    ]);
+                    // Material creation (assuming 'Material' column exists in Excel)
+                    $materialCode = $row['Material'];
+                    $material = Material::firstOrCreate(['code' => $materialCode], [
+                        'description' => $row['Short Text'],  // Assuming 'Short Text' is the description
+                    ]);
+
+                    if (strtoupper($row['Currency']) === 'IDR') { // Currency check
+                        // Create Purchase Order logic (adapt as needed):
+                        $po_number = $row['Purchasing Document']; // Assuming unique per document
+                        $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
+                        $PurchaseOrder->plant_number = $row['Plant'];
+                        $PurchaseOrder->purchase_currency_type = $row['Currency'];
+                        $Slock = SLock::firstOrNew(['code' => $row['Storage Location']]);
+                        $Slock->save();
+                        $PurchaseOrder->s_locks_code = $row['Storage Location'];
+
+                        // ... other PO fields (e.g., Plant, Purchasing Group) ...
+
+                        $PurchaseOrder->supplier_id = $supplier->_id;
+                        $PurchaseOrder->supplier_code = $supplier->code;
+                        $PurchaseOrder->order_date = $documentDate->format('Y-m-d');
+                        $PurchaseOrder->save();
+
+                        // Purchase order item creation
+                        $purchaseOrderItem = new PurchaseOrderItem([
+                            'purchase_order_id' => $PurchaseOrder->_id,
+                            'material_id' => $material->_id,
+                            'material_code' => $material->code,
+                            'quantity' => $row['Order Quantity'],
+                            'unit_price' => $row['Net price'],
+                            // ... other item fields
+                        ]);
+                        $purchaseOrderItem->save();
+                    }
+                }
+            }
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Excel data synced successfully',
+
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Error syncing Excel data: ' . $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function SyncSAP(Request $request)
+    {
+        $data = array();
+
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        try {
+
+            $Settings = new Settings;
+            $code_sap = $Settings->scopeGetValue($Settings, 'code_sap');
+            $code = $code_sap[1]['name'];
+
+            $date = date('Y-m-d\TH:i:s', strtotime($request->date));
+
+            // $client = new Client;
+            // $json = $client->get("http://erpprd-app1.dharmap.com:8001/sap/opu/odata/SAP/ZDCI_SRV/MaterialSet?\$filter=Werks eq '$code' and Ersda eq datetime'$date'&\$format=json&sap-300", [
+            //     'auth' => [
+            //         // 'wcs-abap',
+            //         // 'Wilmar12'
+            //         'DCI-DGT01',
+            //         'DCI0001'
+            //     ],
+            // ]);
+            // $results = json_decode($json->getBody())->d->results;
+
+            // if (count($results) > 0) {
+
+            //     foreach ($results as $result) {
+
+            //         $po_number = $this->stringtoupper($result->Matnr);
+
+            //         $PurchaseOrder = PurchaseOrder::firstOrNew(['po_number' => $po_number]);
+
+            //         $PurchaseOrder->created_by = auth()->user()->username;
+            //         $PurchaseOrder->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+            //         $PurchaseOrder->updated_by = auth()->user()->username;
+            //         $PurchaseOrder->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+            //         $PurchaseOrder->save();
+            //     }
+
+            //     return response()->json([
+
+            //         "result" => true,
+            //         "msg_type" => 'success',
+            //         "message" => 'Sync SAP Success. ' . count($results) . ' data synced',
+
+            //     ], 200);
+            // } else {
+
+            //     return response()->json([
+
+            //         "result" => false,
+            //         "msg_type" => 'failed',
+            //         "message" => 'Data not found',
+
+            //     ], 400);
+            // }
+        } catch (\Exception $e) {
+
+            return response()->json([
+
+                "result" => false,
+                "msg_type" => 'error',
+                "message" => 'err: ' . $e,
+
+            ], 400);
+        }
+    }
+
     public function show(Request $request, $id)
     {
         try {
@@ -217,7 +448,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -241,7 +472,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -293,6 +524,7 @@ class PurchaseOrderController extends Controller
             // WhatsAppController::sendWhatsAppMessage($receipt_number, $msg);
 
             // change status po to open
+            $purchaseOrder->schedule_updated_at = Carbon::now();
             $purchaseOrder->po_status = 'waiting for schedule delivery confirmation';
             $purchaseOrder->save();
 
@@ -306,7 +538,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error uploading schedule delivery: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -353,7 +585,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'success',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -388,7 +620,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -423,7 +655,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -453,7 +685,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -471,7 +703,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -490,14 +722,14 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
     public function getListScheduleDelivered(Request $request)
     {
         try {
             $keyword = ($request->keyword != null) ? $request->keyword : '';
-            $order = ($request->order != null) ? $request->order : 'ascend';
+            $order = ($request->order != null) ? $request->order : 'desc';
 
             $purchaseOrders = PurchaseOrder::with('supplier', 'scheduleDeliveries')->where('status', 'approved')
                 ->whereHas('scheduleDeliveries')
@@ -507,7 +739,7 @@ class PurchaseOrderController extends Controller
                         // ->orWhere('supplier_code', 'like', '%' . $keyword . '%');
                     });
                 })
-                ->orderBy('approved_at', $order == 'descend' ? 'desc' : 'asc')
+                ->orderBy('schedule_updated_at', $order == 'desc' ? 'desc' : 'asc')
                 ->paginate($request->perpage ?? 10);
 
             return response()->json([
@@ -519,7 +751,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'type' => 'error',
                 'data' => 'Error: ' . $th->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
@@ -610,7 +842,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error print QR Label: ' . $th->getMessage(),
                 'data' => $res_po->po_number
-            ], 500);
+            ], 400);
         }
     }
     public function downloadPDFForSupplier($po_id)
@@ -621,17 +853,12 @@ class PurchaseOrderController extends Controller
 
             $this->markAsDownloaded($res_po->po_number);
             return $this->downloadPDF($res_po->po_number);
-            // return response()->json([
-            //     'type' => 'success',
-            //     'message' => 'PDF downloaded successfully',
-            //     'data' => ['po_number' => $res_po->po_number]
-            // ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Error downloading PDF: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -703,7 +930,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -738,7 +965,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -754,7 +981,7 @@ class PurchaseOrderController extends Controller
                 'type' => 'error',
                 'message' => 'Error downloading PDF: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -798,14 +1025,14 @@ class PurchaseOrderController extends Controller
                     'type' => 'error',
                     'message' => 'Error creating zip file',
                     'data' => null
-                ], 500);
+                ], 400);
             }
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Error: ' . $th->getMessage(),
                 'data' => null
-            ], 500);
+            ], 400);
         }
     }
 
@@ -954,7 +1181,6 @@ class PurchaseOrderController extends Controller
             $PurchaseOrder->purchase_knowed_by = auth()->user()->npk;
             $PurchaseOrder->knowed_at = new \MongoDB\BSON\UTCDateTime();
             $PurchaseOrder->is_knowed = 0;
-            // $PurchaseOrder->knowed_at = 
             $PurchaseOrder->status = "unapproved";
             $PurchaseOrder->save();
 
@@ -1019,5 +1245,44 @@ class PurchaseOrderController extends Controller
                 'data' => 'Error: ' . $th->getMessage()
             ]);
         }
+    }
+
+    public function getPOByStorageLocation(Request $request)
+    {
+        $request->validate([
+            'storage_location' => 'required|string',
+            'month_year' => 'sometimes|string|regex:/^\d{4}(-\d{2})?$/',
+        ]);
+
+        $storageLocation = $request->input('storage_location');
+        $monthYear = $request->input('month_year');
+
+        $cacheKey = 'pos_by_storage_location_' . md5(serialize($request->all()));
+
+        $purchaseOrders = Cache::remember($cacheKey, 60, function () use ($storageLocation, $monthYear) {
+            $query = PurchaseOrder::query();
+
+            $query->where('s_locks_code', $storageLocation);
+
+            if ($monthYear) {
+                $dateParts = explode('-', $monthYear);
+                $year = (int)$dateParts[0];
+
+                $start = Carbon::createFromDate($year, isset($dateParts[1]) ? (int)$dateParts[1] : 1, 1)->startOfDay();
+                $end = isset($dateParts[1])
+                    ? Carbon::createFromDate($year, (int)$dateParts[1], 1)->endOfMonth()->endOfDay()
+                    : Carbon::createFromDate($year, 12, 31)->endOfDay();
+
+                $query->whereBetween('order_date', [new UTCDateTime($start), new UTCDateTime($end)]);
+            }
+
+            return $query->with('supplier', 'items.material')->get();
+        });
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Purchase Orders retrieved successfully',
+            'data' => $purchaseOrders,
+        ], 200);
     }
 }

@@ -16,6 +16,12 @@ class TravelDocumentPackingItems extends Model
         'scanned_at',
         'scanned_by',
         'notes',
+        'reason_not_scanned',
+        'original_td_no',
+        'td_history'
+    ];
+    protected $casts = [
+        'td_history' => 'array',
     ];
 
     protected $date = [

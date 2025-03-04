@@ -16,6 +16,13 @@ class PurchaseOrderItem extends Model
         'unit_price',
         'unit_price_type',
         'unit_price_amount',
+        'net_price',
+        'qty_delivered',
+    ];
+
+    protected $casts = [
+        'delivered_at' => 'datetime',
+        'partially_delivered_at' => 'datetime',
     ];
 
     public function purchaseOrder()

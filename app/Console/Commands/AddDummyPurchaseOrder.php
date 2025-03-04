@@ -21,7 +21,7 @@ class AddDummyPurchaseOrder extends Command
      * @var string
      */
     protected $signature = 'purchase-order:add-dummy {numberOfOrders? : The number of dummy orders to create (default: 1)}
-    {status? : The status of the purchase order (pending, waiting for checking, waiting for knowing, waiting for approval, approved, unapproved) (default: approved)} {supplier_code? : The number of supplier code}';
+    {status? : The status of the purchase order (pending, waiting for checking, waiting for knowing, waiting for approval, approved, unapproved) (default: approved)} {supplier_code? : The number of supplier code} {numberOfItems? : The number of items per order}';
 
     /**
      * The console command description.
@@ -53,7 +53,7 @@ class AddDummyPurchaseOrder extends Command
         $validStatuses = ['pending', 'approved', 'unapproved', 'waiting for checking', 'waiting for knowing', 'waiting for approval', 'waiting for schedule delivery'];
         if (!in_array($status, $validStatuses)) {
             $this->error("Invalid status. Choose from: " . implode(', ', $validStatuses));
-            return 1; // Indicate an error occurred
+            return 1;
         }
 
         $faker = Faker::create();
@@ -105,6 +105,13 @@ class AddDummyPurchaseOrder extends Command
                     break;
             }
 
+            $supplierCode = $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray());
+            $supplier = Supplier::where('code', $supplierCode)->first();
+
+            if (!$supplier) {
+                $this->error("Supplier with code '{$supplierCode}' not found.");
+                return 1;
+            }
 
             $purchaseOrder = PurchaseOrder::create([
                 'plant_number' => "1601",
@@ -112,11 +119,11 @@ class AddDummyPurchaseOrder extends Command
                 'user' => 'Admin',
                 'user_npk' => '39748',
                 'order_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
-                'delivery_email' => $faker->companyEmail,
+                'delivery_email' => $supplier->emails,
                 'delivery_date' => new UTCDateTime(Carbon::parse(Carbon::now()->format('Y-m-d H:i:s'))->getPreciseTimestamp(3)),
                 'delivery_address' => $faker->randomElement(ShippingAddress::pluck('full_address')->toArray()),
                 'supplier_id' => $faker->uuid(),
-                'supplier_code' => $supplier_code != "" ? $supplier_code : $faker->randomElement(Supplier::pluck('code')->toArray()),
+                'supplier_code' => $supplier_code != "" ? $supplier_code : $supplier->code,
                 's_locks_code' => $faker->randomElement(SLock::pluck('code')->toArray()),
                 'total_item_quantity' => $faker->randomFloat(2, 1, 100),
                 'total_amount' => $faker->randomFloat(2, 1000, 10000),
@@ -130,8 +137,7 @@ class AddDummyPurchaseOrder extends Command
                 'tax' => $faker->randomFloat(2, 100, 10000),
                 'tax_type' => $faker->randomElement(['PPN']),
                 'status' => $status,
-                // 'po_status' => $faker->randomElement(['In Progress']),
-                'po_status' => $faker->randomElement(['waiting for schedule delivery']),
+                'po_status' => $status === 'approved'  ? 'waiting for schedule delivery' : 'in progress',
                 'is_send_email_to_supplier' => 0,
                 'is_checked' => $is_checked,
                 'is_knowed' => $is_knowed,
@@ -152,17 +158,22 @@ class AddDummyPurchaseOrder extends Command
 
     private function createPurchaseOrderItems(PurchaseOrder $purchaseOrder, $faker)
     {
-        $numberOfItems = $faker->numberBetween(1, 5); // Create 1 to 5 items per order
+        $numberOfItems = $this->argument('numberOfItems') ?: $faker->numberBetween(1, 5);
         $materialIds = Material::pluck('_id')->take(10)->toArray();
         for ($j = 0; $j < $numberOfItems; $j++) {
+            $quantity = $this->ask("Enter quantity for item " . ($j + 1) . ":");
+            if (!$quantity) {
+                $quantity = $faker->randomElement([1000, 1500, 2000, 2500, 3000, 3500, 4000]);
+            }
+
             PurchaseOrderItem::create([
                 'purchase_order_id' => $purchaseOrder->_id,
-                'material_id' => $faker->randomElement($materialIds), // Replace with your material ID generation logic
-                'quantity' => $faker->randomElement([1000, 1500, 2000, 2500, 3000, 3500, 4000]), // Random 2-digit quantity
-                'unit_type' => $faker->randomElement(['pcs', 'pce']), // Random unit type
-                'unit_price' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
-                'unit_price_type' => $faker->randomElement(['IDR']), // Random unit type
-                'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000), // Random price between 10.00 and 500.00
+                'material_id' => $faker->randomElement($materialIds),
+                'quantity' => $quantity,
+                'unit_type' => $faker->randomElement(['pcs', 'pce']),
+                'unit_price' => $faker->randomFloat(2, 900000, 1000000),
+                'unit_price_type' => $faker->randomElement(['IDR']),
+                'unit_price_amount' => $faker->randomFloat(2, 900000, 1000000),
             ]);
         }
     }

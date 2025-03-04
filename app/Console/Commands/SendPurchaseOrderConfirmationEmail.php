@@ -19,7 +19,7 @@ class SendPurchaseOrderConfirmationEmail extends Command
      *
      * @var string
      */
-    protected $signature = 'email:send-po-confirmation';
+    protected $signature = 'email:send-po-confirmation {po_number? : The purchase order number (optional)}';
 
     /**
      * The console command description.
@@ -45,9 +45,22 @@ class SendPurchaseOrderConfirmationEmail extends Command
      */
     public function handle()
     {
-        $purchaseOrders = PurchaseOrder::where('status', 'approved')
-            ->where('is_send_email_to_supplier', 0)
-            ->get();
+        $poNumber = $this->argument('po_number');
+
+        if ($poNumber) {
+            $purchaseOrders = PurchaseOrder::where('po_number', $poNumber)
+                ->where('status', 'approved')
+                ->where('is_send_email_to_supplier', 0)
+                ->get();
+            if ($purchaseOrders->isEmpty()) {
+                $this->error("Purchase order with number '{$poNumber}' not found or already processed.");
+                return 1;
+            }
+        } else {
+            $purchaseOrders = PurchaseOrder::where('status', 'approved')
+                ->where('is_send_email_to_supplier', 0)
+                ->get();
+        }
 
         foreach ($purchaseOrders as $POData) {
             $this->sendConfirmationEmail($POData);
@@ -64,7 +77,12 @@ class SendPurchaseOrderConfirmationEmail extends Command
                 ->first();
 
             $noPO = $POData->po_number;
-            $emailTo = $POData->delivery_email;
+            $supplier = $POData->supplier;
+            if (!$supplier) {
+                Log::error("Supplier not found for PO: {$POData->po_number}");
+                return;
+            }
+            $emailTo = $supplier->emails;
 
             $data = [
                 'supplierName' => isset($POData->supplier) ? $POData->supplier->name : $POData->supplier_code,
@@ -73,16 +91,23 @@ class SendPurchaseOrderConfirmationEmail extends Command
                 'deliveryDate' => $POData->delivery_date,
                 'totalAmount' => $POData->total_amount,
                 'orderNumber' => $noPO,
-                'purchaseOrderLink' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
-                'purchaseOrderLinkInternal' => env('FRONT_URL') . '/purchase-order/' . $POData->_id,
+                'purchaseOrderLink' => env('FRONT_URL') . '/get-po/' . $POData->_id,
+                'purchaseOrderLinkInternal' => env('FRONT_URL') . '/get-po/' . $POData->_id,
             ];
 
             $bodyEmail = new DynamicEmail($template, $data);
             $emailContent = $bodyEmail->render();
 
             // Send to supplier
-            Mail::to($emailTo)->send(new DynamicEmail($template, $data));
-
+            if (is_array($emailTo)) {
+                foreach ($emailTo as $email) {
+                    Mail::to($email)->send(new DynamicEmail($template, $data));
+                }
+            } else if (is_string($emailTo) && !empty($emailTo)) {
+                Mail::to($emailTo)->send(new DynamicEmail($template, $data));
+            } else {
+                Log::warning("No email address found for supplier on PO: {$POData->po_number}");
+            }
             $this->sendInternalConfirmationEmails($POData, $data);
 
             // Log the email
@@ -95,7 +120,7 @@ class SendPurchaseOrderConfirmationEmail extends Command
 
             // Update the PO to indicate that the email has been sent
             $POData->is_send_email_to_supplier = 1;
-            $POData->po_status = "open";
+            $POData->po_status = "waiting for schedule delivery";
             $POData->save();
 
             Log::info("Purchase order confirmation email sent for PO: {$noPO}");
@@ -130,16 +155,16 @@ class SendPurchaseOrderConfirmationEmail extends Command
 
         // Send to specific internal email
         $emailInternal = "fachriansyahmni@gmail.com";
-        Mail::to($emailInternal)->send(new DynamicEmail($templateInternal, $data));
+        Mail::to($emailInternal)->send(new DynamicEmail($templateInternalSendSchedule, $data));
 
         // Send to Warehouse users
-        $warehouseRole = Role::where('name', 'Warehouse')->first();
-        if (!$warehouseRole) {
-            Log::error('Warehouse role not found for internal purchase order confirmation.');
-            return;
-        }
+        // $warehouseRole = Role::where('name', 'Warehouse')->first();
+        // if (!$warehouseRole) {
+        //     Log::error('Warehouse role not found for internal purchase order confirmation.');
+        //     return;
+        // }
 
-        $internalWarehouseUsers = User::where('role_name', 'Warehouse')->get();
+        $internalWarehouseUsers = User::where('role_name', 'warehouse')->get();
         $emailInternalSendSchedule = $internalWarehouseUsers->pluck('email')->toArray();
 
         Mail::to($emailInternalSendSchedule)->send(new DynamicEmail($templateInternalSendSchedule, $data));

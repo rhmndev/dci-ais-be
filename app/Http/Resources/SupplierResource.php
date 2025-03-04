@@ -15,11 +15,12 @@ class SupplierResource extends JsonResource
     public function toArray($request)
     {
         return [
-            '_id' => $this->_id, // Assuming _id is your primary key in the supplier table
+            '_id' => $this->_id,
             'code' => $this->code,
             'name' => $this->name,
-            'email' => $this->email,
-            // ... other supplier attributes you want to expose
+            'emails' => $this->emails,
+            'phone' => $this->phone,
+            'address' => $this->address,
         ];
     }
 }

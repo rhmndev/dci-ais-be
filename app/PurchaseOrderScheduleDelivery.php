@@ -23,6 +23,12 @@ class PurchaseOrderScheduleDelivery extends Model
         'updated_by',
     ];
 
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'supplier_confirmed_at',
+    ];
+
     public function getAllData($keyword, $columns, $sort, $order, $po_number)
     {
         $query = PurchaseOrderScheduleDelivery::query();

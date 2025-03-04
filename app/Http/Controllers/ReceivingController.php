@@ -159,7 +159,12 @@ class ReceivingController extends Controller
                 ],
             ]);
             $results = json_decode($json->getBody())->d->results;
-
+            return response()->json([
+                "result" => false,
+                "msg_type" => 'failed',
+                "message" => 'asd!',
+                "data" => $results,
+            ], 400);
             if (count($results) > 0) {
 
                 $Material = new Material;

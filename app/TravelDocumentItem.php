@@ -8,6 +8,7 @@ class TravelDocumentItem extends Model
 {
     protected $fillable = [
         'travel_document_id',
+        'td_no',
         'po_item_id',
         'lot_production_number',
         'qty',
@@ -17,7 +18,15 @@ class TravelDocumentItem extends Model
         'is_scanned',
         'scanned_at',
         'scanned_by',
+        'condition',
+        'condition_note',
         'notes',
+        'reason_not_scanned',
+        'original_td_no',
+        'td_history'
+    ];
+    protected $casts = [
+        'td_history' => 'array',
     ];
 
     protected $dates = [
@@ -41,6 +50,14 @@ class TravelDocumentItem extends Model
 
     public function tempLabelItem()
     {
-        return $this->hasOne(TravelDocumentLabelTemp::class, 'qr_tdi_no', 'item_number');
+        return $this->hasOne(TravelDocumentLabelTemp::class, 'item_number', 'qr_tdi_no');
+    }
+
+    public function addToTdHistory($tdNumber)
+    {
+        $history = $this->td_history ?? [];
+        $history[] = $tdNumber;
+        $this->td_history = $history;
+        $this->save();
     }
 }
