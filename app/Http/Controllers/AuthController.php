@@ -9,9 +9,28 @@ use Illuminate\Support\Str;
 use App\User;
 use App\Permission;
 use App\Mail\UserMail;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    public function checkToken(Request $request)
+    {
+        // Check if the user is authenticated (token is valid)
+        if (Auth::guard('api')->check()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Token is valid',
+                'user' => Auth::user()
+            ], 200);
+        }
+
+        // If token is invalid or expired
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Invalid or expired token'
+        ], 401);
+    }
+
     public function login(Request $request)
     {
         $request->validate([

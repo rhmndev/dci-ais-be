@@ -34,7 +34,15 @@ class BoxController extends Controller
             }
 
             if ($request->has('type_box') && !is_null($request->input('type_box'))) {
-                $query->where('type_box', 'like', '%' . $request->input('type_box') . '%');
+                $typeBox = $request->input('type_box');
+
+                if (is_numeric($typeBox)) {
+                    // If it's a number, use direct comparison
+                    $query->where('type_box', $typeBox);
+                } else {
+                    // If it's a string, use LIKE for partial matching
+                    $query->where('type_box', 'like', '%' . $typeBox . '%');
+                }
             }
 
             if ($request->has('status_box')) {
@@ -370,12 +378,12 @@ class BoxController extends Controller
                 $plant = !is_null($row['plant']) ? $row['plant'] : $plant;
                 $statusBox = $row['status_box'] ?? 'ready';
                 $colorCodeBox = !is_null($row['color_code_box']) ? $row['color_code_box'] : Box::DEFAULTCOLOR;
-                $typeBox = $row['type_box'];
+                $typeBox = strval($row['type_box']);
                 $numberBox = $plant . "-" . $typeBox . "-" . $colorCodeBox . "-" . $row['number_box'];
                 $box = new Box([
                     'number_box' => $numberBox,
                     'number_box_alias' => $row['number_box'],
-                    'type_box' => $row['type_box'],
+                    'type_box' => $typeBox,
                     'color_code_box' => $colorCodeBox,
                     'status_box' => $statusBox,
                     'plant' => $plant,
