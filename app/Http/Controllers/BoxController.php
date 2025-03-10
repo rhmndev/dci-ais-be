@@ -49,9 +49,9 @@ class BoxController extends Controller
                 $query->where('status_box', 'like', '%' . $request->input('status_box') . '%');
             }
 
-            $query->orderBy('number_box', 'asc');
+            $query->orderBy('number_box_alias', 'asc');
 
-            $perPage = $request->input('per_page', 10);
+            $perPage = $request->input('per_page', 20);
             $boxes = $query->paginate($perPage);
 
             $boxes->getCollection()->transform(function ($box) {
