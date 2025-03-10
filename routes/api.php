@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
 
 Route::group(['middleware' => ['auth:api']], function () {
 
+        Route::get('/check-token', 'AuthController@checkToken');
+
         Route::get('/getmydata', 'UserController@myData');
 
         #region Dashboard
@@ -332,6 +334,24 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/', 'PlanningProductionController@index');
                 Route::post('/', 'PlanningProductionController@store');
                 Route::put('/{id}', 'PlanningProductionController@update');
+        });
+
+        Route::group(['prefix' => 'parts'], function () {
+                Route::get('/', 'PartController@index');
+                Route::post('/', 'PartController@store');
+                Route::put('/{id}', 'PartController@update');
+                Route::delete('/{id}', 'PartController@destroy');
+                Route::get('/g/list', 'PartController@getPartList');
+
+                // Route::post('/a/label-print-in', 'PartControlController@printPartIn');
+                // Route::post('/a/label-print-out', 'PartController@printPartOut');
+        });
+
+        Route::group(['prefix' => 'part-controls'], function () {
+                Route::get('/', 'PartControlController@index');
+                Route::post('/a/label-print-in', 'PartControlController@inPart');
+                // Route::put('/{id}', 'PartControlController@update');
+                Route::delete('/{id}', 'PartControlController@destroy');
         });
 });
 
