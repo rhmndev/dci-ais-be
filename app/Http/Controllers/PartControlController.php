@@ -18,6 +18,8 @@ class PartControlController extends Controller
             $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
             $query = PartControl::query();
 
+            $query = $query->with('part', 'UserUpdatedBy', 'UserCreatedBy', 'UserOutBy');
+
             if ($request->has('part_code')) {
                 $query->where('part_code', 'like', '%' . $request->part_code . '%');
             }
@@ -30,7 +32,8 @@ class PartControlController extends Controller
             //     $searchTerm = $request->search;
             //     $query->where(function ($query) use ($searchTerm) {
             //         $query->where('part_code', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('note', 'like', '%' . $searchTerm . '%');
+            //             ->orWhere('note', 'like', '%' . $searchTerm . '%')
+            //             ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
             //     });
             // }
 
@@ -66,6 +69,61 @@ class PartControlController extends Controller
         }
     }
 
+    public function getSeqDetails($seq)
+    {
+        try {
+            $partControls = PartControl::where('job_seq', $seq)
+                ->get();
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $partControls
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    private function generateUniqueJobSeqNumber($yearMonthDate, $seq_no)
+    {
+        $startOfDay = Carbon::today()->startOfDay();
+        $endOfDay = Carbon::today()->endOfDay();
+
+        // Fetch the last PartControl record for today (using where to filter by date range)
+        $lastSeqNoLabel = PartControl::where('created_at', '>=', $startOfDay)
+            ->where('created_at', '<=', $endOfDay)
+            ->orderBy('job_seq', 'desc')
+            ->first();
+
+        // Generate the new sequence number based on the latest one
+        if ($lastSeqNoLabel && strpos($lastSeqNoLabel->job_seq, $yearMonthDate) !== false) {
+            // Extract the last 4 digits from the job_seq and increment it
+            $lastSeqNo = (int) substr($lastSeqNoLabel->job_seq, -4);
+            $seq_no = $lastSeqNo + 1;
+        } else {
+            // Start from 0001 if no sequence found
+            $seq_no = 1;
+        }
+
+        // If sequence exceeds 9999, return an error
+        if ($seq_no > 9999) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => 'Sequence number has reached its limit'
+            ], 400);
+        }
+
+        // Format sequence number to have leading zeros (4 digits)
+        $seq_no = str_pad($seq_no, 4, '0', STR_PAD_LEFT);
+
+        $JobSeqNumber = $yearMonthDate . $seq_no;
+
+        return $JobSeqNumber;
+    }
+
     public function inPart(Request $request)
     {
         try {
@@ -98,20 +156,23 @@ class PartControlController extends Controller
             $parts = [];
 
             for ($i = 0; $i < $count; $i++) {
-                $jobSeq = $Part->code . '-' . $nextSeqNo;
+                $jobSeq = $this->generateUniqueJobSeqNumber(Carbon::now()->format('ymd'), $nextSeqNo);
                 $partControl = new PartControl([
                     'part_code' => $request->part_code,
                     'seq_no' => $nextSeqNo,
                     'job_seq' => $jobSeq,
                     'qr_code' => PartControl::generateNewQRCode($jobSeq),
                     'in_at' => Carbon::now()->toDateTimeString(),
-                    'status' => 'IN',
+                    'status' => PartControl::STATUS_IN,
                     'note' => $request->note,
                     'created_by' => auth()->user()->npk,
                 ]);
 
+                $partControl->part()->associate($Part);
+
                 $partControl->save();
                 $parts[] = $partControl;
+
                 $nextSeqNo++;
             }
 
@@ -119,6 +180,112 @@ class PartControlController extends Controller
                 'message' => 'success',
                 'data' => $parts
             ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function outPart(Request $request)
+    {
+        try {
+            $request->validate([
+                'part_code' => 'required|string',
+                'job_seq' => 'required|integer',
+                'note' => 'nullable|string',
+            ]);
+
+            $partControl = PartControl::where('job_seq', $request->job_seq)
+                ->where('status', PartControl::STATUS_IN)
+                ->first();
+
+            if (is_null($partControl)) {
+                return response()->json([
+                    'message' => 'failed',
+                    'error' => 'Part control need to be IN first'
+                ], 404);
+            }
+
+            $partControl->update([
+                'out_at' => Carbon::now()->toDateTimeString(),
+                'status' => PartControl::STATUS_OUT,
+                'is_out' => true,
+                'out_by' => auth()->user()->npk,
+                'out_note' => $request->note,
+            ]);
+
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $partControl
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function saveScanPart(Request $request)
+    {
+        try {
+            $request->validate([
+                'job_seq' => 'required|string',
+                'status' => 'required|string',
+                'scan_action' => 'required|string',
+                'note' => 'nullable|string',
+            ]);
+
+            if ($request->scan_action == 'OUT') {
+
+                $checkPartIsOuted = PartControl::where('job_seq', $request->job_seq)
+                    ->where('status', PartControl::STATUS_OUT)
+                    ->first();
+
+                if ($checkPartIsOuted) {
+                    return response()->json([
+                        'message' => 'failed',
+                        'error' => 'Part control ' . $request->job_seq . ' already out'
+                    ], 400);
+                }
+
+                $partControl = PartControl::where('job_seq', $request->job_seq)
+                    ->where('status', PartControl::STATUS_IN)
+                    ->first();
+
+                if (is_null($partControl)) {
+                    return response()->json([
+                        'message' => 'failed',
+                        'error' => 'Part control need to be IN first'
+                    ], 404);
+                }
+
+                // add request part_code
+                $request->merge(['part_code' => $partControl->part_code]);
+
+                return $this->outPart($request);
+            } else if ($request->scan_action == 'IN') {
+                // $partControl = PartControl::where('job_seq', $request->job_seq)
+                // ->where('status', PartControl::STATUS_OUT)
+                // ->first();
+
+                // if ($partControl->isEmpty()) {
+                //     return response()->json([
+                //         'message' => 'failed',
+                //         'error' => 'Part control need to be OUT first'
+                //     ], 404);
+                // }
+
+                // $this->inPart($request);
+            } else {
+                return response()->json([
+                    'message' => 'failed',
+                    'error' => 'Scan action not valid'
+                ], 400);
+            }
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'failed',
@@ -141,7 +308,7 @@ class PartControlController extends Controller
                 ->limit($request->count)
                 ->get();
 
-            if ($partControls->isEmpty()) {
+            if (is_null($partControls->isEmpty())) {
                 return response()->json([
                     'message' => 'failed',
                     'error' => 'Part control not found'

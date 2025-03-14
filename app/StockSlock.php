@@ -18,7 +18,11 @@ class StockSlock extends Model
         'last_time_take_in',
         'last_time_take_out',
         'user_id',
+        'tag',
+        'note',
         'is_success',
+        'last_changed_by',
+        'last_changed_at',
     ];
 
     public function material()
