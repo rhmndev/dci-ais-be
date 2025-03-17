@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Part;
 use App\PartControl;
+use App\PartStock;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ class PartControlController extends Controller
             $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
             $query = PartControl::query();
 
-            $query = $query->with('part', 'UserUpdatedBy', 'UserCreatedBy', 'UserOutBy');
+            $query = $query->with('part', 'PartStock', 'UserUpdatedBy', 'UserCreatedBy', 'UserOutBy');
 
             if ($request->has('part_code')) {
                 $query->where('part_code', 'like', '%' . $request->part_code . '%');
@@ -175,6 +176,8 @@ class PartControlController extends Controller
 
                 $nextSeqNo++;
             }
+            // update stock
+            PartStock::updateIncreaseStock($request->part_code, $count, auth()->user());
 
             return response()->json([
                 'message' => 'success',
@@ -215,6 +218,9 @@ class PartControlController extends Controller
                 'out_by' => auth()->user()->npk,
                 'out_note' => $request->note,
             ]);
+
+            // update stock
+            PartStock::updateReduceStock($request->part_code, 1, auth()->user());
 
 
             return response()->json([
