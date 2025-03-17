@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Imports\PartsImport;
 use App\Part;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PartController extends Controller
 {
@@ -150,6 +152,41 @@ class PartController extends Controller
 
             return response()->json([
                 'message' => 'Part deleted successfully'
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls'
+            ]);
+
+            $file = $request->file('file');
+            $Excels = Excel::toArray(new PartsImport, $file);
+
+            foreach ($Excels[0] as $row) {
+                $part = Part::updateOrCreate(
+                    ['code' => $row['code']],
+                    [
+                        'name' => $row['name'],
+                        'description' => $row['description'],
+                        'category_code' => $row['category_code'],
+                        'uom' => $row['uom'],
+                        'min_stock' => $row['min_stock'],
+                    ]
+                );
+                $part->generateQRCode();
+            }
+
+            return response()->json([
+                'message' => 'Parts imported successfully'
             ]);
         } catch (\Throwable $th) {
             return response()->json([

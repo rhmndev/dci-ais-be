@@ -14,6 +14,8 @@ class Part extends Model
         'description',
         'category_code',
         'category_name',
+        'uom',
+        'min_stock',
         'qr_code',
     ];
 
