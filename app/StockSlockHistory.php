@@ -24,6 +24,10 @@ class StockSlockHistory extends Model
         'last_time_take_out',
         'take_location',
         'user_id',
+        'tag',
+        'note',
+        'created_by',
+        'updated_by',
     ];
 
 

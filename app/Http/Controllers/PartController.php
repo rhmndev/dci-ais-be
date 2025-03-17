@@ -91,14 +91,28 @@ class PartController extends Controller
         }
     }
 
-    public function show($id)
+    public function show($code)
     {
         try {
-            $part = Part::findOrFail($id);
-            return response()->json($part);
+            $part = Part::where('code', $code)->first();
+
+            if (!$part) {
+                return response()->json([
+                    'message' => 'Part not found',
+                    'data' => null
+                ], 404);
+            }
+
+            return response()->json(
+                [
+                    'message' => 'success',
+                    'data' => $part
+                ]
+            );
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'failed',
+                'data' => null,
                 'error' => $th->getMessage()
             ], 500);
         }

@@ -55,6 +55,7 @@ class StockSlockController extends Controller
                 'val_stock_value' => 'required|numeric',
                 'valuated_stock' => 'required|numeric',
                 'uom' => 'required|string',
+                'tag' => 'required|string|in:ok,ng,hold',
             ]);
 
             // ✅ Explicitly convert val_stock_value & valuated_stock to float
@@ -65,6 +66,14 @@ class StockSlockController extends Controller
                 'val_stock_value' => floatval($request->val_stock_value),
                 'valuated_stock' => floatval($request->valuated_stock),
                 'uom' => $request->uom,
+                'tag' => $request->tag,
+                'date_income' => Carbon::now()->toDateString(),
+                'time_income' => Carbon::now()->toTimeString(),
+                'take_in_at' => null,
+                'take_out_at' => null,
+                'last_time_take_in' => null,
+                'last_time_take_out' => null,
+                'user_id' => auth()->user()->npk
             ]);
 
             $stockSlockHistroy = StockSlockHistory::create([
@@ -82,6 +91,7 @@ class StockSlockController extends Controller
                 'last_time_take_in' => $stockSlock->last_time_take_in,
                 'last_time_take_out' => $stockSlock->last_time_take_out,
                 'user_id' => auth()->user()->npk,
+                'tag' => $request->tag,
                 'is_success' => true
             ]);
 
@@ -262,6 +272,8 @@ class StockSlockController extends Controller
             // 'val_stock_value' => 'required|numeric',
             'valuated_stock' => 'required|numeric',
             'uom' => 'required|string',
+            'tag' => 'required|string|in:ok,ng,hold',
+            'note' => 'nullable|string',
         ]);
 
         try {
@@ -272,6 +284,8 @@ class StockSlockController extends Controller
                 // 'val_stock_value' => floatval($request->val_stock_value),
                 'valuated_stock' => floatval($request->valuated_stock),
                 'uom' => $request->uom,
+                'tag' => $request->tag,
+                'note' => $request->note ?? null,
                 'user_id' => auth()->user()->npk
             ]);
 
@@ -298,6 +312,8 @@ class StockSlockController extends Controller
                 'last_time_take_in' => $stockSlock->last_time_take_in,
                 'last_time_take_out' => $stockSlock->last_time_take_out,
                 'user_id' => auth()->user()->npk,
+                'tag' => $request->tag,
+                'note' => $request->note ?? null,
                 'is_success' => true
             ]);
 

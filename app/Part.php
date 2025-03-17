@@ -13,8 +13,14 @@ class Part extends Model
         'name',
         'description',
         'category_code',
+        'category_name',
         'qr_code',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(PartCategories::class, 'category_code', 'code');
+    }
 
     public static function generateNewCode()
     {

@@ -47,32 +47,38 @@ class Box extends Model
         [
             'code_box' => '6688',
             'name' => '6688 Rabbit box (1005 L x 335 W x 195 H)',
-            'image' => 'https://rajaplastikindonesia.com/wp-content/uploads/2018/04/6688.jpg'
+            'image' => 'https://rajaplastikindonesia.com/wp-content/uploads/2018/04/6688.jpg',
+            'available_colors' => ['B01'],
         ],
         [
             'code_box' => '6655',
             'name' => '6655 Rabbit box (670 L x 335 W x 195 H)',
-            'image' => 'https://rabbit-plastics.com/po-content/uploads/6655.jpg'
+            'image' => 'https://rabbit-plastics.com/po-content/uploads/6655.jpg',
+            'available_colors' => ['B01']
         ],
         [
             'code_box' => '7006',
             'name' => '7006 Rabbit box (P840 x L630 x T375 mm)',
-            'image' => 'https://static.wixstatic.com/media/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg/v1/fill/w_600,h_600,al_c,lg_1,q_85/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg'
+            'image' => 'https://static.wixstatic.com/media/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg/v1/fill/w_600,h_600,al_c,lg_1,q_85/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg',
+            'available_colors' => ['B01'],
         ],
         [
             'code_box' => '3324',
             'name' => '3324 Rabbit box (600 L x 400 W x 250 J)',
-            'image' => 'https://down-id.img.susercontent.com/file/9f2635fa591d5c6d144ad878909212b2.webp'
+            'image' => 'https://down-id.img.susercontent.com/file/9f2635fa591d5c6d144ad878909212b2.webp',
+            'available_colors' => ['B01'],
         ],
         [
             'code_box' => '6653',
             'name' => '6653 Rabbit box (670 L x 335 W x 100 H)',
-            'image' => 'https://www.rabbit-plastics.com/po-content/uploads/6653.jpg'
+            'image' => 'https://www.rabbit-plastics.com/po-content/uploads/6653.jpg',
+            'available_colors' => ['B01'],
         ],
         [
             'code_box' => '4066',
             'name' => '4066 Rabbit box (37.5 x 32 x 16.5 cm)',
-            'image' => 'https://static.wixstatic.com/media/1648dd_faca01364e484a05a8555921fc7d0141~mv2.jpg/v1/fill/w_497,h_497,al_c,lg_1,q_80,enc_auto/1648dd_faca01364e484a05a8555921fc7d0141~mv2.jpg'
+            'image' => 'https://static.wixstatic.com/media/1648dd_faca01364e484a05a8555921fc7d0141~mv2.jpg/v1/fill/w_497,h_497,al_c,lg_1,q_80,enc_auto/1648dd_faca01364e484a05a8555921fc7d0141~mv2.jpg',
+            'available_colors' => ['B01'],
         ],
     ];
 

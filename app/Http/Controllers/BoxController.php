@@ -176,47 +176,76 @@ class BoxController extends Controller
     {
         try {
             $total = 0;
-            foreach (Customer::getCustomerList() as $key => $value) {
-                $totalBoxOut[$value['code_name']] = 0;
-            }
+
             $query = Box::query();
+            if ($request->has('customer')) {
+                $customer = $request->input('customer');
 
-            if ($request->has('type_box')) {
-                $query->where('type_box', 'like', '%' . $request->input('type_box') . '%');
+                $plants = [];
+
+                foreach (Customer::getCustomerList($customer) as $key => $value) {
+                    $totalBoxOut[$value['code_name']] = 0;
+                    $plants[] = $value['code_name'];
+                }
+            } else {
+                foreach (Customer::getCustomerList() as $key => $value) {
+                    $totalBoxOut[$value['code_name']] = 0;
+                }
+
+                if ($request->has('type_box')) {
+                    $query->where('type_box', 'like', '%' . $request->input('type_box') . '%');
+                }
+
+                if ($request->has('status_box')) {
+                    $query->where('status_box', 'like', '%' . $request->input('status_box') . '%');
+                }
             }
-
-            if ($request->has('status_box')) {
-                $query->where('status_box', 'like', '%' . $request->input('status_box') . '%');
-            }
-
             $boxes = $query->get();
             $total = $boxes->count();
 
             foreach ($boxes as $box) {
-                $latestTracking = TrackingBox::where('number_box', $box->number_box)
-                    ->orderBy('date_time', 'desc')
-                    ->first();
+                $latestTracking = TrackingBox::where('number_box', $box->number_box);
+
+                if ($request->has('customer')) {
+                    $latestTracking->whereIn('customer', $plants);
+                }
+
+                $latestTracking = $latestTracking->orderBy('date_time', 'desc')->first();
 
                 if ($latestTracking && in_array($latestTracking->status, ['out', 'delivery'])) {
-                    if (isset($totalBoxOut[$latestTracking->destination_code])) {
-                        $totalBoxOut[$latestTracking->destination_code]++;
+                    if (!isset($totalBoxOut[$latestTracking->destination_code]) || !is_array($totalBoxOut[$latestTracking->destination_code])) {
+                        $totalBoxOut[$latestTracking->destination_code] = [];
+                    }
+
+                    if (isset($totalBoxOut[$latestTracking->destination_code][$box->type_box])) {
+                        $totalBoxOut[$latestTracking->destination_code][$box->type_box]++;
                     } else {
-                        $totalBoxOut[$latestTracking->destination_code] = 1;
+                        $totalBoxOut[$latestTracking->destination_code][$box->type_box] = 1;
                     }
                 }
             }
-
+            return response()->json($totalBoxOut, 200);
             $totalBoxInArea = $total - array_sum($totalBoxOut);
 
-            foreach (Customer::getCustomerList() as $key => $value) {
-                if (isset($totalBoxOut[$value['code_name']])) {
-                    if (isset($totalOut['total_box_out_' . $value['customer']])) {
-                        $totalOut['total_box_out_' . $value['customer']] += $totalBoxOut[$value['code_name']];
+            if ($request->has('customer')) {
+                foreach (Customer::getCustomerList($customer) as $key => $value) {
+                    if (isset($totalOut[$value['code_name']])) {
+                        $totalOut[$value['code_name']] += $totalBoxOut[$value['code_name']];
                     } else {
-                        $totalOut['total_box_out_' . $value['customer']] = $totalBoxOut[$value['code_name']];
+                        $totalOut[$value['code_name']] = $totalBoxOut[$value['code_name']];
                     }
-                } else {
-                    $totalOut['total_box_out_' . $value['customer']] = 0;
+                }
+            } else {
+                foreach (Customer::getCustomerList() as $key => $value) {
+                    if (isset($totalBoxOut[$value['code_name']])) {
+                        if (isset($totalOut['total_box_out_' . $value['customer']])) {
+                            $totalOut['total_box_out_' . $value['customer']] += $totalBoxOut[$value['code_name']];
+                        } else {
+                            $totalOut['total_box_out_' . $value['customer']] = $totalBoxOut[$value['code_name']];
+                        }
+                    } else {
+                        $totalOut['total_box_out_' . $value['customer']] = 0;
+                    }
                 }
             }
 
@@ -225,8 +254,14 @@ class BoxController extends Controller
                 'total_box_in_area' => $totalBoxInArea
             ];
 
-            foreach (Customer::getCustomerList() as $key => $value) {
-                $result['total_box_out_' . $value['customer']] = $totalOut['total_box_out_' . $value['customer']];
+            if ($request->has('customer')) {
+                foreach (Customer::getCustomerList($customer) as $key => $value) {
+                    $result[$value['code_name']] = $totalOut[$value['code_name']];
+                }
+            } else {
+                foreach (Customer::getCustomerList() as $key => $value) {
+                    $result['total_box_out_' . $value['customer']] = $totalOut['total_box_out_' . $value['customer']];
+                }
             }
 
             return response()->json($result, 200);
