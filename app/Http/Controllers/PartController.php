@@ -15,6 +15,8 @@ class PartController extends Controller
             $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
             $query = Part::query();
 
+            $query = $query->with('partStock');
+
             if ($request->has('code')) {
                 $query->where('code', 'like', '%' . $request->code . '%');
             }

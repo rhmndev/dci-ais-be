@@ -24,6 +24,11 @@ class Part extends Model
         return $this->belongsTo(PartCategories::class, 'category_code', 'code');
     }
 
+    public function partStock()
+    {
+        return $this->hasOne(PartStock::class, 'part_code', 'code');
+    }
+
     public static function generateNewCode()
     {
         $lastPart = self::orderBy('created_at', 'desc')->first();

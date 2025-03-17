@@ -32,6 +32,11 @@ class PartControl extends Model
         return $this->belongsTo(Part::class, 'part_code', 'code');
     }
 
+    public function PartStock()
+    {
+        return $this->belongsTo(PartStock::class, 'part_code', 'part_code');
+    }
+
     public function UserCreatedBy()
     {
         return $this->belongsTo(User::class, 'created_by', 'npk');
