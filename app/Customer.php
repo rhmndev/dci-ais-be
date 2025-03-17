@@ -8,9 +8,9 @@ class Customer extends Model
 {
     protected $fillable = ['code'];
 
-    public static function getCustomerList()
+    public static function getCustomerList($customerName = null)
     {
-        return [
+        $customers = [
             ['code_name' => 'P1P1', 'customer' => 'AHM'],
             ['code_name' => 'P1P2', 'customer' => 'AHM'],
             ['code_name' => 'P2P1', 'customer' => 'AHM'],
@@ -31,6 +31,14 @@ class Customer extends Model
             ['code_name' => 'SUZUKI TAMBUN', 'customer' => 'SUZUKI'],
             ['code_name' => 'HYUNDAI CIKARANG', 'customer' => 'HYUNDAI'],
         ];
+
+        if ($customerName) {
+            return array_filter($customers, function ($customer) use ($customerName) {
+                return $customer['customer'] == $customerName;
+            });
+        }
+
+        return $customers;
     }
 
     public function getAllData($keyword, $columns, $sort, $order)

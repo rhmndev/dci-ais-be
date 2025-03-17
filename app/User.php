@@ -16,7 +16,7 @@ class User extends Authenticable
         'api_token'
     ];
 
-    protected $fillable = ['username'];
+    protected $fillable = ['username', 'npk'];
 
     public function role()
     {
@@ -43,5 +43,10 @@ class User extends Authenticable
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function partControls()
+    {
+        return $this->hasMany(PartControl::class, 'created_by', 'npk');
     }
 }

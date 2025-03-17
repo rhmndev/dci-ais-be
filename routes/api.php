@@ -339,6 +339,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::group(['prefix' => 'parts'], function () {
                 Route::get('/', 'PartController@index');
                 Route::post('/', 'PartController@store');
+                Route::get('/{code}', 'PartController@show');
                 Route::put('/{id}', 'PartController@update');
                 Route::delete('/{id}', 'PartController@destroy');
                 Route::get('/g/list', 'PartController@getPartList');
@@ -349,9 +350,10 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'part-controls'], function () {
                 Route::get('/', 'PartControlController@index');
+                Route::get('/g/seq/{seq}', 'PartControlController@getSeqDetails');
                 Route::post('/a/label-print-in', 'PartControlController@inPart');
-                // Route::put('/{id}', 'PartControlController@update');
                 Route::delete('/{id}', 'PartControlController@destroy');
+                Route::post('/a/save-scan-part', 'PartControlController@saveScanPart');
         });
 });
 
