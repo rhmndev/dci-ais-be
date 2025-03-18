@@ -21,8 +21,8 @@ class BoxesImport implements ToModel, WithHeadingRow
             'number_box' => $row['number_box'],
             'type_box' => $row['type_box'],
             'status_box' => $row['status_box'],
-            'plant' => '1603',
-            'qr_code' => $this->generateQrCode('1603-' . $row['number_box'] . '-' . $row['type_box']),
+            'plant' => '1601',
+            'qr_code' => $this->generateQrCode('1601-' . $row['number_box'] . '-' . $row['type_box']),
         ]);
     }
 

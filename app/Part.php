@@ -14,12 +14,19 @@ class Part extends Model
         'description',
         'category_code',
         'category_name',
+        'uom',
+        'min_stock',
         'qr_code',
     ];
 
     public function category()
     {
         return $this->belongsTo(PartCategories::class, 'category_code', 'code');
+    }
+
+    public function partStock()
+    {
+        return $this->hasOne(PartStock::class, 'part_code', 'code');
     }
 
     public static function generateNewCode()
