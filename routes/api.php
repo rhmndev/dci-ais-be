@@ -190,6 +190,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/permission', 'PermissionController@store');
         Route::get('/permission/list-permission', 'PermissionController@get');
         Route::get('/permission/list', 'PermissionController@list');
+        Route::put('/permission/{id}', 'PermissionController@update');
         Route::get('/permission/list-parent', 'PermissionController@listParentId');
         Route::get('/permission/{id}', 'PermissionController@show');
         Route::post('/permission/{id}', 'PermissionController@update');
