@@ -128,11 +128,20 @@ class PartController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'category_code' => 'required|string|max:255',
+                'category_code' => 'nullable|string|max:255',
+                'min_stock' => 'nullable|integer|min:0',
+                'uom' => 'nullable|string|max:255',
             ]);
 
             $part = Part::findOrFail($id);
-            $part->update($request->all());
+            $part->update([
+                'name' => $request->name,
+                'description' => $request->description ?? $part->description, // Use existing value if not provided
+                'category_code' => $request->category_code ?? $part->category_code,
+                'min_stock' => $request->min_stock ?? $part->min_stock,
+                'uom' => $request->uom ?? $part->uom,
+                'last_updated_by' => auth()->user()->npk,
+            ]);
 
             return response()->json([
                 'message' => 'Part updated successfully',
