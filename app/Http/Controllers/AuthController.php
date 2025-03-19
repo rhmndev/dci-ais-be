@@ -59,7 +59,7 @@ class AuthController extends Controller
                         'name' => $permission->name,
                         'url' => $permission->url,
                         'icon' => $permission->icon,
-                        'children' => $permission->children->map(function ($child) use ($user) {
+                        'children' => $permission->children->sortBy('order_number')->map(function ($child) use ($user) {
                             $permission_allowed = collect($user->role->permissions)->where('allow', true);
                             if ($permission_allowed->pluck('permission_id')->contains($child->id)) {
                                 return [

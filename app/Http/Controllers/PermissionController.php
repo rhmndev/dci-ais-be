@@ -67,6 +67,8 @@ class PermissionController extends Controller
         $permission->order_number = $request->order_number;
         $permission->created_by = auth()->user()->created_by;
         $permission->changed_by = auth()->user()->changed_by;
+        // slug
+        $permission->slug = $this->generateUniqueSlug($request->name);
         $permission->save();
 
         return response()->json([
@@ -94,7 +96,7 @@ class PermissionController extends Controller
         $permission = Permission::findOrFail($id);
 
         $permission->name = $request->name;
-        $permission->slug = $request->slug;
+        $permission->slug = $this->generateUniqueSlug($request->name);
         $permission->description = $request->description;
         $permission->url = $request->url;
         $permission->icon = $request->icon;
@@ -108,6 +110,20 @@ class PermissionController extends Controller
             'type' => 'success',
             'message' => 'Data updated successfully!'
         ], 201);
+    }
+
+    private function generateUniqueSlug($name)
+    {
+        $slug = str_replace(' ', '-', strtolower($name));
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (Permission::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 
     public function destroy(Request $request, $id)
