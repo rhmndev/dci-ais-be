@@ -342,6 +342,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/', 'PartController@store');
                 Route::get('/{code}', 'PartController@show');
                 Route::put('/{id}', 'PartController@update');
+                Route::put('/{id}/change-stock', 'PartController@updateStock');
                 Route::delete('/{id}', 'PartController@destroy');
                 Route::get('/g/list', 'PartController@getPartList');
                 Route::post('/a/import', 'PartController@import');

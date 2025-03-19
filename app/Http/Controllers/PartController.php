@@ -146,6 +146,41 @@ class PartController extends Controller
         }
     }
 
+    public function updateStock(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'stock' => 'required|integer|min:0',
+            ]);
+
+            $part = Part::findOrFail($id);
+
+            if ($part->partStock) {
+                $part->partStock->stock = $request->stock;
+            } else {
+                $part->partStock()->create([
+                    'stock' => $request->stock,
+                    'created_by' => auth()->user()->npk,
+                ]);
+                $part->partStock->created_by = auth()->user()->npk;
+            }
+            $part->partStock->updated_by = auth()->user()->npk;
+            $part->partStock->save();
+            $part->last_updated_by = auth()->user()->npk;
+            $part->save();
+
+            return response()->json([
+                'message' => 'Part stock updated successfully',
+                'data' => $part
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function destroy($id)
     {
         try {
