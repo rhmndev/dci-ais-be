@@ -17,6 +17,7 @@ class Part extends Model
         'uom',
         'min_stock',
         'qr_code',
+        'last_updated_by',
     ];
 
     public function category()
