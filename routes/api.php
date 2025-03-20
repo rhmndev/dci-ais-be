@@ -314,6 +314,14 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/a/delete-selected', 'CustomerScheduleDeliveryListController@deleteSelected');
         });
 
+        Route::group(['prefix' => 'whs-controls'], function () {
+                Route::get('/', 'WhsMaterialControlController@index');
+                Route::get('/g/seq/{seq}', 'WhsMaterialControlController@getSeqDetails');
+                Route::post('/a/label-print-in', 'WhsMaterialControlController@inWhsMaterial');
+                Route::delete('/{id}', 'WhsMaterialControlController@destroy');
+                Route::post('/a/save-scan-whs', 'WhsMaterialControlController@saveScanWhs');
+        });
+
         Route::group(['prefix' => 'stock-slocks'], function () {
                 Route::post('/a/import', 'StockSlockController@import');
                 Route::post('/a/take-out', 'StockSlockController@takeOut');
@@ -329,6 +337,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'rack'], function () {
                 Route::delete('/{id}', 'RackController@destroy');
+                Route::get('/g/qrcode/{slock}/print', 'RackController@printQrRackSloc');
         });
 
         Route::group(['prefix' => 'planning-productions'], function () {

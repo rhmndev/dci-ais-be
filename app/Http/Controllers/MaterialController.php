@@ -353,7 +353,13 @@ class MaterialController extends Controller
             if (!empty($request->keyword)) {
                 $query->where('name', 'like', '%' . $request->keyword . '%');
             }
-        })->take(10)
+        })
+            ->when($request->type, function ($query) use ($request) {
+                if (!empty($request->type)) {
+                    $query->where('type', $request->type);
+                }
+            })
+            ->take($request->take ?? 10)
             ->get();
 
         return response()->json([

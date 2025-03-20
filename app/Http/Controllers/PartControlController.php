@@ -29,14 +29,23 @@ class PartControlController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // if ($request->has('search')) {
-            //     $searchTerm = $request->search;
-            //     $query->where(function ($query) use ($searchTerm) {
-            //         $query->where('part_code', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('note', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
-            //     });
-            // }
+            if ($request->has('type')) {
+                if ($request->type == 'IN' || $request->type == 'in') {
+                    $query->where('status', PartControl::STATUS_IN);
+                } else if ($request->type == 'OUT' || $request->type == 'out') {
+                    $query->where('status', PartControl::STATUS_OUT);
+                }
+            }
+
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                if ($searchTerm != null) {
+                    $query->where(function ($query) use ($searchTerm) {
+                        $query->where('part_code', 'like', '%' . $searchTerm . '%')
+                            ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
+                    });
+                }
+            }
 
             $query = $query->orderBy('created_at', 'desc');
 
