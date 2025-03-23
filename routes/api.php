@@ -346,6 +346,15 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::put('/{id}', 'PlanningProductionController@update');
         });
 
+        Route::group(['prefix' => 'machines'], function () {
+                Route::get('/', 'MachineController@index');
+                Route::get('/{id}', 'MachineController@show');
+                Route::put('/{id}', 'MachineController@update');
+                Route::post('/', 'MachineController@store');
+                Route::post('/a/import', 'MachineController@import');
+                Route::delete('/{id}', 'MachineController@destroy');
+        });
+
         Route::group(['prefix' => 'parts'], function () {
                 Route::get('/', 'PartController@index');
                 Route::post('/', 'PartController@store');
@@ -366,6 +375,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/a/label-print-in', 'PartControlController@inPart');
                 Route::delete('/{id}', 'PartControlController@destroy');
                 Route::post('/a/save-scan-part', 'PartControlController@saveScanPart');
+                Route::get('/g/activity-parts', 'PartControlController@getActivityData');
         });
 });
 

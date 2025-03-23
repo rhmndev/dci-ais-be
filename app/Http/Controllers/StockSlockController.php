@@ -17,7 +17,7 @@ class StockSlockController extends Controller
         try {
             $stockSlocks = StockSlock::query();
 
-            $stockSlocks->with('material');
+            $stockSlocks->with('material', 'RackDetails');
 
             if ($request->has('slock_code')) {
                 $stockSlocks->where('slock_code', $request->slock_code);

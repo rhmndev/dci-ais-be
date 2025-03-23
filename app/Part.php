@@ -17,6 +17,9 @@ class Part extends Model
         'uom',
         'min_stock',
         'qr_code',
+        'is_partially_out',
+        'is_out_target',
+        'created_by',
         'last_updated_by',
     ];
 

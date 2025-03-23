@@ -13,6 +13,12 @@ class PartsImport implements ToModel, WithHeadingRow
 
     public function model(array $row)
     {
+        // if isset  $row['can_parsially_out'] then have value is Y will be true
+        // if isset  $row['must_select_out_target'] then have value is Y will be true
+
+        $row['can_parsially_out'] = isset($row['can_parsially_out']) && $row['can_parsially_out'] == 'Y' ? true : false;
+        $row['must_select_out_target'] = isset($row['must_select_out_target']) && $row['must_select_out_target'] == 'Y' ? true : false;
+
         return new Part([
             'code' => $row['code'],
             'name' => $row['name'],
@@ -21,6 +27,8 @@ class PartsImport implements ToModel, WithHeadingRow
             'category_name' => $row['category_name'],
             'uom' => $row['uom'],
             'min_stock' => $row['min_stock'],
+            'is_partially_out' => $row['can_parsially_out'] ?? false,
+            'is_out_target' => $row['must_select_out_target'] ?? false,
             'qr_code' => Part::generateQRCode(),
         ]);
     }

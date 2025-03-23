@@ -119,7 +119,9 @@ class WhsMaterialControlController extends Controller
         try {
             $request->validate([
                 'material_code' => 'required|string',
-                'stock' => 'required|double',
+                'loc_in' => 'required|string',
+                'uom' => 'required|string',
+                'stock' => 'required',
                 'note' => 'nullable|string',
             ]);
             $whsMat = Material::where('code', $request->material_code)->first();

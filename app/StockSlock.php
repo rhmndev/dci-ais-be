@@ -29,4 +29,9 @@ class StockSlock extends Model
     {
         return $this->belongsTo(Material::class, 'material_code', 'code');
     }
+
+    public function RackDetails()
+    {
+        return $this->hasOne(Rack::class, 'rack_code', 'code');
+    }
 }
