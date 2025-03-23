@@ -78,6 +78,12 @@ class PartController extends Controller
                 'name' => $request->name,
                 'description' => $request->description,
                 'category_code' => $request->category_code,
+                'min_stock' => $request->min_stock ?? 0,
+                'uom' => $request->uom ?? '',
+                'is_partially_out' => $request->is_partially_out ?? false,
+                'is_out_target' => $request->is_out_target ?? false,
+                'created_by' => auth()->user()->npk,
+                'last_updated_by' => auth()->user()->npk,
             ]);
 
             $part->save();
@@ -140,6 +146,8 @@ class PartController extends Controller
                 'category_code' => $request->category_code ?? $part->category_code,
                 'min_stock' => $request->min_stock ?? $part->min_stock,
                 'uom' => $request->uom ?? $part->uom,
+                'is_partially_out' => $request->is_partially_out ?? $part->is_partially_out,
+                'is_out_target' => $request->is_out_target ?? $part->is_out_target,
                 'last_updated_by' => auth()->user()->npk,
             ]);
 
@@ -218,6 +226,9 @@ class PartController extends Controller
             $Excels = Excel::toArray(new PartsImport, $file);
 
             foreach ($Excels[0] as $row) {
+                $row['can_parsially_out'] = isset($row['can_parsially_out']) && $row['can_parsially_out'] == 'Y' ? true : false;
+                $row['must_select_out_target'] = isset($row['must_select_out_target']) && $row['must_select_out_target'] == 'Y' ? true : false;
+
                 $part = Part::updateOrCreate(
                     ['code' => $row['code']],
                     [
@@ -226,6 +237,8 @@ class PartController extends Controller
                         'category_code' => $row['category_code'],
                         'uom' => $row['uom'],
                         'min_stock' => $row['min_stock'],
+                        'is_partially_out' => $row['can_parsially_out'] ?? false,
+                        'is_out_target' => $row['must_select_out_target'] ?? false,
                     ]
                 );
                 $part->generateQRCode();

@@ -29,16 +29,30 @@ class PartControlController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // if ($request->has('search')) {
-            //     $searchTerm = $request->search;
-            //     $query->where(function ($query) use ($searchTerm) {
-            //         $query->where('part_code', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('note', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
-            //     });
-            // }
+            if ($request->has('type')) {
+                if ($request->type == 'IN' || $request->type == 'in') {
+                    $query->where('status', PartControl::STATUS_IN);
+                } else if ($request->type == 'OUT' || $request->type == 'out') {
+                    $query->where('status', PartControl::STATUS_OUT);
+                }
+            }
 
-            $query = $query->orderBy('created_at', 'desc');
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                if ($searchTerm != null) {
+                    $query->where(function ($query) use ($searchTerm) {
+                        $query->where('part_code', 'like', '%' . $searchTerm . '%')
+                            ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
+                    });
+                }
+            }
+            // adding orderBy request
+            if ($request->has('order_by')) {
+                $orderBy = $request->order_by;
+                $query->orderBy($orderBy, 'desc');
+            } else {
+                $query->orderBy('created_at', 'desc');
+            }
 
             $partControls = $query->paginate($perPage);
 
@@ -73,7 +87,7 @@ class PartControlController extends Controller
     public function getSeqDetails($seq)
     {
         try {
-            $partControls = PartControl::where('job_seq', $seq)
+            $partControls = PartControl::with('part')->where('job_seq', $seq)
                 ->get();
 
             return response()->json([
@@ -131,6 +145,7 @@ class PartControlController extends Controller
             $request->validate([
                 'part_code' => 'required|string',
                 'count' => 'required|integer',
+                'stock_in' => 'required',
                 'note' => 'nullable|string',
             ]);
             $Part = Part::where('code', $request->part_code)->first();
@@ -156,6 +171,8 @@ class PartControlController extends Controller
 
             $parts = [];
 
+            $stocksTotal = 0;
+
             for ($i = 0; $i < $count; $i++) {
                 $jobSeq = $this->generateUniqueJobSeqNumber(Carbon::now()->format('ymd'), $nextSeqNo);
                 $partControl = new PartControl([
@@ -165,6 +182,7 @@ class PartControlController extends Controller
                     'qr_code' => PartControl::generateNewQRCode($jobSeq),
                     'in_at' => Carbon::now()->toDateTimeString(),
                     'status' => PartControl::STATUS_IN,
+                    'stock_in' => $request->stock_in,
                     'note' => $request->note,
                     'created_by' => auth()->user()->npk,
                 ]);
@@ -173,11 +191,12 @@ class PartControlController extends Controller
 
                 $partControl->save();
                 $parts[] = $partControl;
+                $stocksTotal += floatval($request->stock_in);
 
                 $nextSeqNo++;
             }
             // update stock
-            PartStock::updateIncreaseStock($request->part_code, $count, auth()->user());
+            PartStock::updateIncreaseStock($request->part_code, $stocksTotal, auth()->user());
 
             return response()->json([
                 'message' => 'success',
@@ -198,16 +217,22 @@ class PartControlController extends Controller
                 'part_code' => 'required|string',
                 'job_seq' => 'required|integer',
                 'note' => 'nullable|string',
+                'is_partially_out' => 'nullable',
+                'out_stock' => 'required',
             ]);
 
-            $partControl = PartControl::where('job_seq', $request->job_seq)
-                ->where('status', PartControl::STATUS_IN)
-                ->first();
+            $partControlQuery = PartControl::where('job_seq', $request->job_seq);
+
+            if (!$request->is_partially_out) {
+                $partControlQuery->where('status', PartControl::STATUS_IN);
+            }
+
+            $partControl = $partControlQuery->first();
 
             if (is_null($partControl)) {
                 return response()->json([
                     'message' => 'failed',
-                    'error' => 'Part control need to be IN first'
+                    'error' => 'Part control need to be IN first',
                 ], 404);
             }
 
@@ -216,12 +241,13 @@ class PartControlController extends Controller
                 'status' => PartControl::STATUS_OUT,
                 'is_out' => true,
                 'out_by' => auth()->user()->npk,
+                'stock_out' => $request->out_stock,
                 'out_note' => $request->note,
+                'updated_by' => auth()->user()->npk,
             ]);
 
             // update stock
-            PartStock::updateReduceStock($request->part_code, 1, auth()->user());
-
+            PartStock::updateReduceStock($request->part_code, $request->out_stock, auth()->user());
 
             return response()->json([
                 'message' => 'success',
@@ -242,25 +268,43 @@ class PartControlController extends Controller
                 'job_seq' => 'required|string',
                 'status' => 'required|string',
                 'scan_action' => 'required|string',
+                'out_target' => 'nullable',
+                'out_stock' => 'nullable',
                 'note' => 'nullable|string',
             ]);
 
-            if ($request->scan_action == 'OUT') {
 
-                $checkPartIsOuted = PartControl::where('job_seq', $request->job_seq)
+            if ($request->scan_action == 'OUT') {
+                $checkPartIsOuted = PartControl::with('part', 'PartStock')->where('job_seq', $request->job_seq)
                     ->where('status', PartControl::STATUS_OUT)
+                    ->latest('updated_at')
                     ->first();
 
+                $is_partially_out = false;
                 if ($checkPartIsOuted) {
-                    return response()->json([
-                        'message' => 'failed',
-                        'error' => 'Part control ' . $request->job_seq . ' already out'
-                    ], 400);
+                    if ($checkPartIsOuted->part->is_partially_out !== true) {
+
+                        return response()->json([
+                            'message' => 'failed',
+                            'error' => 'Part control ' . $request->job_seq . ' already out'
+                        ], 400);
+                    }
+                    $is_partially_out = $checkPartIsOuted->part->is_partially_out;
+                    if ($request->out_stock > $checkPartIsOuted->PartStock->stock) {
+                        return response()->json([
+                            'message' => 'failed',
+                            'error' => 'Out stock for part ' . $checkPartIsOuted->part->description . ' not enough'
+                        ], 400);
+                    }
                 }
 
-                $partControl = PartControl::where('job_seq', $request->job_seq)
-                    ->where('status', PartControl::STATUS_IN)
-                    ->first();
+                $partControlQuery = PartControl::where('job_seq', $request->job_seq);
+
+                if (!$is_partially_out) {
+                    $partControlQuery->where('status', PartControl::STATUS_IN);
+                }
+
+                $partControl = $partControlQuery->first();
 
                 if (is_null($partControl)) {
                     return response()->json([
@@ -270,7 +314,11 @@ class PartControlController extends Controller
                 }
 
                 // add request part_code
-                $request->merge(['part_code' => $partControl->part_code]);
+                $request->merge([
+                    'part_code' => $partControl->part_code,
+                    'out_stock' => $request->out_stock ?? 1,
+                    'is_partially_out' => $is_partially_out,
+                ]);
 
                 return $this->outPart($request);
             } else if ($request->scan_action == 'IN') {
@@ -369,6 +417,84 @@ class PartControlController extends Controller
             return response()->json([
                 'message' => 'success',
                 'data' => $partControl
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getActivityData(Request $request)
+    {
+        try {
+            // Default date range: today to 5 days before
+            $endDate = $request->get('end_date', Carbon::today()->toDateString());
+            $startDate = $request->get('start_date', Carbon::today()->subDays(5)->toDateString());
+
+            // Convert dates to Carbon instances
+            $start = Carbon::parse($startDate)->startOfDay();
+            $end = Carbon::parse($endDate)->endOfDay();
+
+            // Query MongoDB to aggregate data
+            $activityData = PartControl::raw(function ($collection) use ($start, $end) {
+                return $collection->aggregate([
+                    [
+                        '$match' => [
+                            'created_at' => [
+                                '$gte' => new \MongoDB\BSON\UTCDateTime($start->timestamp * 1000),
+                                '$lte' => new \MongoDB\BSON\UTCDateTime($end->timestamp * 1000),
+                            ]
+                        ]
+                    ],
+                    [
+                        '$group' => [
+                            '_id' => [
+                                '$dateToString' => [
+                                    'format' => '%Y-%m-%d',
+                                    'date' => '$created_at'
+                                ]
+                            ],
+                            'in' => [
+                                '$sum' => [
+                                    '$cond' => [
+                                        'if' => ['$eq' => ['$status', PartControl::STATUS_IN]],
+                                        'then' => 1,
+                                        'else' => 0
+                                    ]
+                                ]
+                            ],
+                            'out' => [
+                                '$sum' => [
+                                    '$cond' => [
+                                        'if' => ['$eq' => ['$status', PartControl::STATUS_OUT]],
+                                        'then' => 1,
+                                        'else' => 0
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    [
+                        '$sort' => ['_id' => 1] // Sort by date ascending
+                    ]
+                ]);
+            });
+
+            // Format the result
+            $formattedData = [];
+            foreach ($activityData as $data) {
+                $formattedData[] = [
+                    'date' => $data['_id'],
+                    'in' => $data['in'],
+                    'out' => $data['out']
+                ];
+            }
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $formattedData
             ]);
         } catch (\Throwable $th) {
             return response()->json([

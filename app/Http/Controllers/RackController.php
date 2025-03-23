@@ -6,6 +6,7 @@ use App\Rack;
 use App\SegmentRack;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class RackController extends Controller
 {
@@ -173,5 +174,32 @@ class RackController extends Controller
         $segment = SegmentRack::findOrFail($id);
         $segment->delete();
         return response()->json(null, 204);
+    }
+
+    // generate for handle print to pdf qr rack with selected sloc
+    public function printQrRackSloc($sloc)
+    {
+        $racks = Rack::where('code_slock', $sloc)->get();
+
+        if ($racks->isEmpty()) {
+            return response()->json([
+                'message' => 'No racks found for the given sloc',
+            ], 404);
+        }
+
+        // Prepare data for the PDF
+        $qrCodes = [];
+        foreach ($racks as $rack) {
+            $qrCodes[] = [
+                'code' => $rack->code,
+                'qrcode' => 'storage/' . $rack->qrcode, // Assuming QR codes are stored in the 'storage' directory
+            ];
+        }
+
+        // Generate the PDF using a view
+        $pdf = PDF::loadView('pdf.qr_racks', ['qrCodes' => $qrCodes]);
+
+        // Stream the PDF back to the client
+        return $pdf->stream('qr_racks.pdf');
     }
 }

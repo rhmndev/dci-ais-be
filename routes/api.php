@@ -314,6 +314,14 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/a/delete-selected', 'CustomerScheduleDeliveryListController@deleteSelected');
         });
 
+        Route::group(['prefix' => 'whs-controls'], function () {
+                Route::get('/', 'WhsMaterialControlController@index');
+                Route::get('/g/seq/{seq}', 'WhsMaterialControlController@getSeqDetails');
+                Route::post('/a/label-print-in', 'WhsMaterialControlController@inWhsMaterial');
+                Route::delete('/{id}', 'WhsMaterialControlController@destroy');
+                Route::post('/a/save-scan-whs', 'WhsMaterialControlController@saveScanWhs');
+        });
+
         Route::group(['prefix' => 'stock-slocks'], function () {
                 Route::post('/a/import', 'StockSlockController@import');
                 Route::post('/a/take-out', 'StockSlockController@takeOut');
@@ -329,12 +337,22 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::group(['prefix' => 'rack'], function () {
                 Route::delete('/{id}', 'RackController@destroy');
+                Route::get('/g/qrcode/{slock}/print', 'RackController@printQrRackSloc');
         });
 
         Route::group(['prefix' => 'planning-productions'], function () {
                 Route::get('/', 'PlanningProductionController@index');
                 Route::post('/', 'PlanningProductionController@store');
                 Route::put('/{id}', 'PlanningProductionController@update');
+        });
+
+        Route::group(['prefix' => 'machines'], function () {
+                Route::get('/', 'MachineController@index');
+                Route::get('/{id}', 'MachineController@show');
+                Route::put('/{id}', 'MachineController@update');
+                Route::post('/', 'MachineController@store');
+                Route::post('/a/import', 'MachineController@import');
+                Route::delete('/{id}', 'MachineController@destroy');
         });
 
         Route::group(['prefix' => 'parts'], function () {
@@ -357,6 +375,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/a/label-print-in', 'PartControlController@inPart');
                 Route::delete('/{id}', 'PartControlController@destroy');
                 Route::post('/a/save-scan-part', 'PartControlController@saveScanPart');
+                Route::get('/g/activity-parts', 'PartControlController@getActivityData');
         });
 });
 
