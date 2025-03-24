@@ -22,6 +22,7 @@ class PartControl extends Model
         'is_out',
         'is_partially_out',
         'is_out_target',
+        'out_to',
         'stock',
         'created_by',
         'updated_by',
