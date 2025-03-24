@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Part;
 use App\PartControl;
 use App\PartStock;
+use App\PartStockLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -241,13 +242,14 @@ class PartControlController extends Controller
                 'status' => PartControl::STATUS_OUT,
                 'is_out' => true,
                 'out_by' => auth()->user()->npk,
+                'out_to' => $request->out_target,
                 'stock_out' => $request->out_stock,
                 'out_note' => $request->note,
                 'updated_by' => auth()->user()->npk,
             ]);
 
             // update stock
-            PartStock::updateReduceStock($request->part_code, $request->out_stock, auth()->user());
+            PartStock::updateReduceStock($request->part_code, $request->out_stock, auth()->user(), $request->out_target);
 
             return response()->json([
                 'message' => 'success',
@@ -318,6 +320,7 @@ class PartControlController extends Controller
                     'part_code' => $partControl->part_code,
                     'out_stock' => $request->out_stock ?? 1,
                     'is_partially_out' => $is_partially_out,
+                    'out_target' => $request->out_target,
                 ]);
 
                 return $this->outPart($request);
@@ -495,6 +498,47 @@ class PartControlController extends Controller
             return response()->json([
                 'message' => 'success',
                 'data' => $formattedData
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getPartStockLog(Request $request)
+    {
+        try {
+            // Default date range: today to 5 days before
+            $endDate = $request->get('end_date', Carbon::today()->toDateString());
+            $startDate = $request->get('start_date', Carbon::today()->subDays(5)->toDateString());
+
+            // Convert dates to MongoDB UTCDateTime
+            $start = new \MongoDB\BSON\UTCDateTime(Carbon::parse($startDate)->startOfDay()->timestamp * 1000);
+            $end = new \MongoDB\BSON\UTCDateTime(Carbon::parse($endDate)->endOfDay()->timestamp * 1000);
+
+            // Query logs within the date range
+            $logs = PartStockLog::whereBetween('created_at', [$start, $end])
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            // Format the result
+            $formattedLogs = [];
+            foreach ($logs as $log) {
+                $formattedLogs[] = [
+                    'date' => $log->created_at->toDateTime()->format('Y-m-d'), // Convert MongoDB UTCDateTime to string
+                    'part_code' => $log->part_code,
+                    'stock_change' => $log->stock_change,
+                    'new_stock' => $log->new_stock,
+                    'action' => $log->action,
+                    'created_by' => $log->created_by,
+                ];
+            }
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $formattedLogs
             ]);
         } catch (\Throwable $th) {
             return response()->json([

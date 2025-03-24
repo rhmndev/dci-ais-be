@@ -11,6 +11,7 @@ class PartStockLog extends Model
         'stock_change',
         'new_stock',
         'action',
+        'out_to',
         'created_by',
     ];
 }

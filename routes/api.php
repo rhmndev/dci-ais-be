@@ -376,6 +376,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::delete('/{id}', 'PartControlController@destroy');
                 Route::post('/a/save-scan-part', 'PartControlController@saveScanPart');
                 Route::get('/g/activity-parts', 'PartControlController@getActivityData');
+                Route::get('/g/log', 'PartControlController@getPartStockLog');
         });
 });
 

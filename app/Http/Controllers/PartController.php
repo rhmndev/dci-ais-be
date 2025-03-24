@@ -17,16 +17,30 @@ class PartController extends Controller
 
             $query = $query->with('partStock');
 
-            if ($request->has('code')) {
+            if ($request->has('code') && $request->code != '') {
                 $query->where('code', 'like', '%' . $request->code . '%');
             }
 
-            if ($request->has('name')) {
+            if ($request->has('name') && $request->name != '') {
                 $query->where('name', 'like', '%' . $request->name . '%');
             }
 
             if ($request->has('category_code')) {
                 $query->where('category_code', $request->category_code);
+            }
+
+            if ($request->has('status_stock') && in_array($request->status_stock, ['low', 'normal'])) {
+                $query->whereHas('partStock', function ($query) use ($request) {
+                    $query->whereHas('part', function ($query) use ($request) {
+                        if ($request->status_stock == 'low') {
+                            // MongoDB query to check if stock is less than min_stock (low stock)
+                            $query->where('stock', '<', '$min_stock');
+                        } else {
+                            // MongoDB query to check if stock is greater than or equal to min_stock (normal stock)
+                            $query->where('stock', '>=', '$min_stock');
+                        }
+                    });
+                });
             }
 
             // if ($request->has('search')) {

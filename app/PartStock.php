@@ -13,6 +13,11 @@ class PartStock extends Model
         'updated_by',
     ];
 
+    public function part()
+    {
+        return $this->belongsTo(Part::class, 'part_code', 'code');
+    }
+
     public function UserCreatedBy()
     {
         return $this->belongsTo(User::class, 'created_by', 'npk');
@@ -52,7 +57,7 @@ class PartStock extends Model
         ]);
     }
 
-    public static function updateReduceStock($partCode, $stock, $user)
+    public static function updateReduceStock($partCode, $stock, $user, $out_to = null)
     {
         $partStock = PartStock::where('part_code', $partCode)->first();
         $newStock = 0;
@@ -76,6 +81,7 @@ class PartStock extends Model
             'stock_change' => -$stock,
             'new_stock' => $newStock,
             'action' => 'decrease',
+            'out_to' => $out_to,
             'created_by' => $user->npk,
         ]);
     }
