@@ -31,7 +31,12 @@ class MachineController extends Controller
                 });
             }
 
-            $machines = $query->paginate($perPage);
+            if ($request->has('show_all') && $request->show_all) {
+                $machines = $query->get(); // Return all records without pagination
+            } else {
+                $perPage = $request->get('per_page', 15); // Default to 15 items per page
+                $machines = $query->paginate($perPage);
+            }
 
             return response()->json([
                 'message' => 'success',
