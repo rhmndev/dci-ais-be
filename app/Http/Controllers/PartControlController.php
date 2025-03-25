@@ -47,6 +47,20 @@ class PartControlController extends Controller
                     });
                 }
             }
+
+            if ($request->has('in_at_start') && $request->has('in_at_end')) {
+                $inAtStart = $request->in_at_start;
+                $inAtEnd = $request->in_at_end;
+                $query->whereBetween('in_at', [$inAtStart, $inAtEnd]);
+            }
+
+            // Date filter for Out At range
+            if ($request->has('out_at_start') && $request->has('out_at_end')) {
+                $outAtStart = $request->out_at_start;
+                $outAtEnd = $request->out_at_end;
+                $query->whereBetween('out_at', [$outAtStart, $outAtEnd]);
+            }
+
             // adding orderBy request
             if ($request->has('order_by')) {
                 $orderBy = $request->order_by;
