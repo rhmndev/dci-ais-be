@@ -23,13 +23,13 @@ class MachineController extends Controller
                 $query->where('name', 'like', '%' . $request->name . '%');
             }
 
-            // if ($request->has('search')) {
-            //     $searchTerm = $request->search;
-            //     $query->where(function ($query) use ($searchTerm) {
-            //         $query->where('code', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('name', 'like', '%' . $searchTerm . '%');
-            //     });
-            // }
+            if ($request->has('search') && $request->search != '') {
+                $searchTerm = $request->search;
+                $query->where(function ($query) use ($searchTerm) {
+                    $query->where('code', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('name', 'like', '%' . $searchTerm . '%');
+                });
+            }
 
             $machines = $query->paginate($perPage);
 
