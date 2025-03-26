@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Jenssegers\Mongodb\Connection as MongoConnection;
+use Barryvdh\DomPDF\Facade as PDF;
 
 
 class PartControlController extends Controller
@@ -419,6 +420,53 @@ class PartControlController extends Controller
 
             $pdf = \PDF::loadView('pdf.label', ['partControls' => $partControls]);
             return $pdf->download('label.pdf');
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function printPdf(Request $request)
+    {
+        try {
+            $selectedData = $request->input('selectedData');
+            $type = $request->input('type');
+
+            if ($type == 'IN' || $type == 'in') {
+                $typeData = PartControl::STATUS_IN;
+            } else if ($type == 'OUT' || $type == 'out') {
+                $typeData = PartControl::STATUS_OUT;
+            } else {
+                $typeData = null;
+            }
+
+            // If selectedData is 0, we fetch all parts; otherwise, we fetch only the selected ones
+            if ($selectedData == 0) {
+                $partsStockLog = PartStockLog::with('part', 'PartControl', 'UserCreatedBy')->where('ref_job_seq', '!=', null)->where('action', $typeData)->orderBy('created_at', 'desc')->get();
+            } else {
+                // Fetch the selected parts using the codes in selectedData array
+                $partsStockLog = PartStockLog::with('part', 'PartControl', 'UserCreatedBy')
+                    ->whereIn('ref_job_seq', $selectedData)
+                    ->where('action', $typeData)
+                    ->orderBy('updated_at', 'desc')
+                    ->get();
+            }
+
+            // If no parts were found, return a 404 response
+            if ($partsStockLog->isEmpty()) {
+                return response()->json(['message' => 'No parts stock found to print.'], 404);
+            }
+
+            $currentDate = Carbon::now()->toFormattedDateString(); // Get current date in a readable format
+            $currentUser = auth()->user() ? auth()->user()->full_name : 'Guest'; // Get the current user's name
+
+            // Generate the PDF
+            $pdf = PDF::loadView('part-control.print', compact('partsStockLog', 'currentDate', 'currentUser'));
+
+            // Return the PDF as a downloadable response
+            return $pdf->stream('parts_report.pdf');
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'failed',

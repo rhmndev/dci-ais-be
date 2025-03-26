@@ -380,6 +380,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/a/save-scan-part', 'PartControlController@saveScanPart');
                 Route::get('/g/activity-parts', 'PartControlController@getActivityData');
                 Route::get('/g/log', 'PartControlController@getPartStockLog');
+                Route::post('/g/print-pdf', 'PartControlController@printPdf');
         });
 });
 
