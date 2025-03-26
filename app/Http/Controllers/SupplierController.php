@@ -118,11 +118,21 @@ class SupplierController extends Controller
 
     public function list(Request $request)
     {
+        $limit = $request->input('limit', 10);
+        $takeAll = $request->input('take_all', false);
+
+        if ($takeAll) {
+            $limit = null; // No limit
+        }
+
         $Supplier = Supplier::when($request->keyword, function ($query) use ($request) {
             if (!empty($request->keyword)) {
                 $query->where('name', 'like', '%' . $request->keyword . '%');
             }
-        })->take(10)
+        })
+            ->when($limit, function ($query) use ($limit) {
+                return $query->take($limit); // Apply the limit if provided
+            })
             ->get();
 
         return response()->json([

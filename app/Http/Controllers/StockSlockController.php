@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class StockSlockController extends Controller
 {
@@ -333,7 +334,7 @@ class StockSlockController extends Controller
         try {
             $stockSlockHistories = StockSlockHistory::query();
 
-            $stockSlockHistories->with('material');
+            $stockSlockHistories->with('material', 'UserCreateBy', 'UserPutInBy', 'RackDetails');
 
             if ($request->has('slock_code')) {
                 $stockSlockHistories->where('slock_code', $request->slock_code);
@@ -378,5 +379,32 @@ class StockSlockController extends Controller
                 'message' => $th->getMessage(),
             ], 500);
         }
+    }
+
+    public function printToPdf(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date', // Ensure the end date is after or equal to start date
+        ]);
+
+        // Convert start and end dates to Carbon instances
+        $startDate = Carbon::parse($validated['start_date']);
+        $endDate = Carbon::parse($validated['end_date']);
+
+        // Fetch the StockSlock records within the date range using MongoDB's whereBetween method
+        $stockSlocks = StockSlock::with('material', 'RackDetails')->where('created_at', '>=', $startDate)
+            ->where('created_at', '<=', $endDate)
+            ->get();
+
+        if ($stockSlocks->isEmpty()) {
+            return response()->json(['error' => 'No records found within the date range'], 404);
+        }
+
+        // Generate PDF
+        $pdf = PDF::loadView('warehouse.stock_slock_pdf', ['stockSlocks' => $stockSlocks]);
+
+        // Return the generated PDF
+        return $pdf->download('stock_slock_report.pdf');
     }
 }

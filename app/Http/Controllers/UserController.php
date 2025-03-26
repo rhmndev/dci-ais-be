@@ -105,8 +105,8 @@ class UserController extends Controller
         $request->validate([
             'username' => 'required|string',
             'full_name' => 'required|string',
-            'phone_number' => 'required|string|min:9',
-            'email' => 'required|email',
+            'phone_number' => 'nullable|string|min:9',
+            'email' => 'nullable|email',
             'type' => 'required|numeric',
             'password' => $request->typePost == 1 ? 'string|confirmed|min:6' : 'required|string|confirmed|min:6',
             'role_id' => 'required|string',
