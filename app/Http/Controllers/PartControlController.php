@@ -43,7 +43,10 @@ class PartControlController extends Controller
                 if ($searchTerm != null) {
                     $query->where(function ($query) use ($searchTerm) {
                         $query->where('part_code', 'like', '%' . $searchTerm . '%')
-                            ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
+                            ->orWhere('job_seq', 'like', '%' . $searchTerm . '%')
+                            ->orWhereHas('part', function ($query) use ($searchTerm) {
+                                $query->where('name', 'like', '%' . $searchTerm . '%');
+                            });
                     });
                 }
             }
@@ -208,6 +211,19 @@ class PartControlController extends Controller
                 $parts[] = $partControl;
                 $stocksTotal += floatval($request->stock_in);
 
+                // add part stock log
+                $partStockLog = new PartStockLog([
+                    'part_code' => $request->part_code,
+                    'ref_job_seq' => $jobSeq,
+                    'stock_change' => $request->stock_in,
+                    'new_stock' => $stocksTotal,
+                    'action' => PartControl::STATUS_IN,
+                    'created_by' => auth()->user()->npk,
+                ]);
+
+                $partStockLog->PartControl()->associate($partControl);
+                $partStockLog->save();
+
                 $nextSeqNo++;
             }
             // update stock
@@ -261,6 +277,21 @@ class PartControlController extends Controller
                 'out_note' => $request->note,
                 'updated_by' => auth()->user()->npk,
             ]);
+
+            $stocksTotal = floatval($request->out_stock ?? 0);
+
+            $partStockLog = new PartStockLog([
+                'part_code' => $request->part_code,
+                'ref_job_seq' => $partControl->job_seq,
+                'stock_change' => $request->out_stock,
+                'new_stock' => $stocksTotal,
+                'action' => PartControl::STATUS_OUT,
+                'out_to' => $request->out_target,
+                'created_by' => auth()->user()->npk,
+            ]);
+
+            $partStockLog->PartControl()->associate($partControl);
+            $partStockLog->save();
 
             // update stock
             PartStock::updateReduceStock($request->part_code, $request->out_stock, auth()->user(), $request->out_target);
@@ -525,34 +556,100 @@ class PartControlController extends Controller
     {
         try {
             // Default date range: today to 5 days before
-            $endDate = $request->get('end_date', Carbon::today()->toDateString());
-            $startDate = $request->get('start_date', Carbon::today()->subDays(5)->toDateString());
+            // $endDate = $request->get('end_date', Carbon::today()->toDateString());
+            // $startDate = $request->get('start_date', Carbon::today()->subDays(5)->toDateString());
 
-            // Convert dates to MongoDB UTCDateTime
-            $start = new \MongoDB\BSON\UTCDateTime(Carbon::parse($startDate)->startOfDay()->timestamp * 1000);
-            $end = new \MongoDB\BSON\UTCDateTime(Carbon::parse($endDate)->endOfDay()->timestamp * 1000);
+            // // Convert dates to MongoDB UTCDateTime
+            // $start = new \MongoDB\BSON\UTCDateTime(Carbon::parse($startDate)->startOfDay()->timestamp * 1000);
+            // $end = new \MongoDB\BSON\UTCDateTime(Carbon::parse($endDate)->endOfDay()->timestamp * 1000);
 
-            // Query logs within the date range
-            $logs = PartStockLog::whereBetween('created_at', [$start, $end])
-                ->orderBy('created_at', 'asc')
-                ->get();
+            // // Query logs within the date range
+            // $logs = PartStockLog::whereBetween('created_at', [$start, $end])
+            //     ->orderBy('created_at', 'asc')
+            //     ->get();
 
-            // Format the result
-            $formattedLogs = [];
-            foreach ($logs as $log) {
-                $formattedLogs[] = [
-                    'date' => $log->created_at->toDateTime()->format('Y-m-d'), // Convert MongoDB UTCDateTime to string
-                    'part_code' => $log->part_code,
-                    'stock_change' => $log->stock_change,
-                    'new_stock' => $log->new_stock,
-                    'action' => $log->action,
-                    'created_by' => $log->created_by,
-                ];
+            // // Format the result
+            // $formattedLogs = [];
+            // foreach ($logs as $log) {
+            //     $formattedLogs[] = [
+            //         'date' => $log->created_at->toDateTime()->format('Y-m-d'), // Convert MongoDB UTCDateTime to string
+            //         'part_code' => $log->part_code,
+            //         'stock_change' => $log->stock_change,
+            //         'new_stock' => $log->new_stock,
+            //         'action' => $log->action,
+            //         'created_by' => $log->created_by,
+            //     ];
+            // }
+
+            // return response()->json([
+            //     'message' => 'success',
+            //     'data' => $formattedLogs
+            // ]);
+            $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
+            $currentPage = $request->get('page', 1);
+            $query = PartStockLog::query();
+
+            $query = $query->with('part', 'PartControl', 'UserCreatedBy')->where('ref_job_seq', '!=', null);
+
+            if ($request->has('type')) {
+                if ($request->type == 'IN' || $request->type == 'in') {
+                    $query->where('action', PartControl::STATUS_IN);
+                } else if ($request->type == 'OUT' || $request->type == 'out') {
+                    $query->where('action', PartControl::STATUS_OUT);
+                }
             }
+
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                if ($searchTerm != null) {
+                    $query->where(function ($query) use ($searchTerm) {
+                        $query->where('part_code', 'like', '%' . $searchTerm . '%')
+                            ->orWhere('ref_job_seq', 'like', '%' . $searchTerm . '%')
+                            ->orWhereHas('part', function ($query) use ($searchTerm) {
+                                $query->where('name', 'like', '%' . $searchTerm . '%');
+                            });
+                    });
+                }
+            }
+
+            // Filter by additional fields (name, code, job_seq, start_date, end_date)
+            if ($request->has('name') && $request->name != '') {
+                $query->whereHas('part', function ($query) use ($request) {
+                    $query->where('name', 'like', '%' . $request->name . '%');
+                });
+            }
+
+            if ($request->has('code') && $request->code != '') {
+                $query->where('part_code', 'like', '%' . $request->code . '%');
+            }
+
+            if ($request->has('job_seq') && $request->job_seq != '') {
+                $query->where('ref_job_seq', 'like', '%' . $request->job_seq . '%');
+            }
+
+            if ($request->has('start_date') && $request->start_date != '') {
+                $startDate = Carbon::parse($request->start_date)->startOfDay();
+                $query->where('created_at', '>=', $startDate);
+            }
+
+            if ($request->has('end_date') && $request->end_date != '') {
+                $endDate = Carbon::parse($request->end_date)->endOfDay();
+                $query->where('created_at', '<=', $endDate);
+            }
+
+            // adding orderBy request
+            if ($request->has('order_by')) {
+                $orderBy = $request->order_by;
+                $query->orderBy($orderBy, 'desc');
+            } else {
+                $query->orderBy('updated_at', 'desc');
+            }
+
+            $partControlLogs = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
             return response()->json([
                 'message' => 'success',
-                'data' => $formattedLogs
+                'data' => $partControlLogs
             ]);
         } catch (\Throwable $th) {
             return response()->json([

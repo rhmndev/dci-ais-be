@@ -28,6 +28,11 @@ class PartStock extends Model
         return $this->belongsTo(User::class, 'updated_by', 'npk');
     }
 
+    public function PartStockLogs()
+    {
+        return $this->hasMany(PartStockLog::class, 'part_code', 'part_code');
+    }
+
     public static function updateIncreaseStock($partCode, $stock, $user)
     {
         $partStock = PartStock::where('part_code', $partCode)->first();

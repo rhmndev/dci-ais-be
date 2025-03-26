@@ -43,6 +43,12 @@ class PartControl extends Model
         return $this->belongsTo(PartStock::class, 'part_code', 'part_code');
     }
 
+    public function PartControlLogs()
+    {
+        return $this->hasMany(PartStockLog::class, 'job_seq', 'ref_job_seq');
+        // ->where('ref_job_seq', $this->job_seq);
+    }
+
     public function UserCreatedBy()
     {
         return $this->belongsTo(User::class, 'created_by', 'npk');

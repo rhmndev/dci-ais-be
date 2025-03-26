@@ -364,6 +364,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::delete('/{id}', 'PartController@destroy');
                 Route::get('/g/list', 'PartController@getPartList');
                 Route::post('/a/import', 'PartController@import');
+                Route::post('/a/export', 'PartController@export');
+                Route::post('/g/print-pdf', 'PartController@printPdf');
 
                 // Route::post('/a/label-print-in', 'PartControlController@printPartIn');
                 // Route::post('/a/label-print-out', 'PartController@printPartOut');
