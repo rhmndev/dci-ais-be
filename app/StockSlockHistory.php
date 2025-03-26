@@ -30,9 +30,28 @@ class StockSlockHistory extends Model
         'updated_by',
     ];
 
-
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_code', 'code');
+    }
+
+    public function RackDetails()
+    {
+        return $this->belongsTo(Rack::class, 'rack_code', 'code');
+    }
+
+    public function UserCreateBy()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'npk');
+    }
+
+    public function UserUpdateBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by', 'npk');
+    }
+
+    public function UserPutInBy()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'npk');
     }
 }
