@@ -8,59 +8,63 @@
     <title>Parts Stock Acitivity Report</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            font-size: 10px; /* Smaller font size */
-        }
+    font-family: Arial, sans-serif;
+    font-size: 9px; /* Smaller font size for the whole document */
+} 
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px; /* Reduced margin for more compactness */
+}
 
-        table, th, td {
-            border: 1px solid black;
-        }
+table, th, td {
+    border: 1px solid black;
+}
 
-        th, td {
-            padding: 5px; /* Reduced padding for smaller size */
-            text-align: left;
-            font-size: 9px; /* Smaller text inside table cells */
-            word-wrap: break-word; /* Allow long words to wrap */
-            max-width: 120px; /* Limit width of the cells */
-            text-overflow: ellipsis; /* Add ellipsis for overflowed content */
-            white-space: nowrap; /* Prevent text from wrapping */
-        }
+th, td {
+    padding: 4px; /* Reduced padding for smaller table size */
+    text-align: left;
+    font-size: 8px; /* Smaller text inside table cells */
+    word-wrap: break-word; /* Allow long words to wrap */
+    max-width: 100px; /* Limit width of the cells */
+    text-overflow: ellipsis; /* Add ellipsis for overflowed content */
+    white-space: nowrap; /* Prevent text from wrapping */
+}
 
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-        }
+th {
+    background-color: #f2f2f2;
+    text-align: center;
+}
 
-        td {
-            text-align: left;
-        }
+td {
+    text-align: left;
+}
 
-        h2 {
-            font-size: 14px; /* Smaller title */
-        }
-        .header-info {
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        .footer-info {
-            margin-top: 30px;
-            font-size: 12px;
-            text-align: right;
-        }
-        .action-in {
-            background-color: #d4edda; /* Light green */
-            color: #155724; /* Dark green text */
-        }
-        .action-out {
-            background-color: #f8d7da; /* Light red */
-            color: #721c24; /* Dark red text */
-        }
+h1 {
+    font-size: 12px; /* Smaller title */
+}
+
+.header-info {
+    margin-bottom: 15px; /* Reduced space between header and table */
+    font-size: 10px;
+}
+
+.footer-info {
+    margin-top: 20px; /* Reduced space between table and footer */
+    font-size: 10px;
+    text-align: right;
+}
+
+.action-in {
+    background-color: #d4edda; /* Light green */
+    color: #155724; /* Dark green text */
+}
+
+.action-out {
+    background-color: #f8d7da; /* Light red */
+    color: #721c24; /* Dark red text */
+}
     </style>
 </head>
 <body>
@@ -73,7 +77,7 @@
     <table>
         <thead>
             <tr>
-                <th >No</th>
+                <th>No</th>
                 <th>Action</th>
                 <th>Job Sequence</th>
                 <th>Part Code</th>

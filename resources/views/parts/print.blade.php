@@ -7,25 +7,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parts Report</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px; /* Decreased font size for the entire document */
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 9px; /* Smaller font size for the table */
         }
+
         table, th, td {
             border: 1px solid black;
         }
+
         th, td {
-            padding: 8px;
+            padding: 5px; /* Reduced padding */
             text-align: left;
         }
+        th {
+            text-align: center; /* Center the header text */
+            background-color: #f2f2f2; /* Background color for header */
+            font-weight: bold;
+        }
+
+        td {
+            text-align: left;
+        }
+
         .header-info {
             margin-bottom: 20px;
-            font-size: 14px;
+            font-size: 12px; /* Reduced font size for header info */
         }
+
         .footer-info {
             margin-top: 30px;
-            font-size: 12px;
+            font-size: 10px; /* Reduced font size for footer info */
             text-align: right;
+        }
+
+        /* For styling stock cells with different colors */
+        .green {
+            background-color: green;
+            color: white;
+        }
+
+        .red {
+            background-color: red;
+            color: white;
+        }
+
+        .yellow {
+            background-color: yellow;
+            color: black;
         }
     </style>
 </head>
@@ -39,6 +74,7 @@
     <table>
         <thead>
             <tr>
+                <th>No</th>
                 <th>Code</th>
                 <th>Name</th>
                 {{-- <th>Description</th>
@@ -49,31 +85,33 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($parts as $part)
+            @foreach($parts as $index => $part)
             <tr>
+                <td style="text-align: center;">{{ $index + 1 }}</td>
                 <td>{{ $part->code }}</td>
                 <td>{{ $part->name }}</td>
                 {{-- <td>{{ $part->description }}</td>
                 <td>{{ $part->category_name }}</td> --}}
                 <td>
                     @php
-                        $stock = $part->partStock->stock ?? 0; // Default to 0 if stock is null
-                        $min_stock = $part->min_stock ?? 0; // Default to 0 if min_stock is null
-                        $bgColor = 'green';  // Default color is green (ok)
-                        $textColor = 'dark';  // Default text color is dark
-                        
-                        // Determine background color based on stock status
-                        if ($stock <= 0) {
-                            $bgColor = 'red'; // Out of stock
-                        } elseif ($stock < $min_stock) {
-                            $bgColor = 'yellow'; // Low stock
-                        }
-                    @endphp
-
-                    {{ $stock }}
-                    <td style="background-color: {{ $bgColor }}; color: dark; font-weight: bold;">
-                        &nbsp;
-                    </td>
+                    // Default to 0 if 'partStock' or 'stock' is null, and ensure 'min_stock' defaults to 0 if null
+                    $stock = $part->partStock ? $part->partStock->stock : 0; 
+                    $min_stock = $part->min_stock ?? 0; // Default to 0 if min_stock is null
+                    $bgColor = 'green';  // Default color is green (ok)
+                    $textColor = 'dark';  // Default text color is dark
+                    
+                    // Determine background color based on stock status
+                    if ($stock <= 0) {
+                        $bgColor = 'red'; // Out of stock
+                    } elseif ($stock < $min_stock) {
+                        $bgColor = 'yellow'; // Low stock
+                    }
+                @endphp
+                
+                {{ $stock }}
+                <td style="background-color: {{ $bgColor }}; color: {{ $textColor }}; font-weight: bold;">
+                    &nbsp;
+                </td>
                 </td>
                 <td>{{ $part->uom }}</td>
                 <td></td>
