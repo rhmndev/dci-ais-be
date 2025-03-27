@@ -114,9 +114,14 @@ class RoleController extends Controller
         $role = Role::findOrFail($id);
 
         $permissions = [];
+        $permissionsAA = [];
 
         foreach ($request->permissions as $permissionId => $allow) {
-            $permis_data = Permission::findOrFail($permissionId);
+            $permis_data = Permission::find($permissionId);
+
+            if ($permis_data == null) {
+                continue;
+            }
 
             $permissions[] = [
                 'permission_id' => $permissionId,

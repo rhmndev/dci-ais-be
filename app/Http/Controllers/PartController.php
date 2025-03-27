@@ -72,7 +72,7 @@ class PartController extends Controller
     public function getPartList()
     {
         try {
-            $parts = Part::select('id', 'code', 'name', 'category_code')->get();
+            $parts = Part::select('id', 'code', 'name', 'category_code', 'is_partially_out')->get();
             return response()->json($parts);
         } catch (\Throwable $th) {
             return response()->json([
