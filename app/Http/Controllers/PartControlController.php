@@ -433,6 +433,8 @@ class PartControlController extends Controller
         try {
             $selectedData = $request->input('selectedData');
             $type = $request->input('type');
+            $startDate = $request->input('start_date'); // Get start date from request
+            $endDate = $request->input('end_date'); // Get end date from request
 
             if ($type == 'IN' || $type == 'in') {
                 $typeData = PartControl::STATUS_IN;
@@ -442,17 +444,24 @@ class PartControlController extends Controller
                 $typeData = null;
             }
 
-            // If selectedData is 0, we fetch all parts; otherwise, we fetch only the selected ones
-            if ($selectedData == 0) {
-                $partsStockLog = PartStockLog::with('part', 'PartControl', 'UserCreatedBy')->where('ref_job_seq', '!=', null)->where('action', $typeData)->orderBy('created_at', 'desc')->get();
-            } else {
-                // Fetch the selected parts using the codes in selectedData array
-                $partsStockLog = PartStockLog::with('part', 'PartControl', 'UserCreatedBy')
-                    ->whereIn('ref_job_seq', $selectedData)
-                    ->where('action', $typeData)
-                    ->orderBy('updated_at', 'desc')
-                    ->get();
+            $query = PartStockLog::with('part', 'PartControl', 'UserCreatedBy')
+                ->where('ref_job_seq', '!=', null)
+                ->where('action', $typeData);
+
+            if ($selectedData != 0) {
+                $query->whereIn('ref_job_seq', $selectedData);
             }
+
+            if ($startDate) {
+                $startDate = Carbon::parse($startDate)->startOfDay(); // Start of the day for start_date
+                $query->where('created_at', '>=', $startDate);
+            }
+            if ($endDate) {
+                $endDate = Carbon::parse($endDate)->endOfDay(); // End of the day for end_date
+                $query->where('created_at', '<=', $endDate);
+            }
+
+            $partsStockLog = $query->orderBy('created_at', 'desc')->get();
 
             // If no parts were found, return a 404 response
             if ($partsStockLog->isEmpty()) {

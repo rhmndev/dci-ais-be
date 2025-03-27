@@ -76,12 +76,11 @@
             <tr>
                 <th>No</th>
                 <th>Code</th>
-                <th>Name</th>
-                {{-- <th>Description</th>
-                <th>Category</th> --}}
+                <th>Name</th> 
                 <th colspan="2">Stock</th>
                 <th>UOM</th>
-                <th></th>
+                <th>Actual Stock</th>
+                <th>Note</th>
             </tr>
         </thead>
         <tbody>
@@ -90,9 +89,7 @@
                 <td style="text-align: center;">{{ $index + 1 }}</td>
                 <td>{{ $part->code }}</td>
                 <td>{{ $part->name }}</td>
-                {{-- <td>{{ $part->description }}</td>
-                <td>{{ $part->category_name }}</td> --}}
-                <td>
+                <td style="text-align: center;">
                     @php
                     // Default to 0 if 'partStock' or 'stock' is null, and ensure 'min_stock' defaults to 0 if null
                     $stock = $part->partStock ? $part->partStock->stock : 0; 
@@ -113,7 +110,8 @@
                     &nbsp;
                 </td>
                 </td>
-                <td>{{ $part->uom }}</td>
+                <td style="text-align: center;">{{ $part->uom }}</td>
+                <td></td>
                 <td></td>
             </tr>
             @endforeach
