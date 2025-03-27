@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Part;
+use App\Machine;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -14,16 +14,16 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle
+class MachineExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle
 {
     /**
-     * Get the collection of parts to export
+     * Get the collection of machines to export
      *
      * @return \Illuminate\Support\Collection
      */
     public function collection()
     {
-        return Part::all(); // Fetch all parts data
+        return Machine::all(); // Fetch all machines data
     }
 
     /**
@@ -35,47 +35,37 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     {
         return [
             'No',
-            'Code',
-            'Name',
-            'Description',
-            'Category Code',
-            'UOM',
-            'Min Stock',
-            'Can Parsially Out',
-            'Must Select Out Target',
-            'Stock',
+            'Machine Code',
+            'Machine Name',
+            'Machine Description',
         ];
     }
 
     /**
      * Map the data to export
      *
-     * @param mixed $part
+     * @param mixed $machine
      * @return array
      */
-    public function map($part): array
+    public function map($machine): array
     {
         // adding numbering
         static $number = 1;
-        $stock = $part->PartStock ? $part->PartStock->stock : 0;
         return [
             $number++,
-            $part->code,
-            $part->name,
-            $part->description,
-            $part->category_code,
-            $part->uom,
-            $part->min_stock,
-            $part->can_partially_out ? 'Yes' : 'No',
-            $part->must_select_out_target ? 'Yes' : 'No',
-            $stock,
+            $machine->code,
+            $machine->name,
+            $machine->description,
+            $machine->category_code,
         ];
     }
+
+    // Other methods like __construct and collection...
 
     /**
      * Apply styles to the table
      *
-     * @param Worksheet $sheet  // Updated parameter type to Worksheet
+     * @param Worksheet $sheet
      * @return array
      */
     public function styles(Worksheet $sheet)
@@ -102,8 +92,8 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
                 ],
             ],
 
-            // Style for data rows
-            'A2:J' . $lastRow => [
+            // Style for data rows (from row 2 onward)
+            'A2:D' . $lastRow => [
                 'font' => [
                     'size' => 9, // Smaller font size for data rows
                 ],
@@ -116,18 +106,13 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             ],
 
             // Style for column widths
-            'A' => ['width' => 2],  // Column A: No column width for numbering
-            'B' => ['width' => 20], // Column B: Code column
-            'C' => ['width' => 40], // Column C: Name column
-            'D' => ['width' => 40], // Column D: Description column
-            'E' => ['width' => 15], // Column E: Category Code column
-            'F' => ['width' => 10], // Column F: UOM column
-            'G' => ['width' => 12], // Column G: Min Stock column
-            'H' => ['width' => 15], // Column H: Can Partially Out column
-            'I' => ['width' => 20], // Column I: Must Select Out Target column
-            'J' => ['width' => 10], // Column J: Stock column
+            'A' => ['width' => 2], // Adjust width for column A
+            'B' => ['width' => 20], // Adjust width for column B (Machine Code)
+            'C' => ['width' => 30], // Adjust width for column C (Machine Name)
+            'D' => ['width' => 40], // Adjust width for column D (Machine Description)
         ];
     }
+
     /**
      * Set the title of the sheet
      *
@@ -135,6 +120,6 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
      */
     public function title(): string
     {
-        return 'Parts Data'; // You can set the sheet name here
+        return 'Machine Data'; // You can set the sheet name here
     }
 }
