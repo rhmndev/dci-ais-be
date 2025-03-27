@@ -26,7 +26,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
         Route::put('/admin/reset-password/{id}', 'AdminController@resetPassword');
-  
+
         Route::group(['middleware' => ['checkPermission:user']], function () {
                 #region Master User
                 Route::get('/user', 'UserController@index');
@@ -353,6 +353,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::put('/{id}', 'MachineController@update');
                 Route::post('/', 'MachineController@store');
                 Route::post('/a/import', 'MachineController@import');
+                Route::post('/a/export', 'MachineController@export');
                 Route::delete('/{id}', 'MachineController@destroy');
         });
 

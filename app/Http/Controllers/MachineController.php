@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MachineExport;
 use App\Imports\MachineImport;
 use App\Machine;
 use Illuminate\Http\Request;
@@ -161,5 +162,22 @@ class MachineController extends Controller
                 'error' => $th->getMessage()
             ], 500);
         }
+    }
+
+    public function export(Request $request)
+    {
+        $selectedMachines = $request->selectedMachines;
+
+        $machineQuery = Machine::query();
+
+        if ($selectedMachines && $selectedMachines !== 0) {
+            $machineQuery->whereIn('_id', $selectedMachines);
+        }
+
+        // Get the selected or all machine
+        $machines = $machineQuery->get();
+
+        // Generate the Excel file and return it as a download directly
+        return Excel::download(new MachineExport($machines), 'machine_export.xlsx');
     }
 }

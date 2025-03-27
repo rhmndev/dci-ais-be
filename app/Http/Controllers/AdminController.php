@@ -20,19 +20,19 @@ class AdminController extends Controller
 
         try {
             $user = User::findOrFail($id);
-            $newPassword = $user->email ?? '';
+            $newPassword = $user->username ?? '';
 
             if (empty($newPassword)) {
                 return response()->json([
                     'type' => 'failed',
-                    'message' => 'User email is empty. Cannot reset password.',
+                    'message' => 'User username is empty. Cannot reset password.',
                 ], 400);
             }
 
             $user->password = Hash::make($newPassword);
             $user->save();
 
-            Mail::to($user->email)->send(new PasswordResetNotification($user, $newPassword));
+            // Mail::to($user->email)->send(new PasswordResetNotification($user, $newPassword));
 
             return response()->json([
                 'type' => 'success',
