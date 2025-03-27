@@ -333,6 +333,7 @@ class PartController extends Controller
 
     public function printPdf(Request $request)
     {
+        ini_set('memory_limit', '1024M');
         try {
             $selectedParts = $request->input('selectedParts');
 
