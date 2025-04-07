@@ -20,6 +20,7 @@ class WhsMaterialControl extends Model
         'in_at',
         'loc_out_to',
         'out_at',
+        'stock_out',
         'status',
         'note',
         'is_out',
@@ -35,6 +36,11 @@ class WhsMaterialControl extends Model
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_code', 'code');
+    }
+
+    public function StockSlockDetails()
+    {
+        return $this->hasOne(StockSlock::class, 'job_seq', 'job_seq');
     }
 
     public function UserCreatedBy()

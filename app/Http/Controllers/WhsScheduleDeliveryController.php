@@ -16,7 +16,11 @@ class WhsScheduleDeliveryController extends Controller
                 $lists->where('part_type', $request->part_type);
             }
             $perPage = $request->get('per_page', 10);
-            $data = $lists->paginate($perPage);
+            $page = (int) $request->get('page', 1);
+
+            $perPage = $perPage > 0 ? $perPage : 10;
+            $page = $page > 0 ? $page : 1;
+            $data = $lists->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json([
                 'type' => 'success',

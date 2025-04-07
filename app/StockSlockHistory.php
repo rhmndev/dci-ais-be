@@ -9,6 +9,7 @@ class StockSlockHistory extends Model
     protected $fillable = [
         'slock_code',
         'rack_code',
+        'job_seq',
         'material_code',
         'val_stock_value',
         'valuated_stock',
@@ -50,7 +51,7 @@ class StockSlockHistory extends Model
         return $this->belongsTo(User::class, 'updated_by', 'npk');
     }
 
-    public function UserPutInBy()
+    public function UserActionBy()
     {
         return $this->belongsTo(User::class, 'user_id', 'npk');
     }

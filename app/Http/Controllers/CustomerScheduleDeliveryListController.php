@@ -32,7 +32,6 @@ class CustomerScheduleDeliveryListController extends Controller
             $lists->where('show', true);
         }
 
-
         $lists->groupBy('customer_name', 'customer_id', 'customer_alias', 'customer_plant');
 
         if ($request->has('group_by')) {
@@ -118,7 +117,7 @@ class CustomerScheduleDeliveryListController extends Controller
 
     public function getDeliverySchedules(Request $request)
     {
-        $perPage = $request->input('per_page', 15);
+        $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
 
         // Query OrderCustomer with pagination
