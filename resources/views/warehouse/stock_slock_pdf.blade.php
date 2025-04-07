@@ -24,10 +24,6 @@
             padding: 5px; /* Reduced padding for smaller size */
             text-align: left;
             font-size: 9px; /* Smaller text inside table cells */
-            word-wrap: break-word; /* Allow long words to wrap */
-            max-width: 120px; /* Limit width of the cells */
-            text-overflow: ellipsis; /* Add ellipsis for overflowed content */
-            white-space: nowrap; /* Prevent text from wrapping */
         }
 
         th {
@@ -56,16 +52,17 @@
     </style>
 </head>
 <body>
-    <h2>Stock Slock Report (From {{ $stockSlocks->first()->date_income }} to {{ $stockSlocks->last()->date_income }})</h2>
+    <h2>Stock Sloc Report (From {{ $stockSlocks->first()->date_income }} to {{ $stockSlocks->last()->date_income }})</h2>
 
     <table>
         <thead>
             <tr>
+                <th>No.</th>
                 <th>Sloc</th>
-                <th>Rack</th>
                 <th>Material</th>
-                <th>Valuated Stock</th>
-                <th>Time</th> 
+                <th>Stock</th>
+                <th>Time Income</th> 
+                <th>Rack</th>
                 <th>Last Time Take In</th>
                 <th>Last Time Take Out</th>
                 <th>Tag</th>
@@ -73,16 +70,17 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($stockSlocks as $stockSlock)
+            @foreach ($stockSlocks as $index => $stockSlock)
                 <tr>
-                    <td>{{ $stockSlock->slock_code }}</td>
-                    <td>{{ $stockSlock->rack_code }}</td>
-                    <td>{{ $stockSlock->material_code }}</td>
-                    <td>{{ $stockSlock->valuated_stock }} {{ $stockSlock->uom }}</td>
+                    <td style="text-align: center; width:10px">{{ $index + 1 }}</td>
+                    <td style="text-align: center;">{{ $stockSlock->slock_code }}</td>
+                    <td>{{ $stockSlock->material ? $stockSlock->material->description : $stockSlock->material_code }}</td>
                     <td>{{ $stockSlock->date_income }} {{ $stockSlock->time_income }}</td>
-                    <td>{{ $stockSlock->last_time_take_in }}</td>
-                    <td>{{ $stockSlock->last_time_take_out }}</td>
-                    <td>{{ $stockSlock->tag }}</td>
+                    <td>{{ $stockSlock->rack_code }}</td>
+                    <td style="text-align: center;">{{ $stockSlock->valuated_stock }} {{ $stockSlock->uom }}</td>
+                    <td style="text-align: center;">{{ $stockSlock->last_time_take_in }}</td>
+                    <td style="text-align: center;">{{ $stockSlock->last_time_take_out }}</td>
+                    <td style="text-align: center;">{{ $stockSlock->tag }}</td>
                     <td>{{ $stockSlock->note }}</td>
                 </tr>
             @endforeach

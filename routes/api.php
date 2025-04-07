@@ -330,6 +330,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
                 Route::get('/g/history', 'StockSlockController@getHistory');
                 Route::get('/a/print-activity', 'StockSlockController@printToPdf');
+                Route::get('/a/print-activity-history', 'StockSlockController@printHistoryStockSloc');
         });
         Route::group(['prefix' => 'tracking-boxes'], function () {
                 Route::post('/', 'TrackingBoxController@store');

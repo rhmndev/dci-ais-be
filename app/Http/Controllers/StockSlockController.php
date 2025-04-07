@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use Barryvdh\DomPDF\Facade as PDF;
+use Illuminate\Support\Facades\DB;
 
 class StockSlockController extends Controller
 {
@@ -18,7 +19,7 @@ class StockSlockController extends Controller
         try {
             $stockSlocks = StockSlock::query();
 
-            $stockSlocks->with('material', 'RackDetails');
+            $stockSlocks->with('material', 'RackDetails', 'WhsMatControl');
 
             if ($request->has('slock_code')) {
                 $stockSlocks->where('slock_code', $request->slock_code);
@@ -88,7 +89,7 @@ class StockSlockController extends Controller
                 'scanned_by' => auth()->user()->npk,
                 'status' => 'add',
                 'date_income' => $stockSlock->date_income,
-                'time_income' => $stockSlock->time_income,
+                'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
                 'last_time_take_in' => $stockSlock->last_time_take_in,
                 'last_time_take_out' => $stockSlock->last_time_take_out,
                 'user_id' => auth()->user()->npk,
@@ -143,7 +144,7 @@ class StockSlockController extends Controller
             'scanned_by' => auth()->user()->npk,
             'status' => 'delete',
             'date_income' => $stockSlock->date_income,
-            'time_income' => $stockSlock->time_income,
+            'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
             'last_time_take_in' => $stockSlock->last_time_take_in,
             'last_time_take_out' => $stockSlock->last_time_take_out,
             'user_id' => auth()->user()->npk,
@@ -189,7 +190,7 @@ class StockSlockController extends Controller
                 'valuated_stock' => $row[3],
                 'uom' => $row[4],
                 'date_income' => $dateIncome,
-                'time_income' => $timeIncome,
+                'time_income' => Carbon::parse($timeIncome)->format('H:i'),
                 'take_in_at' => null,
                 'take_out_at' => null,
                 'last_time_take_in' => null,
@@ -230,20 +231,20 @@ class StockSlockController extends Controller
 
         $remainingStock = $stockSlock->valuated_stock - $request->stock;
 
-
         $logStockSlock = StockSlockHistory::create([
             'slock_code' => $request->slock_code,
             'rack_code' => $request->rack_code,
+            'job_seq' => $stockSlock->job_seq,
             'material_code' => $request->material_code,
             'val_stock_value' => $stockSlock->val_stock_value,
-            'valuated_stock' => $stockSlock->valuated_stock,
+            'valuated_stock' => $remainingStock,
             'stock' => floatval($request->stock),
             'uom' => $request->uom,
             'date_time' => Carbon::now()->toDateTimeString(),
             'scanned_by' => auth()->user()->npk,
             'status' => 'take_out',
             'date_income' => $stockSlock->date_income,
-            'time_income' => $stockSlock->time_income,
+            'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
             'last_time_take_in' => $stockSlock->last_time_take_in,
             'last_time_take_out' => Carbon::now()->toDateTimeString(),
             'take_location' => $request->take_location,
@@ -252,14 +253,65 @@ class StockSlockController extends Controller
         ]);
 
         if ($remainingStock <= 0) {
-            $stockSlock->delete();
+            $stockSlock->update(['valuated_stock' => 0, 'last_time_take_out' => Carbon::now()->toDateTimeString()]);
         } else {
             $stockSlock->update(['valuated_stock' => $remainingStock, 'last_time_take_out' => Carbon::now()->toDateTimeString()]);
         }
 
         $logStockSlock->update(['is_success' => true]);
 
-        return response()->json(['message' => 'Stock has been taken out successfully'], 200);
+        $outWhsControl = new WhsMaterialControlController();
+        $request->merge([
+            'material_code' => $request->material_code,
+            'loc_out_to' => $request->take_location,
+            'uom' => $request->uom,
+            'stock_out' => floatval($request->stock),
+            'note' => $request->note ?? null,
+        ]);
+        $resWhsOut = $outWhsControl->outWhsMaterial($request, $stockSlock->job_seq ?? '');
+
+        if (isset($resWhsOut->original['message']) && $resWhsOut->original['message'] === 'success') {
+            $jobSeq = $resWhsOut->original['data']->job_seq ?? null; // Extract job_seq if available
+
+            if ($jobSeq) {
+                $logStockSlock->update([
+                    'job_seq' => $jobSeq,
+                    'is_success' => true
+                ]);
+            } else {
+                $logStockSlock->update([
+                    'is_success' => false
+                ]);
+            }
+
+            if ($remainingStock > 0) {
+                $request->merge([
+                    'rack_code' => "IN_AREA",
+                    'slock_code' => $request->slock_code,
+                    'date_income' => $stockSlock->date_income,
+                    'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
+                    'valuated_stock' => $remainingStock,
+                    'uom' => $stockSlock->uom,
+                    'tag' => $stockSlock->tag,
+                    'note' => $stockSlock->note ?? null,
+                ]);
+                $this->putIn($request);
+            }
+        } else {
+            // Handle failure case
+            return response()->json([
+                'error' => 'Failed to take out stock slock',
+                'data' => $resWhsOut,
+                'message' => $resWhsOut->original['error'] ?? 'Unknown error',
+            ], 400);
+        }
+        $stockSlock->load('material', 'WhsMatControl');
+
+        $dataTempStockSlock = $stockSlock;
+
+        $stockSlock->delete();
+
+        return response()->json(['message' => 'Stock has been taken out successfully', 'data' => $dataTempStockSlock], 200);
     }
 
     public function putIn(Request $request)
@@ -270,7 +322,6 @@ class StockSlockController extends Controller
             'date_income' => 'required|date',
             'time_income' => 'required|date_format:H:i',
             'material_code' => 'required|string',
-            // 'val_stock_value' => 'required|numeric',
             'valuated_stock' => 'required|numeric',
             'uom' => 'required|string',
             'tag' => 'required|string|in:ok,ng,hold',
@@ -278,11 +329,14 @@ class StockSlockController extends Controller
         ]);
 
         try {
+            // start mongodb transaction
+            $session = DB::connection('mongodb')->getMongoClient()->startSession();
+            $session->startTransaction();
+
             $stockSlock = StockSlock::create([
                 'slock_code' => $request->slock_code,
                 'rack_code' => $request->rack_code,
                 'material_code' => $request->material_code,
-                // 'val_stock_value' => floatval($request->val_stock_value),
                 'valuated_stock' => floatval($request->valuated_stock),
                 'uom' => $request->uom,
                 'tag' => $request->tag,
@@ -309,7 +363,7 @@ class StockSlockController extends Controller
                 'scanned_by' => auth()->user()->npk,
                 'status' => 'put_in',
                 'date_income' => $stockSlock->date_income,
-                'time_income' => $stockSlock->time_income,
+                'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
                 'last_time_take_in' => $stockSlock->last_time_take_in,
                 'last_time_take_out' => $stockSlock->last_time_take_out,
                 'user_id' => auth()->user()->npk,
@@ -318,10 +372,65 @@ class StockSlockController extends Controller
                 'is_success' => true
             ]);
 
-            return response()->json([
-                'message' => 'Stock slock has been put in',
-            ], 200);
+            $request->merge([
+                'material_code' => $request->material_code,
+                'loc_in' => $request->slock_code,
+                'uom' => $request->uom,
+                'stock' => floatval($request->valuated_stock),
+                'note' => $request->note ?? null,
+            ]);
+
+            $inWhsMaterial = new WhsMaterialControlController();
+            $resWhsIn = $inWhsMaterial->inWhsMaterial($request);
+
+            if (isset($resWhsIn->original['message']) && $resWhsIn->original['message'] === 'success') {
+                $jobSeq = $resWhsIn->original['data']->job_seq ?? null; // Extract job_seq if available
+
+                if ($jobSeq) {
+                    $stockSlock->update([
+                        'job_seq' => $jobSeq,
+                    ]);
+                    $logStockSlock->update([
+                        'job_seq' => $jobSeq,
+                        'is_success' => true
+                    ]);
+                    $session->commitTransaction();
+
+                    $stockSlock->load('material', 'WhsMatControl');
+
+                    return response()->json([
+                        'message' => 'Stock successfully put in!',
+                        'data' => $stockSlock,
+                        'job_seq' => $jobSeq
+                    ], 201);
+                } else {
+                    $stockSlock->update([
+                        'job_seq' => null,
+                        'is_success' => false
+                    ]);
+                    $logStockSlock->update([
+                        'is_success' => false
+                    ]);
+                    $stockSlock->load('material', 'WhsMatControl');
+                    $session->abortTransaction();
+
+                    return response()->json([
+                        'message' => 'Stock successfully put in, but job_seq not found!',
+                        'data' => $stockSlock,
+                    ], 201);
+                }
+            } else {
+                // Handle failure case
+                $session->abortTransaction();
+                return response()->json([
+                    'error' => 'Failed to put in stock slock',
+                    'data' => $resWhsIn,
+                    'message' => $resWhsIn->original['error'] ?? 'Unknown error',
+                ], 400);
+            }
         } catch (\Throwable $th) {
+            // Rollback transaction in case of error
+            $session->abortTransaction();
             return response()->json([
                 'error' => 'Failed to put in stock slock',
                 'message' => $th->getMessage(),
@@ -334,7 +443,7 @@ class StockSlockController extends Controller
         try {
             $stockSlockHistories = StockSlockHistory::query();
 
-            $stockSlockHistories->with('material', 'UserCreateBy', 'UserPutInBy', 'RackDetails');
+            $stockSlockHistories->with('material', 'UserCreateBy', 'UserActionBy', 'RackDetails');
 
             if ($request->has('slock_code')) {
                 $stockSlockHistories->where('slock_code', $request->slock_code);
@@ -389,8 +498,8 @@ class StockSlockController extends Controller
         ]);
 
         // Convert start and end dates to Carbon instances
-        $startDate = Carbon::parse($validated['start_date']);
-        $endDate = Carbon::parse($validated['end_date']);
+        $startDate = Carbon::parse($validated['start_date'])->startOfDay();
+        $endDate = Carbon::parse($validated['end_date'])->endOfDay();
 
         // Fetch the StockSlock records within the date range using MongoDB's whereBetween method
         $stockSlocks = StockSlock::with('material', 'RackDetails')->where('created_at', '>=', $startDate)
@@ -406,5 +515,32 @@ class StockSlockController extends Controller
 
         // Return the generated PDF
         return $pdf->download('stock_slock_report.pdf');
+    }
+
+    public function printHistoryStockSloc(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date', // Ensure the end date is after or equal to start date
+        ]);
+
+        // Convert start and end dates to Carbon instances
+        $startDate = Carbon::parse($validated['start_date'])->startOfDay();
+        $endDate = Carbon::parse($validated['end_date'])->endOfDay();
+
+        // Fetch the StockSlockHistory records within the date range using MongoDB's whereBetween method
+        $stockSlockHistories = StockSlockHistory::with('material', 'RackDetails', 'UserActionBy')->where('created_at', '>=', $startDate)
+            ->where('created_at', '<=', $endDate)
+            ->get();
+
+        if ($stockSlockHistories->isEmpty()) {
+            return response()->json(['error' => 'No records found within the date range'], 404);
+        }
+
+        // Generate PDF
+        $pdf = PDF::loadView('warehouse.stock_slock_history_pdf', ['stockSlockHistories' => $stockSlockHistories])->setPaper('a4', 'landscape');;
+
+        // Return the generated PDF
+        return $pdf->download('stock_slock_history_report.pdf');
     }
 }

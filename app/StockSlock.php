@@ -2,11 +2,14 @@
 
 namespace App;
 
+use Illuminate\Support\Facades\Storage;
 use Jenssegers\Mongodb\Eloquent\Model;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class StockSlock extends Model
 {
     protected $fillable = [
+        'job_seq',
         'slock_code',
         'rack_code',
         'material_code',
@@ -23,6 +26,7 @@ class StockSlock extends Model
         'is_success',
         'last_changed_by',
         'last_changed_at',
+        'qrcode',
     ];
 
     public function material()
@@ -33,5 +37,19 @@ class StockSlock extends Model
     public function RackDetails()
     {
         return $this->hasOne(Rack::class, 'rack_code', 'code');
+    }
+
+    public function WhsMatControl()
+    {
+        return $this->hasOne(WhsMaterialControl::class, 'job_seq', 'job_seq');
+    }
+
+    public static function generateNewQRCode($jobSeq)
+    {
+        $qrCode = QrCode::format('png')->size(100)->generate($jobSeq);
+        $qrCodePath = 'qrcodes/whs/stocksloc/' . $jobSeq . '.png';
+        Storage::disk('public')->put($qrCodePath, $qrCode);
+
+        return $qrCodePath;
     }
 }

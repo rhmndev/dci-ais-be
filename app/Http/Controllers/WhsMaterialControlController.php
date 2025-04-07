@@ -15,25 +15,32 @@ class WhsMaterialControlController extends Controller
             $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
             $query = WhsMaterialControl::query();
 
-            $query = $query->with('material', 'UserCreatedBy', 'UserUpdatedBy', 'UserOutBy');
+            $query = $query->with('material', 'StockSlockDetails', 'StockSlockDetails.RackDetails', 'UserCreatedBy', 'UserUpdatedBy', 'UserOutBy');
 
-            if ($request->has('material_code')) {
-                $query->where('material_code', 'like', '%' . $request->material_code . '%');
+            if ($request->has('material_code') && $request->material_code != '') {
+                $query->where('material_code', 'LIKE', '%' . $request->material_code . '%');
             }
-            if ($request->has('job_seq')) {
-                $query->where('job_seq', 'like', '%' . $request->job_seq . '%');
+            if ($request->has('job_seq') && $request->job_seq != '') {
+                $query->where('job_seq', 'LIKE', '%' . $request->job_seq . '%');
             }
-            if ($request->has('status')) {
-                $query->where('status', $request->status);
+            if ($request->has('status') && $request->status != '') {
+                $query->where('status',  'like', $request->status);
             }
-            // if ($request->has('search')) {
-            //     $searchTerm = $request->search;
-            //     $query->where(function ($query) use ($searchTerm) {
-            //         $query->where('part_code', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('note', 'like', '%' . $searchTerm . '%')
-            //             ->orWhere('job_seq', 'like', '%' . $searchTerm . '%');
-            //     });
-            // }
+            if ($request->has('start_date') && $request->start_date != '') {
+                $query->where('created_at', '>=', Carbon::parse($request->start_date)->startOfDay());
+            }
+            if ($request->has('end_date') && $request->end_date != '') {
+                $query->where('created_at', '<=', Carbon::parse($request->end_date)->endOfDay());
+            }
+            if ($request->has('loc_in') && $request->loc_in != '') {
+                $query->where('loc_in', 'LIKE', '%' . $request->loc_in . '%');
+            }
+
+            if ($request->has('material_name') && $request->material_name != '') {
+                $query->whereHas('material', function ($q) use ($request) {
+                    $q->where('description', 'regexp', new \MongoDB\BSON\Regex($request->material_name, 'i'));
+                });
+            }
 
             $query = $query->orderBy('created_at', 'desc');
 
@@ -143,6 +150,7 @@ class WhsMaterialControlController extends Controller
             $WhsControl->material_code = $request->material_code;
             $WhsControl->job_seq = $JobSeqNumber;
             $WhsControl->stock = (float) $request->stock;
+            $WhsControl->uom = $request->uom;
             $WhsControl->note = $request->note;
             $WhsControl->status = 'IN';
             $WhsControl->qr_code = WhsMaterialControl::generateNewQRCode($JobSeqNumber);
@@ -157,6 +165,77 @@ class WhsMaterialControlController extends Controller
             return response()->json([
                 'message' => 'success',
                 'data' => $WhsControl
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    public function outWhsMaterial(Request $request, $job_seq = null)
+    {
+        try {
+            $request->validate([
+                'loc_out_to' => 'required|string',
+                'note' => 'nullable|string',
+                'remaining_stock' => 'nullable|numeric|min:0',
+            ]);
+            if ($job_seq != null) {
+                $whsMatControl = WhsMaterialControl::where('job_seq', $job_seq)->first();
+                if (!$whsMatControl) {
+                    return response()->json([
+                        'message' => 'Material not found',
+                        'data' => null
+                    ], 404);
+                }
+
+                if ($whsMatControl->status == WhsMaterialControl::STATUS_OUT) {
+                    return response()->json([
+                        'message' => 'Material already out',
+                        'data' => null
+                    ], 400);
+                }
+
+                $whsMatControl->loc_out_to = $request->loc_out_to;
+                $whsMatControl->out_at = Carbon::now();
+                $whsMatControl->stock_out = $request->stock_out;
+                $whsMatControl->status = WhsMaterialControl::STATUS_OUT;
+                $whsMatControl->out_by = auth()->user()->npk;
+                $whsMatControl->out_note = $request->note;
+                $whsMatControl->updated_by = auth()->user()->npk;
+                $whsMatControl->save();
+            }
+
+            $newLabelData = null;
+
+            if (!empty($request->remaining_stock) && $request->remaining_stock > 0) {
+                $inRequest = new Request([
+                    'material_code' => $whsMatControl->material_code,
+                    'loc_in' => $whsMatControl->loc_in,
+                    'uom' => $whsMatControl->uom,
+                    'stock' => $request->remaining_stock,
+                    'note' => $request->note,
+                    'tag' => $whsMatControl->tag,
+                ]);
+
+                $newInResult = $this->inWhsMaterial($inRequest);
+
+                if ($newInResult->status() === 200 || $newInResult->status() === 201) {
+                    $newLabelData = $newInResult->original['data'];
+                } else {
+                    return response()->json([
+                        'message' => 'failed',
+                        'error' => $newInResult->original['error']
+                    ], 500);
+                }
+            }
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $whsMatControl ?? $newLabelData,
+                'new_label' => $newLabelData
             ]);
         } catch (\Throwable $th) {
             return response()->json([
