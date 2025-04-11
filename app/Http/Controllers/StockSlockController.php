@@ -286,7 +286,7 @@ class StockSlockController extends Controller
 
             if ($remainingStock > 0) {
                 $request->merge([
-                    'rack_code' => "IN_AREA",
+                    'rack_code' => $request->rack_code,
                     'slock_code' => $request->slock_code,
                     'date_income' => $stockSlock->date_income,
                     'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),

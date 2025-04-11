@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Rack;
 use App\SegmentRack;
+use App\StockSlock;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -201,5 +202,29 @@ class RackController extends Controller
 
         // Stream the PDF back to the client
         return $pdf->stream('qr_racks.pdf');
+    }
+
+    public function showDataByQrCode($qrCode)
+    {
+        $rack = Rack::where('code', $qrCode)->first();
+
+        if (!$rack) {
+            return response()->json([
+                'message' => 'QR Code not found',
+            ], 404);
+        }
+
+        $MaterialInRack = StockSlock::where('rack_code', $qrCode)->first();
+        if ($MaterialInRack) {
+            $MaterialInRack->load('material', 'WhsMatControl');
+        }
+        $rack->load('SegmentRack');
+        return response()->json([
+            'message' => 'success',
+            'data' => [
+                'rack' => $rack,
+                'material_in_rack' => $MaterialInRack,
+            ]
+        ]);
     }
 }
