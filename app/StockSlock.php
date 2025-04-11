@@ -18,6 +18,7 @@ class StockSlock extends Model
         'uom',
         'date_income',
         'time_income',
+        'inventory_no',
         'last_time_take_in',
         'last_time_take_out',
         'user_id',

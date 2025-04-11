@@ -243,6 +243,7 @@ class StockSlockController extends Controller
             'date_time' => Carbon::now()->toDateTimeString(),
             'scanned_by' => auth()->user()->npk,
             'status' => 'take_out',
+            'inventory_no' => $stockSlock->inventory_no,
             'date_income' => $stockSlock->date_income,
             'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
             'last_time_take_in' => $stockSlock->last_time_take_in,
@@ -336,6 +337,7 @@ class StockSlockController extends Controller
             $stockSlock = StockSlock::create([
                 'slock_code' => $request->slock_code,
                 'rack_code' => $request->rack_code,
+                'inventory_no' => $request->inventory_no ?? null,
                 'material_code' => $request->material_code,
                 'valuated_stock' => floatval($request->valuated_stock),
                 'uom' => $request->uom,
@@ -362,6 +364,7 @@ class StockSlockController extends Controller
                 'date_time' => Carbon::now()->toDateTimeString(),
                 'scanned_by' => auth()->user()->npk,
                 'status' => 'put_in',
+                'inventory_no' => $stockSlock->inventory_no,
                 'date_income' => $stockSlock->date_income,
                 'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
                 'last_time_take_in' => $stockSlock->last_time_take_in,
