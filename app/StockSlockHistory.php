@@ -21,6 +21,7 @@ class StockSlockHistory extends Model
         'date_time',
         'date_income',
         'time_income',
+        'inventory_no',
         'last_time_take_in',
         'last_time_take_out',
         'take_location',
