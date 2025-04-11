@@ -16,7 +16,6 @@ use Excel;
 
 class MaterialController extends Controller
 {
-    //
     public function index(Request $request)
     {
 
@@ -74,7 +73,6 @@ class MaterialController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'code' => 'required|string',
             'description' => 'required|string',

@@ -348,6 +348,16 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::put('/{id}', 'PlanningProductionController@update');
         });
 
+        Route::group(['prefix' => 'subconts'], function () {
+                Route::get('/', 'SubContController@index');
+                Route::get('/{id}', 'SubContController@show');
+                Route::put('/{id}', 'SubContController@update');
+                Route::post('/', 'SubContController@store');
+                Route::post('/a/import', 'SubContController@import');
+                Route::post('/a/export', 'SubContController@export');
+                Route::delete('/{id}', 'SubContController@destroy');
+        });
+
         Route::group(['prefix' => 'machines'], function () {
                 Route::get('/', 'MachineController@index');
                 Route::get('/{id}', 'MachineController@show');
@@ -429,6 +439,7 @@ Route::post('/{po_number}/download-pdf', 'PurchaseOrderController@downloadPDF');
 Route::post('/{po_number}/print-po', 'PurchaseOrderController@printPO');
 Route::post('/po/download-zip', 'PurchaseOrderController@downloadMultiplePDF');
 
+Route::get('/storage-locations-list-g', 'StorageLocationController@list');
 Route::get('/send-whatsapp', 'WhatsAppController@sendWhatsAppMessage');
 
 Route::group(['prefix' => 'boxes'], function () {
