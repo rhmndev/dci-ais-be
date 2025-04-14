@@ -160,8 +160,7 @@ class RoleController extends Controller
             if (!empty($request->keyword)) {
                 $query->where('name', 'like', '%' . $request->keyword . '%');
             }
-        })->take(10)
-            ->get();
+        })->get();
 
         return response()->json([
             'type' => 'success',
