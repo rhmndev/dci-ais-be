@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Exports\MpOvertimeExport;
+use App\Helpers\WhatsappHelper;
 use App\MpOvertime;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade as Pdf;
+use Illuminate\Support\Facades\Log;
 
 class MpOvertimeController extends Controller
 {
@@ -82,6 +84,12 @@ class MpOvertimeController extends Controller
 
             $mpOvertime = MpOvertime::create($validated);
 
+            $response = WhatsappHelper::sendMessage(['85337507847', '81310318787'], "New MP Overtime for {$request->dept_code} shift: {$request->shift_code} on: {$request->date} at: {$request->place_code} with total MP is: {$request->total_mp} MP. Created by: {$request->created_by}");
+
+            Log::info('Whatsapp response:', [
+                'response' => $response,
+                'request' => $request->all(),
+            ]);
             return response()->json([
                 'message' => 'created',
                 'data' => $mpOvertime
@@ -109,6 +117,8 @@ class MpOvertimeController extends Controller
 
             $mpOvertime = MpOvertime::findOrFail($id);
             $mpOvertime->update($validated);
+
+            $response = WhatsappHelper::sendMessage(['85337507847', '81310318787'], "Updated MP Overtime for {$request->dept_code} shift: {$request->shift_code} on: {$request->date} at: {$request->place_code} with total MP is: {$request->total_mp} MP. Updated by: {$request->updated_by}");
 
             return response()->json([
                 'message' => 'updated',
