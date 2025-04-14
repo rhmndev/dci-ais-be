@@ -63,10 +63,42 @@ class MpOvertimeController extends Controller
         }
     }
 
+    public function storeAdmin(Request $request)
+    {
+        try {
+            $rules = [
+                'dept_code'     => 'required|string',
+                'date'          => 'required|date',
+                'shift_code'    => 'required|string',
+                'place_code'    => 'required|string',
+                'total_mp'      => 'required|integer|min:0',
+                // 'updated_by'    => 'required|string',
+            ];
+
+            $validated = $request->validate($rules);
+
+            // Format the date
+            $validated['date'] = Carbon::parse($validated['date'])->format('Y-m-d');
+
+            $mpOvertime = MpOvertime::create($validated);
+
+            return response()->json([
+                'message' => 'created',
+                'data' => $mpOvertime
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
             $isGuest = auth()->guest();
+
             $rules = [
                 'dept_code'     => 'required|string',
                 'date'          => 'required|date',
@@ -82,6 +114,12 @@ class MpOvertimeController extends Controller
             // Format the date
             $validated['date'] = Carbon::parse($validated['date'])->format('Y-m-d');
 
+            // merge created_by and updated_by if user is not guest
+            if (!$isGuest) {
+                $validated['created_by'] = auth()->user()->npk;
+                $validated['updated_by'] = auth()->user()->npk;
+            }
+
             $mpOvertime = MpOvertime::create($validated);
 
             $response = WhatsappHelper::sendMessage(['85337507847', '81310318787'], "New MP Overtime for {$request->dept_code} shift: {$request->shift_code} on: {$request->date} at: {$request->place_code} with total MP is: {$request->total_mp} MP. Created by: {$request->created_by}");
@@ -90,10 +128,11 @@ class MpOvertimeController extends Controller
                 'response' => $response,
                 'request' => $request->all(),
             ]);
+
             return response()->json([
                 'message' => 'created',
                 'data' => $mpOvertime
-            ], 201);
+            ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'failed',
@@ -137,6 +176,8 @@ class MpOvertimeController extends Controller
         try {
             $mpOvertime = MpOvertime::findOrFail($id);
             $mpOvertime->delete();
+
+            $response = WhatsappHelper::sendMessage(['85337507847', '81310318787'], "Deleted MP Overtime for {$mpOvertime->dept_code} shift: {$mpOvertime->shift_code} on: {$mpOvertime->date} at: {$mpOvertime->place_code} with total MP is: {$mpOvertime->total_mp} MP. Deleted by: {$mpOvertime->updated_by}");
 
             return response()->json([
                 'message' => 'deleted',
