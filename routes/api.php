@@ -368,6 +368,26 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::delete('/{id}', 'MachineController@destroy');
         });
 
+        Route::group(['prefix' => 'departments'], function () {
+                Route::get('/', 'DepartmentController@index');
+                Route::get('/{id}', 'DepartmentController@show');
+                Route::put('/{id}', 'DepartmentController@update');
+                Route::post('/', 'DepartmentController@store');
+                Route::post('/a/import', 'DepartmentController@import');
+                Route::post('/a/export', 'DepartmentController@export');
+                Route::delete('/{id}', 'DepartmentController@destroy');
+        });
+
+        Route::group(['prefix' => 'shifts'], function () {
+                Route::get('/', 'ShiftController@index');
+                Route::get('/{id}', 'ShiftController@show');
+                Route::put('/{id}', 'ShiftController@update');
+                Route::post('/', 'ShiftController@store');
+                Route::post('/a/import', 'ShiftController@import');
+                Route::post('/a/export', 'ShiftController@export');
+                Route::delete('/{id}', 'ShiftController@destroy');
+        });
+
         Route::group(['prefix' => 'parts'], function () {
                 Route::get('/', 'PartController@index');
                 Route::post('/', 'PartController@store');
@@ -383,6 +403,17 @@ Route::group(['middleware' => ['auth:api']], function () {
                 // Route::post('/a/label-print-in', 'PartControlController@printPartIn');
                 // Route::post('/a/label-print-out', 'PartController@printPartOut');
         });
+
+        Route::group(['prefix' => 'mp-overtimes'], function () {
+                // Route::get('/', 'OvertimeController@index');
+                // Route::get('/{id}', 'OvertimeController@show');
+                // Route::put('/{id}', 'OvertimeController@update');
+                // Route::post('/', 'OvertimeController@store');
+                // Route::post('/a/import', 'OvertimeController@import');
+                // Route::post('/a/export', 'OvertimeController@export');
+                Route::delete('/{id}', 'MpOvertimeController@destroy');
+        });
+
 
         Route::group(['prefix' => 'part-controls'], function () {
                 Route::get('/', 'PartControlController@index');
@@ -485,6 +516,14 @@ Route::group(['prefix' => 'tracking-boxes'], function () {
         Route::get('/g/current-delivery-boxes', 'TrackingBoxController@getCurrentDeliveryBoxes');
 });
 
+Route::get('/g/department-list', 'DepartmentController@list');
+Route::get('/g/shift-list', 'ShiftController@list');
+
+Route::get('/g/mp-overtimes', 'MpOvertimeController@index');
+Route::post('/create-mp-overtime', 'MpOvertimeController@store');
+Route::put('/update-mp-overtime/{id}', 'MpOvertimeController@update');
+Route::get('/g/mp-overtimes/print', 'MpOvertimeController@printPdf');
+
 Route::get('/customer-schedule-delivery-lists', 'CustomerScheduleDeliveryListController@index');
 Route::get('/delivery-schedule', 'CustomerScheduleDeliveryListController@getDeliverySchedules');
 
@@ -492,11 +531,11 @@ Route::get('/delivery-schedule', 'CustomerScheduleDeliveryListController@getDeli
 Route::get('/dn/g/compare', 'CompareDeliveryNoteController@getCompareDN');
 Route::get('/g/currently-box-status', 'CompareDeliveryNoteController@getCurrentlyTrackingBoxStatus');
 Route::get('/kanbans/g/kanban-details', 'CompareDeliveryNoteController@getKanban');
-Route::get('/test-arduino', function () {
-        // return number
-        return response()->json(['data' => [
-                'material_id' => "02C106SWH1RAW",
-                'stock' => "123",
-                'rack' => "A1-1-1",
-        ]]);
-});
+// Route::get('/test-arduino', function () {
+//         // return number
+//         return response()->json(['data' => [
+//                 'material_id' => "02C106SWH1RAW",
+//                 'stock' => "123",
+//                 'rack' => "A1-1-1",
+//         ]]);
+// });
