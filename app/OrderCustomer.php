@@ -2,13 +2,11 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\Model;
 use App\TrackingBox;
 
 class OrderCustomer extends Model
 {
-    protected $connection = 'mysql';
-
     protected $table = 'order_customer';
 
     protected $fillable = [

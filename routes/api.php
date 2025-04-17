@@ -290,14 +290,26 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/g/supplier', 'TravelDocumentController@getBySupplierLoggedUser');
         });
 
+        Route::prefix('delivery-orders')->group(function () {
+                Route::get('/', 'DeliveryOrderController@index');
+                Route::post('/', 'DeliveryOrderController@store');
+                Route::put('/{id}', 'DeliveryOrderController@update');
+                Route::delete('/{id}', 'DeliveryOrderController@destroy');
+                Route::post('/a/import', 'DeliveryOrderController@import');
+                Route::get('/a/export', 'DeliveryOrderController@export');
+        });
+
         Route::group(['prefix' => 'schedule-delivery'], function () {
                 Route::get('/', 'WhsScheduleDeliveryController@index');
                 Route::post('/a/customer-delivery-cycle', 'WhsScheduleDeliveryController@createCustomerDeliveryCycle');
                 Route::put('/u/customer-delivery-cycle/{id}', 'WhsScheduleDeliveryController@updateCustomerDeliveryCycle');
+                Route::post('/a/customer-cycle', 'CustomerScheduleDeliveryListController@createCustomerCycle');
+                Route::put('/u/customer-cycle/{id}', 'CustomerScheduleDeliveryListController@updateCustomeCycle');
                 Route::post('/a/customer-pickup-time', 'CustomerScheduleDeliveryListController@createCustomerPickupTime');
                 Route::put('/u/customer-pickup-time/{id}', 'CustomerScheduleDeliveryListController@updateCustomerPickupTime');
                 Route::post('/a/import', 'CustomerScheduleDeliveryListController@importScheduleDeliveries');
                 Route::post('/a/destroy/{id}', 'CustomerScheduleDeliveryListController@destroy');
+                Route::post('/a/destroy-customer-schedule-delivery-cycle/{id}', 'WhsScheduleDeliveryController@destroyCustomerScheduleDeliveryCycle');
                 Route::post('/a/destroy-customer-schedule-delivery/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryList');
                 Route::post('/a/destroy-customer-pickup-time/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryPickupTime');
                 Route::post('/a/destroy-customer-cycle/{id}', 'CustomerScheduleDeliveryListController@destroyCustomerScheduleDeliveryCycle');
@@ -346,6 +358,16 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/', 'PlanningProductionController@index');
                 Route::post('/', 'PlanningProductionController@store');
                 Route::put('/{id}', 'PlanningProductionController@update');
+        });
+
+        Route::group(['prefix' => 'order-customers'], function () {
+                Route::get('/', 'OrderCustomerController@index');
+                Route::get('/{id}', 'OrderCustomerController@show');
+                Route::put('/{id}', 'OrderCustomerController@update');
+                Route::post('/', 'OrderCustomerController@store');
+                Route::post('/a/import', 'OrderCustomerController@import');
+                Route::post('/a/export', 'OrderCustomerController@export');
+                Route::delete('/{id}', 'OrderCustomerController@destroy');
         });
 
         Route::group(['prefix' => 'subconts'], function () {
@@ -461,6 +483,9 @@ Route::get('/status-part-component/list', 'StatusPartComponentController@list');
 Route::get('/qrcode', 'InspectionController@qrcode');
 Route::get('/qr-get-data', 'QrController@getData');
 Route::get('/readqrcode', 'InspectionController@qrDecode');
+
+Route::get('/g/mp-overtime/settings', 'MpOvertimeSettingController@show');
+Route::put('/u/mp-overtime/settings', 'MpOvertimeSettingController@update');
 
 Route::get('/d/{po_number}/view', 'PurchaseOrderController@showToSupplier');
 Route::get('/d/{po_id}/download', 'PurchaseOrderController@downloadPDFForSupplier');

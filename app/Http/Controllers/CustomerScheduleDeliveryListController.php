@@ -9,6 +9,7 @@ use App\Http\Resources\CustomerScheduleDeliveryListResources;
 use App\Imports\DeliveriesImport;
 use App\Imports\CustomerDeliveriesImport;
 use App\Imports\CustomerScheduleDeliveryCycleImport;
+use App\Imports\CustomerScheduleDeliveryListImport;
 use App\Imports\ScheduleDeliveriesImport;
 use App\OrderCustomer;
 use App\WhsScheduleDelivery;
@@ -81,6 +82,16 @@ class CustomerScheduleDeliveryListController extends Controller
             return $list;
         });
 
+        $lists = $lists->map(function ($list) {
+            $status_parts = $list->getStatusParts();
+            if ($status_parts->isNotEmpty()) {
+                $list->status_parts = $status_parts;
+            } else {
+                $list->status_parts = [];
+            }
+            return $list;
+        });
+
         return response()->json([
             'type' => 'success',
             'data' => CustomerScheduleDeliveryListResources::collection($lists),
@@ -123,16 +134,24 @@ class CustomerScheduleDeliveryListController extends Controller
         // Query OrderCustomer with pagination
         $CustomerScheduleDeliveryList = CustomerScheduleDeliveryList::query();
 
-        if ($request->has('customer_id')) {
-            $CustomerScheduleDeliveryList->where('customer_id', $request->customer_id);
-        }
-
-        if ($request->has('part_type')) {
-            $CustomerScheduleDeliveryList->where('part_type', $request->part_type);
-        }
-
-        if ($request->has('cycle')) {
-            $CustomerScheduleDeliveryList->where('cycle', $request->cycle);
+        $filterableFields = [
+            'customer_id',
+            'customer_name',
+            'customer_plant',
+            'part_no',
+            'part_name',
+            'part_type',
+        ];
+        foreach ($filterableFields as $field) {
+            $value = $request->get($field);
+            if (!is_null($value) && $value !== '') {
+                if ($field === 'customer_id') {
+                    // Handle both string and number safely
+                    $CustomerScheduleDeliveryList->where($field, 'like', '%' . strval($value) . '%');
+                } else {
+                    $CustomerScheduleDeliveryList->where($field, 'like', '%' . $value . '%');
+                }
+            }
         }
 
         $CustomerScheduleDeliveryList = $CustomerScheduleDeliveryList->paginate($perPage, ['*'], 'page', $page);
@@ -246,6 +265,49 @@ class CustomerScheduleDeliveryListController extends Controller
             return response()->json([
                 'error' => 'Failed to delete list',
                 'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function createCustomerCycle(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required',
+            'customer_name' => 'required|string',
+            'customer_plant' => 'required|string',
+            'cycle' => 'required|string',
+            'part_type' => 'required|string',
+        ]);
+
+        try {
+            $customer_id = (int) $request->customer_id;
+            $dataCustomer = CustomerScheduleDeliveryCycle::updateOrCreate(
+                [
+                    'customer_id' => $request->customer_id,
+                    'customer_plant' =>  $request->customer_plant,
+                    'cycle' => $request->cycle,
+                    'part_type' => $request->part_type,
+                ],
+                [
+                    'customer_name' => $request->customer_name,
+                    'customer_plant' => $request->customer_plant,
+                    'customer_alias' => $request->customer_alias ?? $request->customer_plant,
+                    'part_type' => $request->part_type,
+                    'cycle' => $request->cycle,
+                    'customer_id' => $customer_id,
+                ]
+            );
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Pickup time created successfully',
+                'data' => $dataCustomer,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'type' => 'error',
+                'message' => $th->getMessage(),
+                'data' => []
             ], 500);
         }
     }
@@ -417,28 +479,27 @@ class CustomerScheduleDeliveryListController extends Controller
         ]);
 
         try {
-            $data = Excel::toArray(new CustomerScheduleDeliveryCycleImport, $request->file('file'));
+            $data = Excel::toArray(new CustomerScheduleDeliveryListImport, $request->file('file'));
 
             $customers = [];
             foreach ($data[0] as $index => $row) {
-                if ($index == 0) {
-                    continue;
-                }
                 $dataCustomer = CustomerScheduleDeliveryList::updateOrCreate(
                     [
-                        'customer_id' => $row[0] ?? null,
-                        'part_type' => $row[5] ?? null,
-                        'part_no' => $row[6] ?? null,
+                        'customer_id' => $row['customer_id'] ?? null,
+                        'customer_name' => $row['customer_name'] ?? null,
+                        'part_type' => $row['part_type'] ?? null,
+                        'part_no' => $row['part_no'] ?? null,
                     ],
                     [
-                        'customer_name' => $row[1] ?? null,
-                        'customer_plant' => $row[2] ?? null,
-                        'customer_alias' => $row[3] ?? null,
-                        'customer_image' => $row[4] ?? null,
-                        'part_no' => $row[6] ?? null,
-                        'part_name' => $row[7] ?? null,
-                        'part_type' => $row[5] ?? null,
-                        'show' => ($row[8] ?? true) == 1 || strtolower($row[8]) == 'true',
+                        'customer_id' => $row['customer_id'] ?? null,
+                        'customer_name' => $row['customer_name'] ?? null,
+                        'customer_plant' => $row['customer_plant'] ?? null,
+                        'customer_alias' => $row['customer_alias'] ?? null,
+                        'customer_image' => $row['customer_image'] ?? null,
+                        'part_type' => $row['part_type'] ?? null,
+                        'part_no' => $row['part_no'] ?? null,
+                        'part_name' => $row['part_name'] ?? null,
+                        'show' => ($row['show'] ?? true) == 1 || strtolower($row['show']) == 'true',
                     ]
                 );
 
@@ -518,15 +579,15 @@ class CustomerScheduleDeliveryListController extends Controller
                         'customer_id' => $row[0] ?? null,
                         'customer_plant' => $row[2] ?? null,
                         'type' => $row[5] ?? null,
-                        'part_type' => $row[6] ?? null,
+                        'part_type' => $row[4] ?? null,
                     ],
                     [
                         'customer_name' => $row[1] ?? null,
                         'customer_plant' => $row[2] ?? null,
                         'customer_alias' => $row[3] ?? null,
-                        'pickup_time' => '11:30',
+                        'part_type' => $row[4] ?? null,
                         'type' => $row[5] ?? null,
-                        'part_type' => $row[6] ?? null,
+                        'pickup_time' => $row[6] ?? null,
                     ]
                 );
 
