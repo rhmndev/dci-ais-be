@@ -20,7 +20,7 @@ class WhsScheduleDelivery extends Model
         'planning_time',
         'on_time',
         'delay',
-        'status_prod',
+        'status_prd',
         'status_qc',
         'status_spa',
         'status_ok',
@@ -60,4 +60,9 @@ class WhsScheduleDelivery extends Model
 
         'created_by',
     ];
+
+    public function CreatedUserBy()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'npk');
+    }
 }

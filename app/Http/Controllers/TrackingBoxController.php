@@ -82,44 +82,69 @@ class TrackingBoxController extends Controller
         }
     }
 
-    public function getDataOrderCustomer(Request $request): JsonResponse
+    public function getDataOrderCustomer(Request $request)
     {
         try {
             $perPage = $request->input('per_page', 15);
             $page = $request->input('page', 1);
 
-            // Query OrderCustomer with pagination
-            $orderCustomersQuery = OrderCustomer::query();
-
             if ($request->has('group_by') && $request->input('group_by') === 'dn_no') {
-                $subQuery = OrderCustomer::select('dn_no', DB::raw('MAX(id) as last_id'), DB::raw('SUM(qty_kbn) as total_qty_kbn'))
-                    ->groupBy('dn_no');
+                // MongoDB aggregation pipeline for group by
+                $pipeline = [
+                    [
+                        '$group' => [
+                            '_id' => '$dn_no',
+                            'last_id' => ['$last' => '$_id'],
+                            'total_qty_kbn' => ['$sum' => '$qty_kbn'],
+                            'doc' => ['$last' => '$$ROOT'] // gets the full last doc
+                        ]
+                    ],
+                    [
+                        '$sort' => ['last_id' => -1]
+                    ],
+                    [
+                        '$skip' => ($page - 1) * $perPage
+                    ],
+                    [
+                        '$limit' => (int) $perPage
+                    ]
+                ];
 
-                $orderCustomersQuery = OrderCustomer::joinSub($subQuery, 'sub', function ($join) {
-                    $join->on('order_customer.id', '=', 'sub.last_id');
-                })->orderBy('sub.last_id', 'desc');
+                $results = OrderCustomer::raw(function ($collection) use ($pipeline) {
+                    return $collection->aggregate($pipeline);
+                });
+
+                $items = collect($results)->map(function ($item) {
+                    $doc = (object) $item['doc'];
+                    $doc->source = '-';
+                    $doc->tracking_boxes = []; // Replace with your own logic
+                    $doc->compares = [];        // Replace with your own logic
+                    $doc->parts = [];           // Replace with your own logic
+                    return $doc;
+                });
+
+                // Total count for pagination
+                $totalCount = OrderCustomer::distinct('dn_no')->count();
             } else {
-                $orderCustomersQuery->orderBy('id', 'desc');
+                // Simple pagination (no group by)
+                $query = OrderCustomer::orderBy('_id', 'desc');
+
+                $totalCount = $query->count();
+                $items = $query->skip(($page - 1) * $perPage)
+                    ->take($perPage)
+                    ->get()
+                    ->map(function ($item) {
+                        $item->source = '-';
+                        $item->tracking_boxes = $item->getTrackingBoxes();
+                        $item->compares = $item->compareDeliveryNotes;
+                        $item->parts = $item->getParts();
+                        return $item;
+                    });
             }
-            // $orderCustomersQuery->orderBy('id', 'desc');
-
-            $orderCustomers = $orderCustomersQuery->paginate($perPage, ['*'], 'page', $page);
-
-            // $orderCustomers = OrderCustomer::orderBy('id', 'desc')->paginate($perPage, ['*'], 'page', $page);
-
-            // Query OrderCustomerAhm with paginationz
-
-            $orderCustomers->getCollection()->transform(function ($item) {
-                $item->source = '-';
-                $item->tracking_boxes = $item->getTrackingBoxes();
-                $item->compares = $item->compareDeliveryNotes;
-                $item->parts = $item->getParts();
-                return $item;
-            });
 
             $data = new LengthAwarePaginator(
-                $orderCustomers->getCollection(),
-                $orderCustomers->total(),
+                $items,
+                $totalCount,
                 $perPage,
                 $page,
                 ['path' => LengthAwarePaginator::resolveCurrentPath()]
@@ -127,7 +152,7 @@ class TrackingBoxController extends Controller
 
             return response()->json($data, 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to retrieve data from MySQL', 'message' => $e->getMessage()], 500);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
@@ -158,38 +183,67 @@ class TrackingBoxController extends Controller
         }
     }
 
-    public function getDataOrderCustomerAHM(Request $request): JsonResponse
+    public function getDataOrderCustomerAHM(Request $request)
     {
         try {
             $perPage = $request->input('per_page', 15);
             $page = $request->input('page', 1);
 
-            // Query OrderCustomerAhm with pagination
-            $orderCustomerAhmQuery = OrderCustomerAhm::query();
-
             if ($request->has('group_by') && $request->input('group_by') === 'dn_no') {
-                $subQuery = OrderCustomerAhm::select('dn_no', DB::raw('MAX(id) as last_id'))
-                    ->groupBy('dn_no');
+                // Group by using MongoDB aggregation
+                $pipeline = [
+                    [
+                        '$group' => [
+                            '_id' => '$dn_no',
+                            'last_id' => ['$last' => '$_id'],
+                            'doc' => ['$last' => '$$ROOT']
+                        ]
+                    ],
+                    [
+                        '$sort' => ['last_id' => -1]
+                    ],
+                    [
+                        '$skip' => ($page - 1) * $perPage
+                    ],
+                    [
+                        '$limit' => (int) $perPage
+                    ]
+                ];
 
-                $orderCustomerAhmQuery = OrderCustomerAhm::joinSub($subQuery, 'sub', function ($join) {
-                    $join->on('order_customer_ahm.id', '=', 'sub.last_id');
-                })->orderBy('sub.last_id', 'desc');
+                $results = OrderCustomerAhm::raw(function ($collection) use ($pipeline) {
+                    return $collection->aggregate($pipeline);
+                });
+
+                $items = collect($results)->map(function ($item) {
+                    $doc = (object) $item['doc'];
+                    $doc->source = 'AHM';
+                    $doc->tracking_boxes = []; // Optional: replace with $doc->getTrackingBoxes() if needed
+                    $doc->compares = [];
+                    $doc->parts = [];
+                    return $doc;
+                });
+
+                $totalCount = OrderCustomerAhm::distinct('dn_no')->count();
             } else {
-                $orderCustomerAhmQuery->orderBy('id', 'desc');
-            }
-            $orderCustomerAhms = $orderCustomerAhmQuery->paginate($perPage, ['*'], 'page', $page);
+                // Simple fetch without grouping
+                $query = OrderCustomerAhm::orderBy('_id', 'desc');
 
-            $orderCustomerAhms->getCollection()->transform(function ($item) {
-                $item->source = 'AHM';
-                $item->tracking_boxes = $item->getTrackingBoxes();
-                $item->compares = $item->compareDeliveryNotes;
-                $item->parts = $item->getParts();
-                return $item;
-            });
+                $totalCount = $query->count();
+                $items = $query->skip(($page - 1) * $perPage)
+                    ->take($perPage)
+                    ->get()
+                    ->map(function ($item) {
+                        $item->source = 'AHM';
+                        $item->tracking_boxes = $item->getTrackingBoxes();
+                        $item->compares = $item->compareDeliveryNotes;
+                        $item->parts = $item->getParts();
+                        return $item;
+                    });
+            }
 
             $data = new LengthAwarePaginator(
-                $orderCustomerAhms->getCollection(),
-                $orderCustomerAhms->total(),
+                $items,
+                $totalCount,
                 $perPage,
                 $page,
                 ['path' => LengthAwarePaginator::resolveCurrentPath()]
@@ -197,7 +251,10 @@ class TrackingBoxController extends Controller
 
             return response()->json($data, 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to retrieve data from MySQL', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Failed to retrieve data from MongoDB',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 

@@ -12,5 +12,6 @@ class CustomerScheduleDeliveryCycle extends Model
         'customer_plant',
         'customer_alias',
         'cycle',
+        'part_type',
     ];
 }

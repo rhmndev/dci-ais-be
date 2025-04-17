@@ -2,12 +2,10 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\Model;
 
 class OrderCustomerAhm extends Model
 {
-    protected $connection = 'mysql';
-
     protected $table = 'order_customer_ahm';
 
     protected $fillable = [

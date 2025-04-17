@@ -15,6 +15,10 @@ class CreateMpOvertimeSettingsTable extends Migration
     {
         Schema::create('mp_overtime_settings', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('start_time_open_overtime')->nullable();
+            $table->string('end_time_open_overtime')->nullable();
+            $table->boolean('enable_whatsapp')->default(false);
+            $table->string('whatsapp_numbers')->nullable();
             $table->timestamps();
         });
     }
