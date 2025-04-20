@@ -27,6 +27,8 @@ class PartsImport implements ToModel, WithHeadingRow
             'category_name' => $row['category_name'],
             'uom' => $row['uom'],
             'min_stock' => $row['min_stock'],
+            'max_stock' => $row['max_stock'],
+            'rack' => $row['rack'],
             'stock' => $row['stock'],
             'is_partially_out' => $row['can_parsially_out'] ?? false,
             'is_out_target' => $row['must_select_out_target'] ?? false,

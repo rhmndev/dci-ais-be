@@ -6,6 +6,7 @@ use App\Exports\PartsExport;
 use App\Imports\PartsImport;
 use App\Part;
 use App\PartStock;
+use App\PartStockLog;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -29,8 +30,12 @@ class PartController extends Controller
                 $query->where('name', 'like', '%' . $request->name . '%');
             }
 
-            if ($request->has('category_code')) {
+            if ($request->has('category_code') && $request->category_code != '') {
                 $query->where('category_code', $request->category_code);
+            }
+
+            if ($request->has('rack') && $request->rack != '') {
+                $query->where('rack', $request->rack);
             }
 
             if ($request->has('status_stock') && in_array($request->status_stock, ['low', 'normal'])) {
@@ -90,7 +95,11 @@ class PartController extends Controller
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'stock' => 'nullable|min:0',
+                'rack' => 'nullable|string|max:100',
+                'brand_code' => 'nullable|string|max:155',
+                'brand_name' => 'nullable|string|max:155',
                 'min_stock' => 'nullable|min:0',
+                'max_stock' => 'nullable|min:0',
                 'uom' => 'nullable|string|max:255',
                 'category_code' => 'nullable|string|max:255',
             ]);
@@ -108,7 +117,11 @@ class PartController extends Controller
                 'description' => $request->description,
                 'category_code' => $request->category_code,
                 'min_stock' => floatval($request->min_stock) ?? 0,
+                'max_stock' => floatval($request->max_stock) ?? 0,
+                'rack' => $request->rack ?? null,
                 'uom' => $request->uom ?? '',
+                'brand_code' => $request->brand_code ?? null,
+                'brand_name' => $request->brand_name ?? null,
                 'is_partially_out' => $request->is_partially_out ?? false,
                 'is_out_target' => $request->is_out_target ?? false,
                 'created_by' => auth()->user()->npk,
@@ -175,6 +188,10 @@ class PartController extends Controller
                 'description' => 'nullable|string',
                 'category_code' => 'nullable|string|max:255',
                 'min_stock' => 'nullable|integer|min:0',
+                'max_stock' => 'nullable|integer|min:0',
+                'rack' => 'nullable|string|max:100',
+                'brand_code' => 'nullable|string|max:155',
+                'brand_name' => 'nullable|string|max:155',
                 'uom' => 'nullable|string|max:255',
             ]);
 
@@ -184,6 +201,10 @@ class PartController extends Controller
                 'description' => $request->description ?? $part->description, // Use existing value if not provided
                 'category_code' => $request->category_code ?? $part->category_code,
                 'min_stock' => $request->min_stock ?? $part->min_stock,
+                'max_stock' => $request->max_stock ?? $part->max_stock,
+                'rack' => $request->rack ?? $part->rack,
+                'brand_code' => $request->brand_code ?? $part->brand_code,
+                'brand_name' => $request->brand_name ?? $part->brand_name,
                 'uom' => $request->uom ?? $part->uom,
                 'is_partially_out' => $request->is_partially_out ?? $part->is_partially_out,
                 'is_out_target' => $request->is_out_target ?? $part->is_out_target,
@@ -209,7 +230,13 @@ class PartController extends Controller
                 'stock' => 'required|integer|min:0',
             ]);
 
+            $userNpk = auth()->user()->npk;
+
             $part = Part::findOrFail($id);
+            $newStock = (int) $request->stock;
+
+            $oldStock = $part->partStock ? $part->partStock->stock : 0;
+            $stockChange = $newStock - $oldStock;
 
             if ($part->partStock) {
                 $part->partStock->stock = $request->stock;
@@ -224,6 +251,14 @@ class PartController extends Controller
             $part->partStock->save();
             $part->last_updated_by = auth()->user()->npk;
             $part->save();
+
+            PartStockLog::create([
+                'part_code' => $part->code,
+                'stock_change' => $stockChange,
+                'new_stock' => $newStock,
+                'action' => 'manual_update',
+                'created_by' => $userNpk,
+            ]);
 
             return response()->json([
                 'message' => 'Part stock updated successfully',
@@ -278,6 +313,8 @@ class PartController extends Controller
                         'category_code' => $row['category_code'],
                         'uom' => $row['uom'],
                         'min_stock' => $row['min_stock'],
+                        'max_stock' => $row['max_stock'],
+                        'rack' => $row['rack'],
                         'is_partially_out' => $row['can_parsially_out'] ?? false,
                         'is_out_target' => $row['must_select_out_target'] ?? false,
                     ]

@@ -41,8 +41,10 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             'Category Code',
             'UOM',
             'Min Stock',
+            'Max Stock',
+            'Rack',
             'Can Parsially Out',
-            'Must Select Out Target',
+            // 'Must Select Out Target',
             'Stock',
         ];
     }
@@ -66,8 +68,10 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $part->category_code,
             $part->uom,
             $part->min_stock,
+            $part->max_stock,
+            $part->rack,
             $part->can_partially_out ? 'Yes' : 'No',
-            $part->must_select_out_target ? 'Yes' : 'No',
+            // $part->must_select_out_target ? 'Yes' : 'No',
             $stock,
         ];
     }
