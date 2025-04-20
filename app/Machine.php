@@ -10,6 +10,8 @@ class Machine extends Model
         'code',
         'name',
         'description',
+        'line',
+        'station',
         'created_by',
         'updated_by',
     ];

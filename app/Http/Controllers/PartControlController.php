@@ -288,6 +288,7 @@ class PartControlController extends Controller
                 'new_stock' => $stocksTotal,
                 'action' => PartControl::STATUS_OUT,
                 'out_to' => $request->out_target,
+                'note' => $request->note,
                 'created_by' => auth()->user()->npk,
             ]);
 
@@ -367,6 +368,7 @@ class PartControlController extends Controller
                     'out_stock' => $request->out_stock ?? 1,
                     'is_partially_out' => $is_partially_out,
                     'out_target' => $request->out_target,
+                    'note' => $request->note,
                 ]);
 
                 return $this->outPart($request);
@@ -649,10 +651,13 @@ class PartControlController extends Controller
             $query = $query->with('part', 'PartControl', 'UserCreatedBy')->where('ref_job_seq', '!=', null);
 
             if ($request->has('type')) {
-                if ($request->type == 'IN' || $request->type == 'in') {
+                $type = strtolower($request->type);
+                if ($type === 'in') {
                     $query->where('action', PartControl::STATUS_IN);
-                } else if ($request->type == 'OUT' || $request->type == 'out') {
+                } elseif ($type === 'out') {
                     $query->where('action', PartControl::STATUS_OUT);
+                } elseif ($type === 'inout') {
+                    $query->whereIn('action', [PartControl::STATUS_IN, PartControl::STATUS_OUT]);
                 }
             }
 
@@ -702,7 +707,11 @@ class PartControlController extends Controller
                 $query->orderBy('updated_at', 'desc');
             }
 
-            $partControlLogs = $query->paginate($perPage, ['*'], 'page', $currentPage);
+            if ($request->get('show_all') == 'true') {
+                $partControlLogs = $query->get();
+            } else {
+                $partControlLogs = $query->paginate($perPage, ['*'], 'page', $currentPage);
+            }
 
             return response()->json([
                 'message' => 'success',

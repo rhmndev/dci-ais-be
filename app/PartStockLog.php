@@ -13,6 +13,7 @@ class PartStockLog extends Model
         'new_stock',
         'action',
         'out_to',
+        'note',
         'created_by',
     ];
 

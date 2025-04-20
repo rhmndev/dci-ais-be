@@ -447,6 +447,13 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/g/log', 'PartControlController@getPartStockLog');
                 Route::post('/g/print-pdf', 'PartControlController@printPdf');
         });
+
+        Route::group(['prefix' => 'part-mt-settings'], function () {
+                Route::get('/', 'PartMonitoringSettingController@show');
+                Route::post('/', 'PartMonitoringSettingController@update');
+                Route::post('/test-notification', 'PartMonitoringSettingController@testNotification');
+                Route::post('/send-notification', 'PartMonitoringSettingController@sendNotification');
+        });
 });
 
 Route::group(['prefix' => 'rack'], function () {
