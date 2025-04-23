@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Exports\PartsExport;
+use App\Helpers\WhatsappHelper;
 use App\Imports\PartsImport;
 use App\Part;
+use App\PartMonitoringSetting;
 use App\PartStock;
 use App\PartStockLog;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -247,6 +249,7 @@ class PartController extends Controller
                 ]);
                 $part->partStock->created_by = auth()->user()->npk;
             }
+
             $part->partStock->updated_by = auth()->user()->npk;
             $part->partStock->save();
             $part->last_updated_by = auth()->user()->npk;
@@ -259,6 +262,25 @@ class PartController extends Controller
                 'action' => 'manual_update',
                 'created_by' => $userNpk,
             ]);
+
+            $setting = PartMonitoringSetting::first();
+
+            $minStock = is_numeric($part->min_stock) ? (int) $part->min_stock : null;
+            $maxStock = is_numeric($part->max_stock) ? (int) $part->max_stock : null;
+            $message = null;
+
+            if ($newStock <= 0) {
+                $message = "⚠️ Part {$part->code} - {$part->name} is *Out of Stock*! Current stock: {$newStock} {$part->uom}.";
+            } elseif (!is_null($minStock) && $newStock < $minStock) {
+                $message = "🔻 Part {$part->code} - {$part->name} is *Low Stock*! Current stock: {$newStock} {$part->uom}. Min required: {$minStock} {$part->uom}.";
+            } elseif (!is_null($maxStock) && $newStock > $maxStock) {
+                $message = "🔺 Part {$part->code} - {$part->name} is *Over Stock*! Current stock: {$newStock} {$part->uom}. Max allowed: {$maxStock} {$part->uom}.";
+            }
+
+            if ($setting && $setting->enable_whatsapp && $setting->whatsapp_numbers) {
+                $numbers = explode(',', $setting->whatsapp_numbers);
+                WhatsappHelper::sendMessage($numbers, $message);
+            }
 
             return response()->json([
                 'message' => 'Part stock updated successfully',

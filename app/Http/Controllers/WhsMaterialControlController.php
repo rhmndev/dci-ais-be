@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Material;
 use App\WhsMaterialControl;
+use App\WhsMaterialControlLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -162,6 +163,15 @@ class WhsMaterialControlController extends Controller
             $WhsControl->in_at = Carbon::now();
             $WhsControl->save();
 
+
+            WhsMaterialControlLog::create([
+                'whs_material_control_id' => $WhsControl->id,
+                'action' => 'IN',
+                'changes' => json_encode($WhsControl->toArray()),
+                'performed_by' => auth()->user()->npk,
+                'performed_at' => Carbon::now(),
+            ]);
+
             return response()->json([
                 'message' => 'success',
                 'data' => $WhsControl
@@ -191,46 +201,58 @@ class WhsMaterialControlController extends Controller
                     ], 404);
                 }
 
-                if ($whsMatControl->status == WhsMaterialControl::STATUS_OUT) {
-                    return response()->json([
-                        'message' => 'Material already out',
-                        'data' => null
-                    ], 400);
-                }
+                // if ($whsMatControl->status == WhsMaterialControl::STATUS_OUT) {
+                //     return response()->json([
+                //         'message' => 'Material already out',
+                //         'data' => null
+                //     ], 400);
+                // }
+                $originalData = $whsMatControl->toArray();
 
-                $whsMatControl->loc_out_to = $request->loc_out_to;
-                $whsMatControl->out_at = Carbon::now();
+                $whsMatControl->last_loc_out_to = $request->loc_out_to;
+                $whsMatControl->last_out_at = Carbon::now();
                 $whsMatControl->stock_out = $request->stock_out;
                 $whsMatControl->status = WhsMaterialControl::STATUS_OUT;
                 $whsMatControl->out_by = auth()->user()->npk;
                 $whsMatControl->out_note = $request->note;
                 $whsMatControl->updated_by = auth()->user()->npk;
                 $whsMatControl->save();
+
+                WhsMaterialControlLog::create([
+                    'whs_material_control_id' => $whsMatControl->id,
+                    'action' => 'OUT',
+                    'changes' => json_encode([
+                        'before' => $originalData,
+                        'after' => $whsMatControl->toArray(),
+                    ]),
+                    'performed_by' => auth()->user()->npk,
+                    'performed_at' => Carbon::now(),
+                ]);
             }
 
             $newLabelData = null;
 
-            if (!empty($request->remaining_stock) && $request->remaining_stock > 0) {
-                $inRequest = new Request([
-                    'material_code' => $whsMatControl->material_code,
-                    'loc_in' => $whsMatControl->loc_in,
-                    'uom' => $whsMatControl->uom,
-                    'stock' => $request->remaining_stock,
-                    'note' => $request->note,
-                    'tag' => $whsMatControl->tag,
-                ]);
+            // if (!empty($request->remaining_stock) && $request->remaining_stock > 0) {
+            //     $inRequest = new Request([
+            //         'material_code' => $whsMatControl->material_code,
+            //         'loc_in' => $whsMatControl->loc_in,
+            //         'uom' => $whsMatControl->uom,
+            //         'stock' => $request->remaining_stock,
+            //         'note' => $request->note,
+            //         'tag' => $whsMatControl->tag,
+            //     ]);
 
-                $newInResult = $this->inWhsMaterial($inRequest);
+            //     $newInResult = $this->inWhsMaterial($inRequest);
 
-                if ($newInResult->status() === 200 || $newInResult->status() === 201) {
-                    $newLabelData = $newInResult->original['data'];
-                } else {
-                    return response()->json([
-                        'message' => 'failed',
-                        'error' => $newInResult->original['error']
-                    ], 500);
-                }
-            }
+            //     if ($newInResult->status() === 200 || $newInResult->status() === 201) {
+            //         $newLabelData = $newInResult->original['data'];
+            //     } else {
+            //         return response()->json([
+            //             'message' => 'failed',
+            //             'error' => $newInResult->original['error']
+            //         ], 500);
+            //     }
+            // }
 
             return response()->json([
                 'message' => 'success',
