@@ -229,7 +229,7 @@ class StockSlockController extends Controller
             return response()->json(['error' => 'Stock slock is not enough'], 400);
         }
 
-        $remainingStock = $stockSlock->valuated_stock - $request->stock;
+        $remainingStock = (float)$stockSlock->valuated_stock - (float)$request->stock;
 
         $logStockSlock = StockSlockHistory::create([
             'slock_code' => $request->slock_code,
@@ -285,19 +285,19 @@ class StockSlockController extends Controller
                 ]);
             }
 
-            if ($remainingStock > 0) {
-                $request->merge([
-                    'rack_code' => $request->rack_code,
-                    'slock_code' => $request->slock_code,
-                    'date_income' => $stockSlock->date_income,
-                    'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
-                    'valuated_stock' => $remainingStock,
-                    'uom' => $stockSlock->uom,
-                    'tag' => $stockSlock->tag,
-                    'note' => $stockSlock->note ?? null,
-                ]);
-                $this->putIn($request);
-            }
+            // if ($remainingStock > 0) {
+            //     $request->merge([
+            //         'rack_code' => $request->rack_code,
+            //         'slock_code' => $request->slock_code,
+            //         'date_income' => $stockSlock->date_income,
+            //         'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
+            //         'valuated_stock' => $remainingStock,
+            //         'uom' => $stockSlock->uom,
+            //         'tag' => $stockSlock->tag,
+            //         'note' => $stockSlock->note ?? null,
+            //     ]);
+            //     $this->putIn($request);
+            // }
         } else {
             // Handle failure case
             return response()->json([
@@ -310,7 +310,9 @@ class StockSlockController extends Controller
 
         $dataTempStockSlock = $stockSlock;
 
-        $stockSlock->delete();
+        if ($remainingStock <= 0) {
+            $stockSlock->delete();
+        }
 
         return response()->json(['message' => 'Stock has been taken out successfully', 'data' => $dataTempStockSlock], 200);
     }

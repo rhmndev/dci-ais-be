@@ -65,4 +65,9 @@ class WhsScheduleDelivery extends Model
     {
         return $this->belongsTo(User::class, 'created_by', 'npk');
     }
+
+    public function logs()
+    {
+        return $this->hasMany(WhsScheduleDeliveryLog::class);
+    }
 }
