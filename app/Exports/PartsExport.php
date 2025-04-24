@@ -16,14 +16,15 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle
 {
-    /**
-     * Get the collection of parts to export
-     *
-     * @return \Illuminate\Support\Collection
-     */
+    protected $parts;
+    public function __construct($parts)
+    {
+        $this->parts = $parts;
+    }
+
     public function collection()
     {
-        return Part::all(); // Fetch all parts data
+        return $this->parts;
     }
 
     /**
@@ -38,12 +39,11 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             'Code',
             'Name',
             'Description',
-            'Category Code',
             'UOM',
+            'Brand Name',
             'Min Stock',
             'Max Stock',
             'Rack',
-            'Brand Name',
             'Can Parsially Out',
             // 'Must Select Out Target',
             'Stock',
@@ -66,7 +66,6 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $part->code,
             $part->name,
             $part->description,
-            $part->category_code,
             $part->uom,
             $part->min_stock,
             $part->max_stock,
@@ -109,16 +108,9 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             ],
 
             // Style for data rows
-            'A2:J' . $lastRow => [
-                'font' => [
-                    'size' => 9, // Smaller font size for data rows
-                ],
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                        'color' => ['argb' => '000000'], // Black border color
-                    ],
-                ],
+            'A2:K' . $lastRow => [
+                'font' => ['size' => 9],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
             ],
 
             // Style for column widths
@@ -132,6 +124,7 @@ class PartsExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             'H' => ['width' => 15], // Column H: Can Partially Out column
             'I' => ['width' => 20], // Column I: Must Select Out Target column
             'J' => ['width' => 10], // Column J: Stock column
+            'K' => ['width' => 20], // Column K: Brand Name column
         ];
     }
     /**

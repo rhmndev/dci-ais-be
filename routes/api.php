@@ -344,6 +344,21 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/a/print-activity', 'StockSlockController@printToPdf');
                 Route::get('/a/print-activity-history', 'StockSlockController@printHistoryStockSloc');
         });
+
+        Route::prefix('outgoing-goods')->group(function () {
+                Route::get('/', 'OutgoingGoodController@index');
+                Route::post('/', 'OutgoingGoodController@store');
+                Route::get('/{id}', 'OutgoingGoodController@show');
+                Route::post('/assign', 'OutgoingGoodController@assign');
+                Route::put('/{id}/status', 'OutgoingGoodController@updateStatus');
+                Route::get('/{id}/receipt', 'OutgoingGoodController@generateReceipt');
+
+                // Template Routes
+                // Route::get('/templates', [OutgoingGoodController, 'getTemplates']);
+                // Route::post('/templates', [OutgoingGoodController, 'storeTemplate']);
+                // Route::delete('/templates/{id}', [OutgoingGoodController, 'deleteTemplate']);
+        });
+
         Route::group(['prefix' => 'tracking-boxes'], function () {
                 Route::post('/', 'TrackingBoxController@store');
                 Route::get('/g/summary-period', 'TrackingBoxController@getSummaryByPeriod');
