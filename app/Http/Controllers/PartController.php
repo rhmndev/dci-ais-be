@@ -327,18 +327,22 @@ class PartController extends Controller
                 $row['can_parsially_out'] = isset($row['can_parsially_out']) && $row['can_parsially_out'] == 'Y' ? true : false;
                 $row['must_select_out_target'] = isset($row['must_select_out_target']) && $row['must_select_out_target'] == 'Y' ? true : false;
 
+                $partValOld = Part::where('code', $row['code'])->first();
+
                 $part = Part::updateOrCreate(
                     ['code' => $row['code']],
                     [
-                        'name' => $row['name'],
-                        'description' => $row['description'],
-                        'category_code' => $row['category_code'],
-                        'uom' => $row['uom'],
-                        'min_stock' => $row['min_stock'],
-                        'max_stock' => $row['max_stock'],
-                        'rack' => $row['rack'],
-                        'is_partially_out' => $row['can_parsially_out'] ?? false,
-                        'is_out_target' => $row['must_select_out_target'] ?? false,
+                        'name' => !empty($row['name']) ? $row['name'] : $partValOld->name,
+                        'description' => !empty($row['description']) ? $row['description'] : $partValOld->description,
+                        'uom' => !empty($row['uom']) ? $row['uom'] : $partValOld->uom,
+                        'min_stock' => !empty($row['min_stock']) ? $row['min_stock'] : $partValOld->min_stock,
+                        'max_stock' => !empty($row['max_stock']) ? $row['max_stock'] : $partValOld->max_stock,
+                        'rack' => !empty($row['rack']) ? $row['rack'] : $partValOld->rack,
+                        'brand_name' => !empty($row['brand_name']) ? $row['brand_name'] : $partValOld->brand_name,
+                        // 'brand_code' => !empty($row['brand_code']) ? $row['brand_code'] : $partValOld->brand_code,
+                        'is_partially_out' => !empty($row['can_parsially_out']) ? $row['can_parsially_out'] ?? false : $partValOld->is_partially_out,
+                        // 'is_out_target' => $row['must_select_out_target'] ?? false,
+                        'updated_by' => auth()->user()->npk,
                     ]
                 );
 
@@ -357,7 +361,7 @@ class PartController extends Controller
                         ]);
                     }
                 }
-                $part->generateQRCode();
+                // $part->generateQRCode();
             }
 
             return response()->json([

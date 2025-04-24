@@ -23,16 +23,18 @@ class PartsImport implements ToModel, WithHeadingRow
             'code' => $row['code'],
             'name' => $row['name'],
             'description' => $row['description'],
-            'category_code' => $row['category_code'],
-            'category_name' => $row['category_name'],
+            // 'category_code' => $row['category_code'],
+            // 'category_name' => $row['category_name'],
             'uom' => $row['uom'],
             'min_stock' => $row['min_stock'],
             'max_stock' => $row['max_stock'],
             'rack' => $row['rack'],
             'stock' => $row['stock'],
+            'brand_name' => $row['brand_name'],
             'is_partially_out' => $row['can_parsially_out'] ?? false,
             'is_out_target' => $row['must_select_out_target'] ?? false,
-            'qr_code' => Part::generateQRCode(),
+            // 'qr_code' => Part::generateQRCode(),
+            'qr_code' => '',
         ]);
     }
 
