@@ -347,9 +347,9 @@ class PartController extends Controller
                 );
 
                 // change stock if has part stock
-                if ($row['stock']) {
+                if (isset($row['stock']) && $row['stock'] !== '') {
                     if ($part->partStock) {
-                        $part->partStock->update([
+                        $part->partStock()->update([
                             'stock' => $row['stock'],
                             'updated_by' => auth()->user()->npk,
                         ]);
