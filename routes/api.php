@@ -37,6 +37,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/userimport', 'UserController@import');
                 #endregion
         });
+
+        Route::get('/myprofile', 'UserController@myProfile');
         Route::get('/userlist', 'UserController@list');
         Route::get('/user/c/permissions', 'UserController@getMyPermissions');
         Route::post('/changepassword', 'UserController@changePassword');
@@ -352,11 +354,11 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/assign', 'OutgoingGoodController@assign');
                 Route::put('/{id}/status', 'OutgoingGoodController@updateStatus');
                 Route::get('/{id}/receipt', 'OutgoingGoodController@generateReceipt');
+                Route::get('/g/templates', 'OutgoingGoodController@getTemplates');
+                Route::post('/a/templates', 'OutgoingGoodController@storeOrUpdateTemplate');
+                Route::delete('/a/templates/{id}', 'OutgoingGoodController@deleteTemplate');
 
                 // Template Routes
-                // Route::get('/templates', [OutgoingGoodController, 'getTemplates']);
-                // Route::post('/templates', [OutgoingGoodController, 'storeTemplate']);
-                // Route::delete('/templates/{id}', [OutgoingGoodController, 'deleteTemplate']);
         });
 
         Route::group(['prefix' => 'tracking-boxes'], function () {
