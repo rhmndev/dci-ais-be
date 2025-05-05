@@ -9,8 +9,10 @@ class OutgoingGood extends Model
     protected $fillable = [
         'number', // Unique identifier for the outgoing good
         'date', // Date of the outgoing good
+        'time', // Time of the outgoing good
         'priority', // Priority of the outgoing good
         'part_code', // Code of the part being sent out
+        'part_number', // Number of the part being sent out
         'part_name', // Name of the part being sent out
         'date_out', // Date when the part was sent out
         'component_code', // Code of the component being sent out
@@ -28,6 +30,9 @@ class OutgoingGood extends Model
         'created_by', // User who created the outgoing good re
         'updated_by', // User who last updated the outgoing good
         'notes', // Additional notes or comments
+        'is_completed', // Flag to indicate if the outgoing good has been completed
+        'completed_at', // Date and time when the outgoing good was completed
+        'completed_by', // User who completed the outgoing good
     ];
 
     public function items()

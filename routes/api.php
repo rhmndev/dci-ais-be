@@ -80,6 +80,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         #region Master Material
         Route::get('/material', 'MaterialController@index');
+        Route::get('/material2', 'MaterialController@index2');
         Route::get('/material/{id}', 'MaterialController@show');
         Route::get('/materialsync', 'MaterialController@SyncSAP');
         Route::get('/materiallist', 'MaterialController@list');
@@ -89,6 +90,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::delete('/material/{id}', 'MaterialController@destroy');
         Route::post('/materialimport', 'MaterialController@import');
         Route::get('/materialexport', 'MaterialController@export');
+        Route::post('/materialexport2', 'MaterialController@export2');
         #endregion
 
         #region Master Material Type
@@ -351,13 +353,17 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/', 'OutgoingGoodController@index');
                 Route::post('/', 'OutgoingGoodController@store');
                 Route::get('/{id}', 'OutgoingGoodController@show');
+                Route::put('/{id}', 'OutgoingGoodController@update');
                 Route::post('/assign', 'OutgoingGoodController@assign');
                 Route::put('/{id}/status', 'OutgoingGoodController@updateStatus');
+                Route::put('/{id}/assign', 'OutgoingGoodController@changeAssign');
                 Route::get('/{id}/receipt', 'OutgoingGoodController@generateReceipt');
                 Route::get('/g/templates', 'OutgoingGoodController@getTemplates');
                 Route::post('/a/templates', 'OutgoingGoodController@storeOrUpdateTemplate');
+                Route::put('/a/templates/{id}', 'OutgoingGoodController@updateTemplate');
                 Route::delete('/a/templates/{id}', 'OutgoingGoodController@deleteTemplate');
-
+                Route::get('/g/check-barcode', 'OutgoingGoodController@checkBarcode');
+                Route::post('/a/start-scan', 'OutgoingGoodController@startScanBarcode');
                 // Template Routes
         });
 
@@ -546,6 +552,8 @@ Route::group(['prefix' => 'stock-slocks'], function () {
         Route::post('/', 'StockSlockController@store');
         Route::get('/show/{id}', 'StockSlockController@show');
         Route::put('/{id}', 'StockSlockController@update');
+        Route::get('/g/stock-by-job-seq', 'StockSlockController@getStockByJobSeq');
+        Route::get('/g/stock-material-available', 'StockSlockController@getStockMaterialAvailable');
         // Route::post('/a/import', 'StockSlockController@import');
 });
 

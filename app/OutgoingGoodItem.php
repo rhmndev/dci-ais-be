@@ -10,6 +10,8 @@ class OutgoingGoodItem extends Model
         'outgoing_good_number', // Reference to the OutgoingGood model
         'material_code',     // Code of the part being sent out
         'material_name',     // Name of the part being sent out
+        'alias',
+        'part_number',
         'quantity_needed',     // Quantity of the part needed
         'quantity_out',        // Quantity of the part sent out
         'uom_needed',        // Unit of Measure for the quantity needed
@@ -17,16 +19,45 @@ class OutgoingGoodItem extends Model
         'created_by',       // User who created the outgoing good item record
         'updated_by',       // User who last updated the outgoing good item
         'status',           // Status of material scanning (e.g., 'pending', 'scanned')
+        'list_need_scans',  // List of scans needed for this item
         'scans',            // Array of scan records
     ];
 
     protected $casts = [
         'scans' => 'array',
+        'list_need_scans' => 'array',
     ];
 
     public function outgoingGood()
     {
         return $this->belongsTo(OutgoingGood::class, 'outgoing_good_number', 'number');
+    }
+
+    public function getListNeedScans()
+    {
+        $scans = $this->list_need_scans ?? [];
+        return $scans;
+    }
+
+    public function addListNeedScans($jobSeq, $rack, $quantity, $uom)
+    {
+        $scans = $this->list_need_scans ?? [];
+        
+        // Check if this job_seq and rack_code combination already exists
+        $exists = collect($scans)->contains(function($scan) use ($jobSeq, $rack) {
+            return $scan['job_seq'] === $jobSeq && $scan['rack_code'] === $rack;
+        });
+
+        if (!$exists) {
+            $scans[] = [
+                'job_seq' => $jobSeq,
+                'rack_code' => $rack,
+                'quantity' => $quantity,
+                'uom' => $uom
+            ];
+            $this->list_need_scans = $scans;
+            $this->save();
+        }
     }
 
     /**
@@ -38,7 +69,7 @@ class OutgoingGoodItem extends Model
      * @param array $additionalInfo
      * @return void
      */
-    public function addScan($qrCode, $userId, $quantity, $additionalInfo = [])
+    public function addScan($qrCode, $userId, $quantity, $uom, $additionalInfo = [])
     {
         $scans = $this->scans ?? [];
         $scans[] = [
@@ -46,6 +77,7 @@ class OutgoingGoodItem extends Model
             'scanned_at' => now(),
             'scanned_by' => $userId,
             'quantity' => $quantity,
+            'uom' => $uom,
             'reference' => $additionalInfo
         ];
         

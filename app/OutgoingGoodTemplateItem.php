@@ -10,6 +10,8 @@ class OutgoingGoodTemplateItem extends Model
         'code_template', // Reference to the OutgoingGoodTemplate model
         'material_code',     // Code of the part being sent out
         'material_name',     // Name of the part being sent out
+        'alias',
+        'material_part_number',
         'quantity_needed',     // Quantity of the part needed
         'uom_needed',        // Unit of Measure for the quantity needed
         'created_by',       // User who created the outgoing good item record
