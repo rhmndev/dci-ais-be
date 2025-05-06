@@ -70,6 +70,16 @@ class UserController extends Controller
         ]);
     }
 
+    public function myProfile(Request $request)
+    {
+        $user = User::findOrFail(auth()->user()->id);
+
+        return response()->json([
+            'type' => 'success',
+            'data' =>  $user
+        ]);
+    }
+
     public function list(Request $request)
     {
 
@@ -80,7 +90,12 @@ class UserController extends Controller
         try {
 
             $User = new User;
-            $results = $User->getList($keyword, $type);
+            if (!empty($request->takeAll)) {
+                $results = $User->getList($keyword, $type, true);
+            } else {
+                $results = $User->getList($keyword, $type);
+            }
+            // $results = $User->getList($keyword, $type);
 
             return response()->json([
                 'type' => 'success',

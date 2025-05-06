@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use App\Material;
 use App\OutgoingGood;
 use App\OutgoingGoodItem;
+use App\OutgoingGoodTemplate;
+use App\OutgoingGoodTemplateItem;
+use App\StockSlocTakeOutTemp;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class OutgoingGoodController extends Controller
 {
@@ -21,8 +26,16 @@ class OutgoingGoodController extends Controller
         $query = OutgoingGood::with(['items', 'assignedTo']);
 
         // Filter by assignment status
-        if ($request->has('is_assigned')) {
-            $query->where('is_assigned', $request->is_assigned);
+        // if ($request->has('is_assigned')) {
+        //     $query->where('is_assigned', $request->is_assigned);
+        // }
+
+        if($request->has('handle_for_id') && $request->handle_for_id !== '') {
+            $query->where('handle_for_id', $request->handle_for_id);
+        }
+
+        if($request->has('keyword') && $request->keyword !== '') {
+            $query->where('number', 'like', '%' . $request->keyword . '%');
         }
 
         // Filter by completion status
@@ -35,11 +48,29 @@ class OutgoingGoodController extends Controller
             $query->where('status', $request->status);
         }
 
-        $outgoingGoods = $query->orderBy('created_at', 'desc')->get();
+        if($request->has('part_number') && $request->part_number !== '') {
+            $query->where('part_number', 'like', '%' . $request->part_number . '%');
+        }
+        if($request->has('part_name') && $request->part_name !== '') {
+            $query->where('part_name', 'like', '%' . $request->part_name . '%');
+        }
+
+        if($request->has('multiple_status') && is_array($request->multiple_status)) {
+            $query->whereNotIn('status', ['completed', 'cancelled']);
+        }
+
+        $perPage = $request->input('per_page', 10); // default 10 items per page
+        $page = $request->input('page', 1); // default to page 1
+
+        $outgoingGoods = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,
-            'data' => $outgoingGoods
+            'data' => $outgoingGoods->items(),
+            'current_page' => $outgoingGoods->currentPage(),
+            'last_page' => $outgoingGoods->lastPage(),
+            'per_page' => $outgoingGoods->perPage(),
+            'total' => $outgoingGoods->total(),
         ]);
     }
 
@@ -50,9 +81,12 @@ class OutgoingGoodController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
+            'time' => 'required|string',
             'priority' => 'required|in:low,normal,high,urgent',
             'outgoing_location' => 'required|string',
             'handle_for' => 'required|string',
+            'part_number' => 'required|string',
+            'part_name' => 'required|string',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.material_code' => 'required|string|exists:materials,code',
@@ -67,21 +101,54 @@ class OutgoingGoodController extends Controller
             ], 422);
         }
 
-        // Generate a unique reference number
-        $refNumber = 'OG-' . date('Ymd') . '-' . Str::random(6);
+        // Generate a unique reference number with monthly sequence
+        $currentMonth = date('Ym');
+        $lastOutgoingGood = OutgoingGood::where('number', 'like', 'OG-' . $currentMonth . '-%')
+            ->orderBy('number', 'desc')
+            ->first();
+
+        $sequence = 1;
+        if ($lastOutgoingGood) {
+            $lastSequence = (int) substr($lastOutgoingGood->number, -4);
+            $sequence = $lastSequence + 1;
+        }
+
+        $refNumber = 'OG-' . $currentMonth . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
         $outgoingGood = new OutgoingGood();
         $outgoingGood->number = $refNumber;
         $outgoingGood->date = $request->date;
+        $outgoingGood->time = $request->time;
+        $outgoingGood->part_number = $request->part_number;
+        $outgoingGood->part_name = $request->part_name;
         $outgoingGood->priority = $request->priority;
         $outgoingGood->outgoing_location = $request->outgoing_location;
         $outgoingGood->handle_for = $request->handle_for;
-        $outgoingGood->status = 'pending';
-        $outgoingGood->is_assigned = false;
+        $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal'; // Default to 'internal' if not provided
+        $outgoingGood->handle_for_id = $request->handle_for_id ?? null; // Default to null if not provided
+        $outgoingGood->status = 'ready';
+        $outgoingGood->is_assigned = ($request->handle_for) ? true : false;
         $outgoingGood->is_completed = false;
         $outgoingGood->created_by = auth()->user()->npk;
         $outgoingGood->notes = $request->notes;
+
+        $outgoingGood->assigned_to = $request->handle_for_id;
+        // === QR Code Generation ===
+        $qrPath = 'whs/bkb/qr/' . $refNumber . '.png';
+        $qrCode = QrCode::format('png')->size(300)->generate($refNumber);
+        Storage::disk('public')->put($qrPath, $qrCode);
+        $outgoingGood->qr_code_path = $qrPath;
+        $outgoingGood->take_material_from_location = $request->take_material_from_location ?? null; // Default to null if not provided
+
         $outgoingGood->save();
+
+        $itemsData = [];
+
+        $request->merge(['slock_code' => 'RAW01']);
+
+        $stockSlock = new StockSlockController();
+        $stockSlockData = $stockSlock->index($request);
+        $stockSlockData = $stockSlockData->original['data'] ?? [];
 
         // Save items
         foreach ($request->items as $item) {
@@ -89,6 +156,8 @@ class OutgoingGoodController extends Controller
 
             $outgoingItem = new OutgoingGoodItem();
             $outgoingItem->outgoing_good_id = $outgoingGood->id;
+            $outgoingItem->outgoing_good_number = $refNumber;
+            $outgoingItem->created_by = auth()->user()->npk;
             $outgoingItem->material_code = $item['material_code'];
             $outgoingItem->material_name = $material->description;
             $outgoingItem->quantity_needed = $item['quantity_needed'];
@@ -96,12 +165,57 @@ class OutgoingGoodController extends Controller
             $outgoingItem->uom_needed = $material->unit;
             $outgoingItem->uom_out = $material->unit;
             $outgoingItem->save();
+
+
+            $filteredStockData = collect($stockSlockData)
+                ->where('material_code', $item['material_code'])
+                ->sortBy(function($item) {
+                    return $item['date_income'] . ' ' . $item['time_income'];
+                })
+                ->values();
+
+            if ($filteredStockData->count() > 0) {
+                $stockNeeded = (int)$item['quantity_needed'];
+                $stockOut = 0;
+                foreach ($filteredStockData as $stock) {
+                    if ($stockNeeded <= 0) {
+                        break;
+                    }
+
+                    $stockOut = min($stockNeeded, $stock['valuated_stock']);
+                    $stockNeeded -= $stockOut;
+
+                    // Create temporary record for stock take out
+                    $tempStock = new StockSlocTakeOutTemp();
+                    $tempStock->job_seq = $stock['job_seq'];
+                    $tempStock->material_code = $item['material_code'];
+                    $tempStock->sloc_code = $stock['slock_code'];
+                    $tempStock->rack_code = $stock['rack_code'];
+                    $tempStock->uom = $stock['uom'];
+                    $tempStock->qty = $stock['valuated_stock'];
+                    $tempStock->uom_take_out = $material->unit;
+                    $tempStock->qty_take_out = $stockOut;
+                    $tempStock->user_id = auth()->user()->npk;
+                    $tempStock->status = 'ready';
+                    $tempStock->note = 'Temporary hold for outgoing good: ' . $refNumber;
+                    $tempStock->is_success = false;
+                    $tempStock->save();
+
+                    $itemsData[] = [
+                        'rack_code' => $stock['rack_code'],
+                        'job_seq' => $stock['job_seq'],
+                    ];
+                    $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
+                }
+            }
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Outgoing request created successfully',
-            'data' => $outgoingGood->load('items')
+            'data' => $outgoingGood->load('items'),
+
+            'qr_code_url' => asset('storage/' . $qrPath)
         ], 201);
     }
 
@@ -110,7 +224,11 @@ class OutgoingGoodController extends Controller
      */
     public function show($id)
     {
-        $outgoingGood = OutgoingGood::with(['items', 'assignedTo', 'completedBy'])->findOrFail($id);
+        $outgoingGood = OutgoingGood::with(['items', 'assignedTo'])->findOrFail($id);
+
+        $outgoingGood->items->each(function ($item) {
+            $item->getListNeedScans();
+        });
 
         return response()->json([
             'success' => true,
@@ -125,9 +243,9 @@ class OutgoingGoodController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'outgoing_ids' => 'required|array|min:1',
-            'outgoing_ids.*' => 'required|exists:outgoing_goods,id',
-            'user_id' => 'required|exists:users,id',
-            'user_type' => 'required|in:internal,external'
+            'outgoing_ids.*' => 'required|exists:outgoing_goods,_id',
+            'user_id' => 'required|exists:users,_id',
+            'user_type' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -139,10 +257,10 @@ class OutgoingGoodController extends Controller
         }
 
         $user = User::findOrFail($request->user_id);
-
         // Check if user type matches
-        if (($request->user_type === 'internal' && $user->type_id !== 0) ||
-            ($request->user_type === 'external' && $user->type_id !== 1)
+        if (
+            ($request->user_type === 'internal' && !in_array($user->type, [0])) ||
+            ($request->user_type === 'external' && $user->type !== 1)
         ) {
             return response()->json([
                 'success' => false,
@@ -204,9 +322,87 @@ class OutgoingGoodController extends Controller
 
         $outgoingGood->save();
 
+        // Update StockSlocTakeOutTemp records based on status
+        if (in_array($request->status, ['completed', 'cancelled'])) {
+            $status = $request->status === 'completed' ? 'finished' : 'cancelled';
+            
+            StockSlocTakeOutTemp::where('note', 'like', '%' . $outgoingGood->number . '%')
+                ->update([
+                    'status' => $status,
+                    'is_success' => $request->status === 'completed',
+                    'updated_at' => Carbon::now()
+                ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Status updated successfully',
+            'data' => $outgoingGood
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+        
+        // adding condition if request has data
+        if($request->has('note') && $request->note !== '') {                
+            $outgoingGood->note = $request->note;
+        }
+        if($request->has('priority') && $request->priority !== '') {
+            $outgoingGood->priority = $request->priority;
+        }
+        if($request->has('outgoing_location') && $request->outgoing_location !== '') {
+            $outgoingGood->outgoing_location = $request->outgoing_location;
+        }
+        if($request->has('handle_for') && $request->handle_for !== '') {
+            $outgoingGood->handle_for = $request->handle_for;
+        }
+        if($request->has('handle_for_type') && $request->handle_for_type !== '') {
+            $outgoingGood->handle_for_type = $request->handle_for_type;
+        }
+        if($request->has('handle_for_id') && $request->handle_for_id !== '') {
+            $outgoingGood->handle_for_id = $request->handle_for_id;
+        }
+
+        if($request->has('take_material_from_location') && $request->take_material_from_location !== '') {
+            $outgoingGood->take_material_from_location = $request->take_material_from_location;
+        }
+
+        if($request->has('assigned_to') && $request->assigned_to !== '') {
+            $outgoingGood->assigned_to = $request->assigned_to;
+        }
+
+        $outgoingGood->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Outgoing good updated successfully',
+            'data' => $outgoingGood
+        ]);
+    }
+
+    public function changeAssign(Request $request, $id)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+        $userData = User::findOrFail($request->user_id);
+
+        if(!$userData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+        
+        $outgoingGood->handle_for = $userData->full_name;
+        $outgoingGood->handle_for_type = $userData->type;
+        $outgoingGood->handle_for_id = $request->user_id;
+        $outgoingGood->assigned_to = $request->user_id;
+        $outgoingGood->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Outgoing good assigned to updated successfully',
             'data' => $outgoingGood
         ]);
     }
@@ -238,73 +434,348 @@ class OutgoingGoodController extends Controller
         ]);
     }
 
+    public function startScanBarcode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'outgoing_good_id' => 'required|exists:outgoing_goods,_id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $outgoingGood = OutgoingGood::findOrFail($request->outgoing_good_id);   
+        
+        $outgoingGood->status = 'in_progress';
+
+        // $request->merge(['slock_code' => 'RAW01']);
+
+        // $stockSlock = new StockSlockController();
+        // $stockSlockData = $stockSlock->index($request);
+        // $stockSlockData = $stockSlockData->original['data'] ?? [];
+
+        // // $itemsData = [];
+
+        // foreach ($outgoingGood->items as $item) {
+        //     // check if stockSlockData has data with material_code = $item->material_code
+        //     $filteredStockData = collect($stockSlockData)
+        //         ->where('material_code', $item->material_code)
+        //         ->sortBy(function($item) {
+        //             return $item['date_income'] . ' ' . $item['time_income'];
+        //         })
+        //         ->values();
+
+        //     if ($filteredStockData->count() > 0) {
+        //         $stockNeeded = (int)$item->quantity_needed;
+        //         $stockOut = 0;
+        //         foreach ($filteredStockData as $stock) {
+        //             if ($stockNeeded <= 0) {
+        //                 break;
+        //             }
+
+        //             $stockOut = min($stockNeeded, $stock['valuated_stock']);
+        //             $stockNeeded -= $stockOut;
+
+        //             $itemsData[] = [
+        //                 'rack_code' => $stock['rack_code'],
+        //                 'job_seq' => $stock['job_seq'],
+        //                 // 'quantity' => $stock['valuated_stock'],
+        //                 // 'uom' => $stock['uom'],
+        //                 // 'date_income' => $stock['date_income'],
+        //                 // 'time_income' => $stock['time_income'],
+        //                 // 'stockOut' => $stockOut,
+        //                 // 'stockNeeded' => $stockNeeded,
+        //             ];
+        //             $item->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
+        //         }
+        //     }
+        // }
+
+        $outgoingGood->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Outgoing good started',
+            'data' => $itemsData
+        ]);
+    }
+
+    public function checkBarcode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'barcode' => 'required|string',
+            'handle_for_id' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $barcode = $request->barcode;
+        $handleForId = $request->handle_for_id;
+        $outgoingGood = OutgoingGood::where('number', $barcode)->where('handle_for_id', $handleForId)->first();
+
+        if (!$outgoingGood) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outgoing good not found'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => $outgoingGood
+        ]);
+    }
+
     /**
      * Get templates for outgoing goods
      */
-    // public function getTemplates()
-    // {
-    //     $templates = Template::where('type', 'outgoing_good')
-    //                         ->where('created_by', auth()->user()->npk)
-    //                         ->get();
+    public function getTemplates(Request $request)
+    {
+        $query = OutgoingGoodTemplate::with('items');
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $templates
-    //     ]);
-    // }
+        // Search by part_name
+        if ($request->has('part_name') && $request->part_name !== '') {
+            $query->where('part_name', 'like', '%' . $request->part_name . '%');
+        }
+
+        // Search by part_number
+        if ($request->has('part_number') && $request->part_number !== '') {
+            $query->where('part_number', 'like', '%' . $request->part_number . '%');
+        }
+
+        // Search by name_template
+        if ($request->has('name_template') && $request->name_template !== '') {
+            $query->where('name_template', 'like', '%' . $request->name_template . '%');
+        }
+
+        if($request->has('search') && $request->search !== '' && $request->search !== null) {
+            $query->where('part_name', 'like', '%' . $request->search . '%')
+                ->orWhere('part_number', 'like', '%' . $request->search . '%')
+                ->orWhere('name_template', 'like', '%' . $request->search . '%');
+        }
+
+        // Handle sorting
+        $sortColumn = $request->input('sort', 'created_at');
+        $sortOrder = $request->input('order', 'desc');
+        $query->orderBy($sortColumn, $sortOrder);
+
+        // Handle pagination
+        $perPage = $request->input('per_page', 10);
+        $page = $request->input('page', 1);
+
+        // Get paginated results
+        $templates = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Handle column selection - only transform if columns are specified
+        if ($request->has('columns') && !empty($request->columns) && is_array($request->columns)) {
+            $templates->getCollection()->transform(function ($template) use ($request) {
+                $data = $template->only($request->columns);
+                // If items relationship exists and is loaded, add it to the response
+                if ($template->relationLoaded('items')) {
+                    $data['items'] = $template->items;
+                }
+                return $data;
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $templates->items(),
+            'current_page' => $templates->currentPage(),
+            'last_page' => $templates->lastPage(),
+            'per_page' => $templates->perPage(),
+            'total' => $templates->total(),
+        ]);
+    }
 
     // /**
     //  * Store a new template
     //  */
-    // public function storeTemplate(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'name' => 'required|string|max:255',
-    //         'items' => 'required|array|min:1',
-    //         'priority' => 'required|in:low,normal,high,urgent',
-    //         'notes' => 'nullable|string'
-    //     ]);
+    public function storeOrUpdateTemplate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'code_template' => 'nullable|string',
+            'name_template' => 'required|string|max:255',
+            'items' => 'required|array|min:1',
+            'notes' => 'nullable|string'
+        ]);
 
-    //     if ($validator->fails()) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Validation error',
-    //             'errors' => $validator->errors()
-    //         ], 422);
-    //     }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    //     $template = new Template();
-    //     $template->name = $request->name;
-    //     $template->type = 'outgoing_good';
-    //     $template->data = json_encode([
-    //         'items' => $request->items,
-    //         'priority' => $request->priority,
-    //         'notes' => $request->notes
-    //     ]);
-    //     $template->created_by = auth()->user()->npk;
-    //     $template->save();
+        // check if code_template is already exists
+        $template = OutgoingGoodTemplate::where('code_template', $request->code_template)->first();
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Template saved successfully',
-    //         'data' => $template
-    //     ], 201);
-    // }
+        if($template) {
+            $isUpdate = true;   
+        } else {
+            $isUpdate = false;
+        }
+
+        $userNpk = auth()->user()->npk;
+
+        if ($isUpdate) {
+            $template = OutgoingGoodTemplate::where('code_template', $request->code_template)->first();
+
+            if (!$template) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Template not found'
+                ], 404);
+            }
+
+            $template->updated_by = $userNpk;
+        } else {
+            $template = new OutgoingGoodTemplate();
+            $template->code_template = 'OGT-' . date('Ymd') . '-' . Str::random(6);
+            $template->created_by = $userNpk;
+        }
+
+        $template->name_template = $request->name_template;
+        $template->part_name = $request->part_name;
+        $template->part_number = $request->part_number;
+        $template->notes = $request->notes;
+        $template->save();
+
+        // Clear old items if updating
+        if ($isUpdate) {
+            OutgoingGoodTemplateItem::where('code_template', $template->code_template)->delete();
+        }
+
+        foreach ($request->items as $item) {
+            $material = Material::where('code', $item['material_code'])->first();
+
+            if (!$material) {
+                continue; // or handle as error
+            }
+
+            $templateItem = new OutgoingGoodTemplateItem();
+            $templateItem->code_template = $template->code_template;
+            $templateItem->created_by = $userNpk;
+            $templateItem->part_number = $item['part_number'] ?? '';
+            $templateItem->alias = $item['alias'] ?? '';
+            $templateItem->material_code = $item['material_code'];
+            $templateItem->material_name = $material->description;
+            $templateItem->quantity_needed = $item['quantity_needed'] ?? 0;
+            $templateItem->uom_needed = $material->unit;
+            $templateItem->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $isUpdate ? 'Template updated successfully' : 'Template created successfully',
+            'data' => $template
+        ], $isUpdate ? 200 : 201);
+    }
+
+    public function updateTemplate(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'name_template' => 'required|string|max:255',
+            'items' => 'required|array|min:1',
+            'notes' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $template = OutgoingGoodTemplate::findOrFail($id);
+
+        if($request->has('name_template') && $request->name_template !== '') {
+            $template->name_template = $request->name_template;
+        }
+        if($request->has('part_name') && $request->part_name !== '') {
+            $template->part_name = $request->part_name;
+        }
+        if($request->has('part_number') && $request->part_number !== '') {
+            $template->part_number = $request->part_number;
+        }
+        if($request->has('notes') && $request->notes !== '') {
+            $template->notes = $request->notes;
+        }
+        $template->save();
+
+        // Get existing items for comparison
+        $existingItems = OutgoingGoodTemplateItem::where('code_template', $template->code_template)->get();
+        $requestedMaterialCodes = collect($request->items)->pluck('material_code')->toArray();
+
+        // Delete items that are not in the request
+        foreach ($existingItems as $existingItem) {
+            if (!in_array($existingItem->material_code, $requestedMaterialCodes)) {
+                $existingItem->delete();
+            }
+        }
+
+        // update for items
+        foreach ($request->items as $item) {
+            $material = Material::where('code', $item['material_code'])->first();
+
+            if (!$material) {
+                continue; // or handle as error
+            }
+
+            $templateItem = OutgoingGoodTemplateItem::where('code_template', $template->code_template)
+                ->where('material_code', $item['material_code'])
+                ->first();
+
+            if($templateItem) {
+                $templateItem->part_number = $item['part_number'] ?? $templateItem->part_number;
+                $templateItem->alias = $item['alias'] ?? $templateItem->alias;
+                $templateItem->quantity_needed = $item['quantity_needed'] ?? $templateItem->quantity_needed;
+                $templateItem->uom_needed = $material->unit ?? $templateItem->uom_needed;
+                $templateItem->save();
+            } else {
+                $templateItem = new OutgoingGoodTemplateItem();
+                $templateItem->code_template = $template->code_template;
+                $templateItem->part_number = $item['part_number'] ?? '';
+                $templateItem->alias = $item['alias'] ?? '';
+                $templateItem->material_code = $item['material_code'];
+                $templateItem->material_name = $material->description;
+                $templateItem->quantity_needed = $item['quantity_needed'] ?? 0;
+                $templateItem->uom_needed = $material->unit ?? '';
+                $templateItem->save();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Template updated successfully'
+        ]);
+    }
 
     // /**
     //  * Delete a template
     //  */
-    // public function deleteTemplate($id)
-    // {
-    //     $template = Template::where('id', $id)
-    //                         ->where('created_by', auth()->user()->npk)
-    //                         ->firstOrFail();
+    public function deleteTemplate($id)
+    {
+        $template = OutgoingGoodTemplate::findOrFail($id);
 
-    //     $template->delete();
+        $template->delete();
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Template deleted successfully'
-    //     ]);
-    // }
+        return response()->json([
+            'success' => true,
+            'message' => 'Template deleted successfully'
+        ]);
+    }
 }
+

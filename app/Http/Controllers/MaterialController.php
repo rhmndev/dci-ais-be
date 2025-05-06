@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Image;
 use App\Exports\MaterialsExport;
+use App\Exports\MaterialsExport2;
 use Excel;
 // use Maatwebsite\Excel\Facades\Excel;
 
@@ -61,6 +62,43 @@ class MaterialController extends Controller
         }
     }
 
+    public function index2(Request $request)
+    {
+        try {
+            $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
+            $query = Material::query();
+
+            if ($request->has('code') && $request->code != '') {
+                $query->where('code', 'like', '%' . $request->code . '%');
+            }
+
+            if ($request->has('description') && $request->description != '') {
+                $query->where('description', 'like', '%' . $request->description . '%');
+            }   
+            
+            if ($request->has('type') && $request->type != '') {
+                $query->where('type', $request->type);
+            }
+
+            if ($request->has('unit') && $request->unit != '') {
+                $query->where('unit', $request->unit);
+            }
+
+            $materials = $query->paginate($perPage);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $materials
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
     public function show(Request $request, $id)
     {
         $Material = Material::findOrFail($id);
@@ -89,6 +127,9 @@ class MaterialController extends Controller
             $Material->description = $this->stringtoupper($request->description);
             $Material->type = $this->stringtoupper($request->type);
             $Material->unit = $this->stringtoupper($request->unit);
+
+            $Material->minQty = $request->minQty;
+            $Material->maxQty = $request->maxQty;
 
             if ($request->photo != null && $request->hasFile('photo')) {
 
@@ -144,8 +185,25 @@ class MaterialController extends Controller
         try {
             $Material = Material::findOrFail($id);
 
-            $Material->minQty = $request->minQty;
-            $Material->maxQty = $request->maxQty;
+            if ($request->has('type') && $request->type != null || $request->type != '') {
+                $Material->type = $this->stringtoupper($request->type);
+            }
+
+            if ($request->has('unit') && $request->unit != null || $request->unit != '') {
+                $Material->unit = $this->stringtoupper($request->unit);
+            }
+
+            if ($request->has('description') && $request->description != null || $request->description != '') {
+                $Material->description = $this->stringtoupper($request->description);
+            }
+
+            if ($request->has('minQty') && $request->minQty != null || $request->minQty != '') {
+                $Material->minQty = floatval($request->minQty);
+            }
+
+            if ($request->has('maxQty') && $request->maxQty != null || $request->maxQty != '') {
+                $Material->maxQty = floatval($request->maxQty);
+            }
 
             $Material->updated_by = auth()->user()->username;
             $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -345,6 +403,20 @@ class MaterialController extends Controller
         }
     }
 
+    public function export2(Request $request)
+    {
+        $selectedMaterials = $request->selectedMaterials;
+
+        $materialsQuery = Material::query();
+
+        if ($selectedMaterials && $selectedMaterials !== 0) {
+            $materialsQuery->whereIn('_id', $selectedMaterials);
+        }
+
+        $materials = $materialsQuery->get();
+
+        return Excel::download(new MaterialsExport2($materials), 'materials.xlsx');
+    }
     public function list(Request $request)
     {
         $materials = Material::when($request->keyword, function ($query) use ($request) {

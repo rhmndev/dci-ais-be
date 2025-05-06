@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Imports\StockSlockImport;
 use App\StockSlock;
+use App\StockSlocTakeOutTemp;
 use App\StockSlockHistory;
+use App\OutgoingGood;
+use App\OutgoingGoodItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -19,7 +22,7 @@ class StockSlockController extends Controller
         try {
             $stockSlocks = StockSlock::query();
 
-            $stockSlocks->with('material', 'RackDetails', 'WhsMatControl');
+            $stockSlocks->with('material', 'RackDetails', 'WhsMatControl','CreatedBy');
 
             if ($request->has('slock_code')) {
                 $stockSlocks->where('slock_code', $request->slock_code);
@@ -31,6 +34,10 @@ class StockSlockController extends Controller
 
             if ($request->has('material_code')) {
                 $stockSlocks->where('material_code', $request->material_code);
+            }
+
+            if($request->has('show_all') && $request->show_all === 'true') {
+                $stockSlocks->where('slock_code', '!=', '000000000000000000000000');
             }
 
 
@@ -209,11 +216,24 @@ class StockSlockController extends Controller
             'slock_code' => 'required|string',
             'rack_code' => 'required|string',
             'material_code' => 'required|string',
-            'valuated_stock' => 'required|numeric',
-            'stock' => 'required|numeric|max:valuated_stock',
+            // 'valuated_stock' => 'required|numeric',
+            'stock' => 'required|numeric',
             'uom' => 'required|string',
             'take_location' => 'required|string',
+            'outgoing_good_id' => 'required|exists:outgoing_goods,_id',
+            'outgoing_good_item_id' => 'required|exists:outgoing_good_items,_id',
+            'is_ng_item' => 'required|boolean',
+            'ng_job_seq' => 'required_if:is_ng_item,true|string|nullable',
+            'ng_quantity' => 'required_if:is_ng_item,true|numeric|nullable',
         ]);
+
+        // Additional validation for NG items
+        if ($request->is_ng_item) {
+            $request->validate([
+                'ng_job_seq' => 'required|string',
+                'ng_quantity' => 'required|numeric',
+            ]);
+        }
 
         $stockSlock = StockSlock::where('slock_code', $request->slock_code)
             ->where('rack_code', $request->rack_code)
@@ -225,7 +245,7 @@ class StockSlockController extends Controller
             return response()->json(['error' => 'Stock slock not found'], 404);
         }
 
-        if ($stockSlock->valuated_stock < $request->stock) {
+        if (floatval($stockSlock->valuated_stock) < floatval($request->stock)) {
             return response()->json(['error' => 'Stock slock is not enough'], 400);
         }
 
@@ -234,7 +254,7 @@ class StockSlockController extends Controller
         $logStockSlock = StockSlockHistory::create([
             'slock_code' => $request->slock_code,
             'rack_code' => $request->rack_code,
-            'job_seq' => $stockSlock->job_seq,
+            'job_seq' => $request->is_ng_item ? $request->ng_job_seq : $stockSlock->job_seq,
             'material_code' => $request->material_code,
             'val_stock_value' => $stockSlock->val_stock_value,
             'valuated_stock' => $remainingStock,
@@ -242,7 +262,7 @@ class StockSlockController extends Controller
             'uom' => $request->uom,
             'date_time' => Carbon::now()->toDateTimeString(),
             'scanned_by' => auth()->user()->npk,
-            'status' => 'take_out',
+            'status' => $request->is_ng_item ? 'take_out_ng' : 'take_out',
             'inventory_no' => $stockSlock->inventory_no,
             'date_income' => $stockSlock->date_income,
             'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
@@ -250,7 +270,10 @@ class StockSlockController extends Controller
             'last_time_take_out' => Carbon::now()->toDateTimeString(),
             'take_location' => $request->take_location,
             'user_id' => auth()->user()->npk,
-            'is_success' => false
+            'is_success' => false,
+            'is_ng_item' => $request->is_ng_item,
+            'ng_job_seq' => $request->is_ng_item ? $request->ng_job_seq : null,
+            'ng_quantity' => $request->is_ng_item ? floatval($request->ng_quantity) : null,
         ]);
 
         if ($remainingStock <= 0) {
@@ -268,36 +291,81 @@ class StockSlockController extends Controller
             'uom' => $request->uom,
             'stock_out' => floatval($request->stock),
             'note' => $request->note ?? null,
+            'is_ng_item' => $request->is_ng_item,
+            'ng_job_seq' => $request->is_ng_item ? $request->ng_job_seq : null,
+            'ng_quantity' => $request->is_ng_item ? floatval($request->ng_quantity) : null,
         ]);
-        $resWhsOut = $outWhsControl->outWhsMaterial($request, $stockSlock->job_seq ?? '');
+        $resWhsOut = $outWhsControl->outWhsMaterial($request, $request->is_ng_item ? $request->ng_job_seq : $stockSlock->job_seq ?? '');
 
         if (isset($resWhsOut->original['message']) && $resWhsOut->original['message'] === 'success') {
-            $jobSeq = $resWhsOut->original['data']->job_seq ?? null; // Extract job_seq if available
+            $jobSeq = $resWhsOut->original['data']->job_seq ?? null;
 
             if ($jobSeq) {
                 $logStockSlock->update([
                     'job_seq' => $jobSeq,
                     'is_success' => true
                 ]);
+
+                // Update StockSlocTakeOutTemp status to finished
+                StockSlocTakeOutTemp::where('job_seq', $request->is_ng_item ? $request->ng_job_seq : $stockSlock->job_seq)
+                    ->where('material_code', $request->material_code)
+                    ->where('sloc_code', $request->slock_code)
+                    ->update([
+                        'status' => 'finished',
+                        'is_success' => true,
+                        'updated_at' => Carbon::now()
+                    ]);
+
+                // Add scanned data to OutgoingGoodItem
+                $outgoingGoodItem = OutgoingGoodItem::find($request->outgoing_good_item_id);
+                if ($outgoingGoodItem) {
+                    $scans = $outgoingGoodItem->scans ?? [];
+                    $scans[] = [
+                        'job_seq' => $request->is_ng_item ? $request->ng_job_seq : $stockSlock->job_seq,
+                        'rack_code' => $request->rack_code,
+                        'quantity' => floatval($request->stock),
+                        'uom' => $request->uom,
+                        'scanned_at' => Carbon::now()->toDateTimeString(),
+                        'scanned_by' => auth()->user()->npk,
+                        'is_ng_item' => $request->is_ng_item,
+                        'ng_job_seq' => $request->is_ng_item ? $request->ng_job_seq : null,
+                        'ng_quantity' => $request->is_ng_item ? floatval($request->ng_quantity) : null,
+                    ];
+                    $outgoingGoodItem->scans = $scans;
+                    $outgoingGoodItem->quantity_out += floatval($request->stock);
+                    $outgoingGoodItem->save();
+                }
+
+                $outgoingGood = OutgoingGood::find($request->outgoing_good_id);
+                if ($outgoingGood) {
+                    $items = $outgoingGood->items()->get();
+                
+                    // If any item has quantity_out > 0 and status is 'ready', set to 'on_progress'
+                    $anyScanned = $items->contains(function ($item) {
+                        return $item->quantity_out > 0;
+                    });
+
+                    if ($anyScanned && $outgoingGood->status === 'ready') {
+                        $outgoingGood->status = 'on_progress';
+                        $outgoingGood->save();
+                    }
+                
+                    $allItemsScanned = $items->every(function ($item) {
+                        return $item->quantity_out >= $item->quantity_needed;
+                    });
+                    if ($allItemsScanned && $outgoingGood->status !== 'completed') {
+                        $outgoingGood->status = 'completed';
+                        $outgoingGood->completed_at = Carbon::now()->toDateTimeString();
+                        $outgoingGood->completed_by = auth()->user()->username;
+                        $outgoingGood->is_completed = true;
+                        $outgoingGood->save();
+                    }
+                }
             } else {
                 $logStockSlock->update([
                     'is_success' => false
                 ]);
             }
-
-            // if ($remainingStock > 0) {
-            //     $request->merge([
-            //         'rack_code' => $request->rack_code,
-            //         'slock_code' => $request->slock_code,
-            //         'date_income' => $stockSlock->date_income,
-            //         'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
-            //         'valuated_stock' => $remainingStock,
-            //         'uom' => $stockSlock->uom,
-            //         'tag' => $stockSlock->tag,
-            //         'note' => $stockSlock->note ?? null,
-            //     ]);
-            //     $this->putIn($request);
-            // }
         } else {
             // Handle failure case
             return response()->json([
@@ -344,6 +412,7 @@ class StockSlockController extends Controller
                 'valuated_stock' => floatval($request->valuated_stock),
                 'uom' => $request->uom,
                 'tag' => $request->tag,
+                'pkg_no' => $request->pkg_no ?? null,
                 'note' => $request->note ?? null,
                 'user_id' => auth()->user()->npk
             ]);
@@ -373,6 +442,7 @@ class StockSlockController extends Controller
                 'last_time_take_out' => $stockSlock->last_time_take_out,
                 'user_id' => auth()->user()->npk,
                 'tag' => $request->tag,
+                'pkg_no' => $request->pkg_no ?? null,
                 'note' => $request->note ?? null,
                 'is_success' => true
             ]);
@@ -401,7 +471,7 @@ class StockSlockController extends Controller
                     ]);
                     $session->commitTransaction();
 
-                    $stockSlock->load('material', 'WhsMatControl');
+                    $stockSlock->load('material', 'WhsMatControl','CreatedBy');
 
                     return response()->json([
                         'message' => 'Stock successfully put in!',
@@ -416,7 +486,7 @@ class StockSlockController extends Controller
                     $logStockSlock->update([
                         'is_success' => false
                     ]);
-                    $stockSlock->load('material', 'WhsMatControl');
+                    $stockSlock->load('material', 'WhsMatControl','CreatedBy');
                     $session->abortTransaction();
 
                     return response()->json([
@@ -443,6 +513,34 @@ class StockSlockController extends Controller
         }
     }
 
+    public function getStockByJobSeq(Request $request)
+    {
+        $request->validate([
+            'job_seq' => 'required|string',
+        ]);
+
+        // adding try and catch and db transaction
+        try {
+            $session = DB::connection('mongodb')->getMongoClient()->startSession();
+            $session->startTransaction();
+
+            $stockSlock = StockSlock::where('job_seq', $request->job_seq)->first();
+
+            $session->commitTransaction();
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $stockSlock
+            ]);
+            
+        } catch (\Throwable $th) {
+            $session->abortTransaction();
+            return response()->json([
+                'error' => 'Failed to get stock by job seq',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
     public function getHistory(Request $request)
     {
         try {
@@ -547,5 +645,64 @@ class StockSlockController extends Controller
 
         // Return the generated PDF
         return $pdf->download('stock_slock_history_report.pdf');
+    }
+
+    public function getStockMaterialAvailable(Request $request)
+    {
+        $request->validate([
+            'material_code' => 'required|string',
+            'sloc_code' => 'nullable|string',
+        ]);
+
+        // Base query for stock slock records
+        $stockSlockQuery = StockSlock::where('material_code', $request->material_code);
+        
+        // Add sloc_code condition only if it's provided
+        if ($request->has('sloc_code') && $request->sloc_code) {
+            $stockSlockQuery->where('slock_code', $request->sloc_code);
+        }
+
+        $stockSlock = $stockSlockQuery->get();
+
+        // Base query for active take out temp records
+        $activeTakeOutTempsQuery = StockSlocTakeOutTemp::where('material_code', $request->material_code)
+            ->whereNotIn('status', ['cancelled', 'finished']);
+        
+        // Add sloc_code condition only if it's provided
+        if ($request->has('sloc_code') && $request->sloc_code) {
+            $activeTakeOutTempsQuery->where('sloc_code', $request->sloc_code);
+        }
+
+        $activeTakeOutTemps = $activeTakeOutTempsQuery->get();
+
+        // Create a map of material_code and sloc_code to track reserved quantities
+        $reservedQuantities = [];
+        foreach ($activeTakeOutTemps as $temp) {
+            $key = $temp->material_code . '_' . $temp->sloc_code;
+            if (!isset($reservedQuantities[$key])) {
+                $reservedQuantities[$key] = 0;
+            }
+            $reservedQuantities[$key] += $temp->qty_take_out;
+        }
+
+        // Process each stock slock record
+        $stockSlock->each(function ($item) use ($reservedQuantities) {
+            $key = $item->material_code . '_' . $item->slock_code;
+            $reservedQty = $reservedQuantities[$key] ?? 0;
+            
+            // Calculate available quantity by subtracting reserved quantity
+            $item->available_qty = max(0, $item->valuated_stock - $reservedQty);
+            
+            // Set default values for other fields
+            $item->rack_code = $item->rack_code ?? '-';
+            $item->job_seq = $item->job_seq ?? '-';
+            $item->date_income = $item->date_income ?? '-';
+            $item->time_income = $item->time_income ?? '-';
+        });
+
+        return response()->json([
+            'message' => 'success',
+            'data' => $stockSlock
+        ]);
     }
 }

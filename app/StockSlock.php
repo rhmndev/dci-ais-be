@@ -19,6 +19,7 @@ class StockSlock extends Model
         'date_income',
         'time_income',
         'inventory_no',
+        'pkg_no',
         'last_time_take_in',
         'last_time_take_out',
         'user_id',
@@ -52,5 +53,10 @@ class StockSlock extends Model
         Storage::disk('public')->put($qrCodePath, $qrCode);
 
         return $qrCodePath;
+    }
+
+    public function CreatedBy()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'npk');
     }
 }
