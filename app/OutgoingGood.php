@@ -33,6 +33,14 @@ class OutgoingGood extends Model
         'is_completed', // Flag to indicate if the outgoing good has been completed
         'completed_at', // Date and time when the outgoing good was completed
         'completed_by', // User who completed the outgoing good
+        'received_by', // Person who received the outgoing good
+        'received_date', // Date when the outgoing good was received
+        'handed_over_by', // Person who handed over the outgoing good
+        'handed_over_date', // Date when the outgoing good was handed over
+        'acknowledged_by', // Person who acknowledged the outgoing good
+        'acknowledged_date', // Date when the outgoing good was acknowledged
+        'requested_by', // Person who requested the outgoing good
+        'requested_date', // Date when the outgoing good was requested
     ];
 
     public function items()

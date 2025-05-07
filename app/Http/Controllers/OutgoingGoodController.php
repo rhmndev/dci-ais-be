@@ -407,6 +407,45 @@ class OutgoingGoodController extends Controller
         ]);
     }
 
+    public function changeAssignReceiveBy(Request $request, $id)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        $outgoingGood->received_by = auth()->user()->npk;
+        $outgoingGood->received_date = Carbon::now()->format('Y-m-d H:i:s');
+        $outgoingGood->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Outgoing good received by updated successfully',
+            'data' => $outgoingGood
+        ]);
+    }
+
+    public function changeAssignHandedOverBy(Request $request, $id)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        $outgoingGood->handed_over_by = auth()->user()->npk;
+        $outgoingGood->handed_over_date = Carbon::now()->format('Y-m-d H:i:s');
+    }
+
+    public function changeAssignAcknowledgeBy(Request $request, $id)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        $outgoingGood->acknowledged_by = auth()->user()->npk;
+        $outgoingGood->acknowledged_date = Carbon::now()->format('Y-m-d H:i:s');
+    }
+
+    public function changeAssignRequestedBy(Request $request, $id)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        $outgoingGood->requested_by = auth()->user()->npk;
+        $outgoingGood->requested_date = Carbon::now()->format('Y-m-d H:i:s');
+    }
+
     /**
      * Generate a receipt for a completed outgoing good
      */
@@ -533,6 +572,139 @@ class OutgoingGoodController extends Controller
         return response()->json([
             'success' => true,
             'data' => $outgoingGood
+        ]);
+    }
+
+    public function storeItems(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'material_code' => 'required|string',
+            'quantity_needed' => 'required|numeric',
+            'uom_needed' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        if(!$outgoingGood) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outgoing good not found'
+            ], 404);
+        }
+
+        $material = Material::where('code', $request->material_code)->first();
+
+        if(!$material) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Material not found'
+            ], 404);
+        }
+        $request->merge(['slock_code' => 'RAW01']);
+
+        $stockSlock = new StockSlockController();
+        $stockSlockData = $stockSlock->index($request);
+        $stockSlockData = $stockSlockData->original['data'] ?? [];
+
+        $newItem = new OutgoingGoodItem();
+        $newItem->outgoing_good_id = $outgoingGood->_id;
+        $newItem->outgoing_good_number = $outgoingGood->number;
+        $newItem->material_code = $request->material_code;
+        $newItem->material_name = $material->description;
+        $newItem->quantity_needed = $request->quantity_needed;
+        $newItem->uom_needed = $request->uom_needed;
+        $newItem->created_by = auth()->user()->npk;
+        $newItem->quantity_out = 0;
+        $newItem->uom_out = $material->unit;
+        $newItem->save();
+
+        $filteredStockData = collect($stockSlockData)
+            ->where('material_code', $request->material_code)
+            ->sortBy(function($item) {
+                return $item['date_income'] . ' ' . $item['time_income'];
+            })
+            ->values();
+
+        if($filteredStockData->count() > 0) {
+            $stockNeeded = (int)$request->quantity_needed;
+            $stockOut = 0;
+            foreach ($filteredStockData as $stock) {
+                if($stockNeeded <= 0) {
+                    break;
+                }
+
+                $stockOut = min($stockNeeded, $stock['valuated_stock']);
+                $stockNeeded -= $stockOut;
+
+                $newItem->quantity_out = $stockOut;
+                $newItem->uom_out = $stock['uom'];
+                // Create temporary record for stock take out
+                $stockSlocTakeOutTemp = new StockSlocTakeOutTemp();
+                $stockSlocTakeOutTemp->job_seq = $stock['job_seq'];
+                $stockSlocTakeOutTemp->material_code = $request->material_code;
+                $stockSlocTakeOutTemp->sloc_code = $stock['slock_code'];
+                $stockSlocTakeOutTemp->rack_code = $stock['rack_code'];
+                $stockSlocTakeOutTemp->note = $outgoingGood->number;
+                $stockSlocTakeOutTemp->qty = $stock['valuated_stock'];
+                $stockSlocTakeOutTemp->qty_take_out = $stockOut;
+                $stockSlocTakeOutTemp->uom = $stock['uom'];
+                $stockSlocTakeOutTemp->uom_take_out = $material->unit;
+                $stockSlocTakeOutTemp->user_id = auth()->user()->npk;
+                $stockSlocTakeOutTemp->status = 'ready';
+                $stockSlocTakeOutTemp->created_by = auth()->user()->npk;
+                $stockSlocTakeOutTemp->is_success = false;
+                $stockSlocTakeOutTemp->save();
+
+                $newItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
+            }
+        }
+
+        // Create the item with all fields
+        // $item = $outgoingGood->items()->create([
+        //     'material_code' => $request->material_code,
+        //     'quantity_needed' => $request->quantity_needed,
+        //     'uom_needed' => $request->uom_needed,
+        // ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Items added successfully',
+            'data' => $newItem
+        ]);
+    }
+
+    public function updateItem(Request $request, $id, $code_item)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        $outgoingGood->items()->where('material_code', $code_item)->update($request->all());
+    }
+
+    public function destroyItem(Request $request, $id, $code_item)
+    {
+        $outgoingGood = OutgoingGood::findOrFail($id);
+
+        $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $outgoingGood->_id)->where('material_code', $code_item)->first();
+
+        $outgoingGood->items()->where('material_code', $code_item)->delete();
+
+        $stockSlocTakeOutTemp = StockSlocTakeOutTemp::where('job_seq', $outgoingItem->job_seq)->where('material_code', $code_item)->first();
+
+        if($stockSlocTakeOutTemp) {
+            $stockSlocTakeOutTemp->delete();
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Item deleted successfully'
         ]);
     }
 
