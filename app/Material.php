@@ -83,4 +83,9 @@ class Material extends Model
     {
         return $this->hasOne(MaterialType::class, 'name', 'type');
     }
+
+    public function roleMaterialTypes()
+    {
+        return $this->hasMany(RoleMaterialType::class, 'material_type', 'type');
+    }
 }

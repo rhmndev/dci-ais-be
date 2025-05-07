@@ -72,7 +72,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/supplierlist', 'SupplierController@list');
         Route::get('/suppliersync', 'SupplierController@SyncSAP');
         Route::post('/supplier', 'SupplierController@store');
-        Route::post('/supplier/{id}', 'SupplierController@store');
+        Route::put('/supplier/{id}', 'SupplierController@store');
         Route::delete('/supplier/{id}', 'SupplierController@destroy');
         Route::post('/supplierimport', 'SupplierController@import');
         Route::get('/supplierexport', 'SupplierController@export');
@@ -91,7 +91,22 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/materialimport', 'MaterialController@import');
         Route::get('/materialexport', 'MaterialController@export');
         Route::post('/materialexport2', 'MaterialController@export2');
+        Route::get('/material-types', 'MaterialController@getMaterialType');
         #endregion
+
+        
+
+// Role Material Type Routes
+        Route::prefix('role-material-types')->group(function () {
+                Route::get('/', 'RoleMaterialTypeController@index');
+                Route::post('/', 'RoleMaterialTypeController@store');
+                Route::get('/{id}', 'RoleMaterialTypeController@show');
+                Route::put('/{id}', 'RoleMaterialTypeController@update');
+                Route::delete('/{id}', 'RoleMaterialTypeController@destroy');
+                Route::get('/role/{roleId}', 'RoleMaterialTypeController@getByRole');
+                Route::get('/material-type/{materialType}', 'RoleMaterialTypeController@getByMaterialType');
+                Route::post('/bulk-assign', 'RoleMaterialTypeController@bulkAssign');
+        });
 
         #region Master Material Type
         Route::get('/materialtype', 'MaterialTypeController@index');
@@ -186,6 +201,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/role', 'RoleController@index');
         Route::post('/role', 'RoleController@store');
         Route::get('/role/list', 'RoleController@list');
+        Route::get('/rolelist', 'RoleController@list');
         Route::get('/role/{id}', 'RoleController@show');
         Route::post('/role/{id}', 'RoleController@update');
         Route::delete('/role/{id}', 'RoleController@destroy');
@@ -354,9 +370,16 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/', 'OutgoingGoodController@store');
                 Route::get('/{id}', 'OutgoingGoodController@show');
                 Route::put('/{id}', 'OutgoingGoodController@update');
+                Route::post('/{id}/items', 'OutgoingGoodController@storeItems');
+                Route::put('/{id}/items/{code_item}', 'OutgoingGoodController@updateItem');
+                Route::delete('/{id}/items/{code_item}', 'OutgoingGoodController@destroyItem');
                 Route::post('/assign', 'OutgoingGoodController@assign');
                 Route::put('/{id}/status', 'OutgoingGoodController@updateStatus');
                 Route::put('/{id}/assign', 'OutgoingGoodController@changeAssign');
+                Route::put('/{id}/assign-receive-by', 'OutgoingGoodController@changeAssignReceiveBy');
+                Route::put('/{id}/assign-acknowledge-by', 'OutgoingGoodController@changeAssignAcknowledgeBy');
+                Route::put('/{id}/assign-handed-over-by', 'OutgoingGoodController@changeAssignHandedOverBy');
+                Route::put('/{id}/assign-requested-by', 'OutgoingGoodController@changeAssignRequestedBy');
                 Route::get('/{id}/receipt', 'OutgoingGoodController@generateReceipt');
                 Route::get('/g/templates', 'OutgoingGoodController@getTemplates');
                 Route::post('/a/templates', 'OutgoingGoodController@storeOrUpdateTemplate');

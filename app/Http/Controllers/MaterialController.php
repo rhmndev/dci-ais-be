@@ -19,7 +19,6 @@ class MaterialController extends Controller
 {
     public function index(Request $request)
     {
-
         $request->validate([
             'columns' => 'required',
             'perpage' => 'required|numeric',
@@ -34,7 +33,6 @@ class MaterialController extends Controller
         $category = $request->category;
 
         try {
-
             $Material = new Material;
             $data = array();
 
@@ -51,13 +49,10 @@ class MaterialController extends Controller
                 'total' => count($resultAlls)
             ], 200);
         } catch (\Exception $e) {
-
             return response()->json([
-
                 'type' => 'failed',
                 'message' => 'Err: ' . $e . '.',
                 'data' => NULL,
-
             ], 400);
         }
     }
@@ -67,7 +62,13 @@ class MaterialController extends Controller
         try {
             $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
             $query = Material::query();
-
+             // Get user's role
+             $userRole = auth()->user()->role;
+            
+            // Apply role filtering
+            $query = $query->whereHas('roleMaterialTypes', function($q) use ($userRole) {
+                $q->where('role_id', $userRole->_id);
+            }); 
             if ($request->has('code') && $request->code != '') {
                 $query->where('code', 'like', '%' . $request->code . '%');
             }
@@ -82,13 +83,48 @@ class MaterialController extends Controller
 
             if ($request->has('unit') && $request->unit != '') {
                 $query->where('unit', $request->unit);
+            } 
+
+            if($request->has('category') && $request->category != ''){
+                $query->where('category', $request->category);
             }
 
-            $materials = $query->paginate($perPage);
+            if($request->has('order') && $request->order != ''){
+                $order = $request->order;
+            }else{
+                $order = 'ascend';
+            }
+
+             // Apply keyword search if exists
+             if (!empty($keyword)) {
+                 foreach ($request->columns as $index => $column) {
+                     if ($index == 0) {
+                         $query = $query->where($column, 'like', '%' . $keyword . '%');
+                     } else {
+                         $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
+                     }
+                 }
+             }
+ 
+             // Apply category filter if exists
+             if(isset($category)){
+             if ($category && $category != '') {
+                 $query = $query->where('category', $category);
+             }
+             }
+ 
+             // Apply sorting
+             $query = $query->orderBy($request->sort ?? 'code', $order == 'ascend' ? 'asc' : 'desc');
+ 
+             // Get all results for total count
+             $resultAlls = $query->get();
+ 
+             // Get paginated results
+             $results = $query->paginate($request->perpage, ['*'], 'page', $request->page);
 
             return response()->json([
                 'type' => 'success',
-                'data' => $materials
+                'data' => $results
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -116,6 +152,9 @@ class MaterialController extends Controller
             'description' => 'required|string',
             'type' => 'required|string',
             'unit' => 'required|string',
+            'origin' => 'nullable|string',
+            'minQty' => 'nullable|numeric',
+            'maxQty' => 'nullable|numeric',
             'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
         ]);
 
@@ -128,6 +167,7 @@ class MaterialController extends Controller
             $Material->type = $this->stringtoupper($request->type);
             $Material->unit = $this->stringtoupper($request->unit);
 
+            $Material->origin = $this->stringtoupper($request->origin);
             $Material->minQty = $request->minQty;
             $Material->maxQty = $request->maxQty;
 
@@ -306,7 +346,7 @@ class MaterialController extends Controller
 
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
-            'category' => 'nullable|string'
+            'type' => 'nullable|string'
         ]);
 
         try {
@@ -321,18 +361,37 @@ class MaterialController extends Controller
                 foreach ($Excels as $Excel) {
 
                     if ($Excel['code'] != null) {
-
                         //store your file into database
                         $Material = Material::firstOrNew(['code' => $Excel['code']]);
                         $Material->code = $this->stringtoupper(strval($Excel['code']));
-                        $Material->description = $this->stringtoupper($Excel['description']);
-                        $Material->type = $this->stringtoupper($Excel['type']);
-                        $Material->unit = $this->stringtoupper($Excel['unit_uom']);
-                        $Material->photo = null;
+                        
+                        // Only update fields if they exist in the import data
+                        if (isset($Excel['description'])) {
+                            $Material->description = $this->stringtoupper($Excel['description']);
+                        }
+                        if (isset($Excel['type'])) {
+                            $Material->type = $this->stringtoupper($Excel['type']);
+                        }
+                        if (isset($Excel['unit_uom'])) {
+                            $Material->unit = $this->stringtoupper($Excel['unit_uom']);
+                        }
+                        if (isset($Excel['min_qty'])) {
+                            $Material->minQty = $this->stringtoupper($Excel['min_qty']);
+                        }
+                        if (isset($Excel['max_qty'])) {
+                            $Material->maxQty = $this->stringtoupper($Excel['max_qty']);
+                        }
+                        if (isset($Excel['origin'])) {
+                            $Material->origin = $this->stringtoupper($Excel['origin']);
+                        }
+                        if ($request->has('category')) {
+                            $Material->category = $this->stringtoupper($request->category);
+                        }
 
-                        $Material->category = $this->stringtoupper($request->category ?? null);
-                        $Material->minQty = $this->stringtoupper($Excel['min_qty']);
-                        $Material->maxQty = $this->stringtoupper($Excel['max_qty']);
+                        // Only set photo to null if it's a new record
+                        if (!$Material->exists) {
+                            $Material->photo = null;
+                        }
 
                         $Material->created_by = auth()->user()->username;
                         $Material->created_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
@@ -346,8 +405,8 @@ class MaterialController extends Controller
 
                     "result" => true,
                     "msg_type" => 'Success',
-                    "message" => 'Data stored successfully!',
-                    // "message" => $data,
+                    // "message" => 'Data stored successfully!',
+                    "message" => $data,
 
                 ], 200);
             }
@@ -435,6 +494,16 @@ class MaterialController extends Controller
         return response()->json([
             'type' => 'success',
             'data' => $materials
+        ], 200);
+    }
+
+    public function getMaterialType()
+    {
+        // get material type by material data then get type from material type data
+        $materialTypes = ['ZRAW','ZOHP','ZMNT','ZFIN','ZGSS','ZSEM','ZCUS','ZWST','ZCON'];
+        return response()->json([
+            'type' => 'success',
+            'data' => $materialTypes
         ], 200);
     }
 }

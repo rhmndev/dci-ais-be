@@ -37,6 +37,7 @@ class MaterialsExport2 implements  FromCollection, WithHeadings, WithMapping, Wi
             'Unit',
             'MinQty',
             'MaxQty',
+            'Origin',
         ];
     }
 
@@ -49,13 +50,14 @@ class MaterialsExport2 implements  FromCollection, WithHeadings, WithMapping, Wi
             $material->unit,
             $material->minQty,
             $material->maxQty,
+            $material->origin,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:G1')->getFill()->setFillType(Fill::FILL_SOLID);
-        $sheet->getStyle('A1:G1')->getFill()->getStartColor()->setARGB('FF0000');
+        $sheet->getStyle('A1:G1')->getFill()->setFillType(Fill::FILL_SOLID); 
+        $sheet->getStyle('A1:G1')->getFill()->getStartColor()->setARGB('00FF00');
     }
 
 
