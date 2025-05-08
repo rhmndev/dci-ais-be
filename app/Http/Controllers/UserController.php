@@ -127,6 +127,7 @@ class UserController extends Controller
             'role_id' => 'required|string',
             'vendor_id' => $request->type == 1 ? 'required|string' : '',
             'photo' => $request->photo != null && $request->hasFile('photo') ? 'sometimes|image|mimes:jpeg,jpg,png|max:2048' : '',
+            'is_admin' => 'boolean',
         ]);
 
         try {
@@ -198,6 +199,7 @@ class UserController extends Controller
 
             $User->role_id = $request->role_id;
             $User->role_name = $request->role_name;
+            $User->is_admin = $request->is_admin ?? false;
 
             $User->created_by = auth()->user()->username;
             $User->updated_by = auth()->user()->username;

@@ -16,7 +16,7 @@ class User extends Authenticable
         'api_token'
     ];
 
-    protected $fillable = ['username', 'npk'];
+    protected $fillable = ['username', 'npk', 'is_admin'];
 
     public function role()
     {
