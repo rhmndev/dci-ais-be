@@ -216,7 +216,7 @@ class RackController extends Controller
 
         $MaterialInRack = StockSlock::where('rack_code', $qrCode)->first();
         if ($MaterialInRack) {
-            $MaterialInRack->load('material', 'WhsMatControl');
+            $MaterialInRack->load('material', 'WhsMatControl', 'CreatedBy');
         }
         $rack->load('SegmentRack');
         return response()->json([
