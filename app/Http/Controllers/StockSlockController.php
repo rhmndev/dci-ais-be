@@ -442,7 +442,6 @@ class StockSlockController extends Controller
                 'last_time_take_out' => $stockSlock->last_time_take_out,
                 'user_id' => auth()->user()->npk,
                 'tag' => $request->tag,
-                'pkg_no' => $request->pkg_no ?? null,
                 'note' => $request->note ?? null,
                 'is_success' => true
             ]);
