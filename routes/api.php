@@ -510,8 +510,8 @@ Route::group(['prefix' => 'rack'], function () {
         Route::post('/a/segment/update/{id}', 'RackController@updateSegment');
         Route::get('/g/segment-list', 'RackController@getSegmentList');
         Route::get('/{id}/g/qrcode', 'RackController@generateQrCode');
-        Route::get('/g/qr-code/{id}', 'RackController@showDataByQrCode');
 });
+Route::get('/rack/g/qr-code/{id}', 'RackController@showDataByQrCode');
 
 Route::post('/login', 'AuthController@login');
 Route::post('/resetpassword', 'AuthController@resetpassword');
