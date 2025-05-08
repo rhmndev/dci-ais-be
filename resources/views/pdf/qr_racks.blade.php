@@ -26,7 +26,7 @@
     <table>
         <thead>
             <tr>
-                <th>Rack Code</th>
+                <th>Rack</th>
                 <th>QR Code</th>
             </tr>
         </thead>
@@ -34,8 +34,13 @@
             @foreach ($qrCodes as $qr)
                 <tr>
                     <td>{{ $qr['code'] }}</td>
-                    <td><img src="{{ $qr['qrcode'] }}" alt="QR Code"></td>
+                    @if (isset($qr['qrcode']))
+                        <td><img src="{{ $qr['qrcode'] }}" alt="QR Code"></td>
+                    @else
+                        <td></td>
+                    @endif
                 </tr>
+                <!-- stop -->
             @endforeach
         </tbody>
     </table>

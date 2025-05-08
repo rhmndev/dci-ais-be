@@ -191,17 +191,43 @@ class RackController extends Controller
         // Prepare data for the PDF
         $qrCodes = [];
         foreach ($racks as $rack) {
-            $qrCodes[] = [
-                'code' => $rack->code,
-                'qrcode' => 'storage/' . $rack->qrcode, // Assuming QR codes are stored in the 'storage' directory
-            ];
+            if ($rack->qrcode) {
+                $qrPath = storage_path('app/public/' . $rack->qrcode);
+                if (file_exists($qrPath)) {
+                    // Convert image to base64
+                    $imageData = base64_encode(file_get_contents($qrPath));
+                    $src = 'data:image/png;base64,' . $imageData;
+                    
+                    $qrCodes[] = [
+                        'code' => $rack->segment . '   ' . $rack->name,
+                        'qrcode' => $src
+                    ];
+                } else {
+                    $qrCodes[] = [
+                        'code' => $rack->code,
+                    ];
+                }
+            } else {
+                $qrCodes[] = [
+                    'code' => $rack->code,
+                ];
+            }
+        }
+
+        if (empty($qrCodes)) {
+            return response()->json([
+                'message' => 'No valid QR codes found for the given sloc',
+            ], 404);
         }
 
         // Generate the PDF using a view
         $pdf = PDF::loadView('pdf.qr_racks', ['qrCodes' => $qrCodes]);
-
+        
+        // Set paper size and orientation
+        $pdf->setPaper('a4', 'portrait');
+        
         // Stream the PDF back to the client
-        return $pdf->stream('qr_racks.pdf');
+        return $pdf->stream('qr_racks_' . $sloc . '.pdf');
     }
 
     public function showDataByQrCode($qrCode)
