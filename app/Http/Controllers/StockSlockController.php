@@ -121,19 +121,42 @@ class StockSlockController extends Controller
         return response()->json($stockSlock);
     }
 
-    public function update(Request $request, StockSlock $stockSlock)
+    public function update(Request $request, $id)
     {
         $request->validate([
-            'slock_code' => 'required|string',
-            'rack_code' => 'required|string',
-            'material_code' => 'required|string',
-            'val_stock_value' => 'required|numeric',
-            'valuated_stock' => 'required|numeric',
-            'uom' => 'required|string',
+            'slock_code' => 'nullable|string',
+            'rack_code' => 'nullable|string',
+            'material_code' => 'nullable|string',
+            'val_stock_value' => 'nullable|numeric',
+            'valuated_stock' => 'nullable|numeric',
+            'uom' => 'nullable|string',
+            'tag' => 'nullable|string|in:ok,ng,hold',
         ]);
 
-        $stockSlock->update($request->all());
-        return response()->json($stockSlock);
+        $stockSlock = StockSlock::findOrFail($id);
+
+        // spesific update check exist request or not
+        // if ($request->has('val_stock_value') && $request->val_stock_value !== null) {
+        //     $stockSlock->val_stock_value = $request->val_stock_value;
+        // }
+        
+        if ($request->has('valuated_stock') && $request->valuated_stock !== null) {
+            $stockSlock->valuated_stock = floatval($request->valuated_stock);
+        }
+
+        // if ($request->has('uom') && $request->uom !== null) {
+        //     $stockSlock->uom = $request->uom;
+        // }
+
+        if ($request->has('tag') && $request->tag !== null) {
+            $stockSlock->tag = $request->tag;
+        }
+
+        $stockSlock->save();
+        return response()->json([
+            'message' => 'Stock slock has been updated',
+            'data' => $stockSlock
+        ], 200);
     }
 
     public function destroy($id)
