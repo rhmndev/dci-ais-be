@@ -85,7 +85,7 @@ class OutgoingGoodController extends Controller
             'priority' => 'required|in:low,normal,high,urgent',
             'outgoing_location' => 'required|string',
             'handle_for' => 'required|string',
-            'part_number' => 'required|string',
+            // 'part_number' => 'required|string',
             'part_name' => 'required|string',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -819,6 +819,7 @@ class OutgoingGoodController extends Controller
         }
 
         $template->name_template = $request->name_template;
+        $template->material_code = $request->material_code;
         $template->part_name = $request->part_name;
         $template->part_number = $request->part_number;
         $template->notes = $request->notes;
@@ -878,6 +879,10 @@ class OutgoingGoodController extends Controller
         }
         if($request->has('part_name') && $request->part_name !== '') {
             $template->part_name = $request->part_name;
+        }
+
+        if($request->has('material_code') && $request->material_code !== '') {
+            $template->material_code = $request->material_code;
         }
         if($request->has('part_number') && $request->part_number !== '') {
             $template->part_number = $request->part_number;
