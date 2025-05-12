@@ -9,6 +9,7 @@ class OutgoingGoodTemplate extends Model
     protected $fillable = [
         'code_template', // Unique identifier for the outgoing good template
         'name_template', // Name of the template
+        'material_code',
         'part_number',
         'part_name',
         'priority', // Priority of the outgoing good
