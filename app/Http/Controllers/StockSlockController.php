@@ -35,6 +35,12 @@ class StockSlockController extends Controller
             if ($request->has('material_code')) {
                 $stockSlocks->where('material_code', $request->material_code);
             }
+            if ($request->has('s_material_code')) {
+                $stockSlocks->where('material_code', 'like', '%'.$request->s_material_code.'%');
+            }
+            if ($request->has('s_job_seq')) {
+                $stockSlocks->where('job_seq', 'like', '%'.$request->s_job_seq.'%');
+            }
 
             if($request->has('show_all') && $request->show_all === 'true') {
                 $stockSlocks->where('slock_code', '!=', '000000000000000000000000');
@@ -533,6 +539,34 @@ class StockSlockController extends Controller
                 'message' => $th->getMessage(),
             ], 500);
         }
+    }
+
+    public function moveStock(Request $request)
+    {
+        $request->validate([
+            'slock_code' => 'required|string',
+            'rack_code' => 'required|string',
+            'job_seq' => 'required|string',
+        ]);
+
+        $stockSlock = StockSlock::where('job_seq', $request->job_seq)->first();
+
+        if (!$stockSlock) {
+            return response()->json(['error' => 'Stock slock not found'], 404);
+        }
+
+        // check rack code is already used
+        $rackCode = StockSlock::where('rack_code', $request->rack_code)->where('slock_code', $request->slock_code)->first();
+        if ($rackCode) {
+            return response()->json(['error' => 'Rack code already used'], 400);
+        }
+
+        // $stockSlock->update([
+        //     'slock_code' => $request->slock_code,
+        //     'rack_code' => $request->rack_code,
+        // ]);
+        
+        return response()->json(['message' => 'Stock slock moved successfully'], 200);
     }
 
     public function getStockByJobSeq(Request $request)
