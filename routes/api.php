@@ -577,6 +577,7 @@ Route::group(['prefix' => 'stock-slocks'], function () {
         Route::put('/{id}', 'StockSlockController@update');
         Route::get('/g/stock-by-job-seq', 'StockSlockController@getStockByJobSeq');
         Route::get('/g/stock-material-available', 'StockSlockController@getStockMaterialAvailable');
+        Route::post('/a/move-stock', 'StockSlockController@moveStock');
         // Route::post('/a/import', 'StockSlockController@import');
 });
 
