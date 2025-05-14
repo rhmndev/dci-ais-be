@@ -146,6 +146,9 @@ class OutgoingGoodController extends Controller
 
         $request->merge(['slock_code' => 'RAW01']);
 
+        // remove material code from request
+        unset($request['material_code']);
+
         $stockSlock = new StockSlockController();
         $stockSlockData = $stockSlock->index($request);
         $stockSlockData = $stockSlockData->original['data'] ?? [];
@@ -165,7 +168,6 @@ class OutgoingGoodController extends Controller
             $outgoingItem->uom_needed = $material->unit;
             $outgoingItem->uom_out = $material->unit;
             $outgoingItem->save();
-
 
             $filteredStockData = collect($stockSlockData)
                 ->where('material_code', $item['material_code'])
@@ -295,7 +297,7 @@ class OutgoingGoodController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,in_progress,ready,completed,cancelled'
+            'status' => 'required|in:pending,in_progress,ready,waiting_tp,completed,cancelled'
         ]);
 
         if ($validator->fails()) {

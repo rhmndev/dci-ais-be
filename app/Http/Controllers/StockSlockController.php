@@ -22,15 +22,16 @@ class StockSlockController extends Controller
         try {
             $stockSlocks = StockSlock::query();
 
+            
             $stockSlocks->with('material', 'RackDetails', 'WhsMatControl','CreatedBy');
-
+            
             if ($request->has('slock_code')) {
                 $stockSlocks->where('slock_code', $request->slock_code);
             }
 
             if ($request->has('rack_code')) {
                 $stockSlocks->where('rack_code', $request->rack_code);
-            }
+            } 
 
             if ($request->has('material_code')) {
                 $stockSlocks->where('material_code', $request->material_code);
@@ -45,7 +46,6 @@ class StockSlockController extends Controller
             if($request->has('show_all') && $request->show_all === 'true') {
                 $stockSlocks->where('slock_code', '!=', '000000000000000000000000');
             }
-
 
             $stockSlocks = $stockSlocks->get();
             return response()->json([
@@ -70,6 +70,8 @@ class StockSlockController extends Controller
                 'val_stock_value' => 'required|numeric',
                 'valuated_stock' => 'required|numeric',
                 'uom' => 'required|string',
+                'date_income' => 'required|date',
+                'time_income' => 'required|date_format:H:i',
                 'tag' => 'required|string|in:ok,ng,hold',
             ]);
 
@@ -82,8 +84,8 @@ class StockSlockController extends Controller
                 'valuated_stock' => floatval($request->valuated_stock),
                 'uom' => $request->uom,
                 'tag' => $request->tag,
-                'date_income' => Carbon::now()->toDateString(),
-                'time_income' => Carbon::now()->toTimeString(),
+                'date_income' => $request->date_income ?? Carbon::now()->toDateString(),
+                'time_income' => $request->time_income ?? Carbon::now()->toTimeString(),
                 'take_in_at' => null,
                 'take_out_at' => null,
                 'last_time_take_in' => null,
@@ -137,6 +139,8 @@ class StockSlockController extends Controller
             'valuated_stock' => 'nullable|numeric',
             'uom' => 'nullable|string',
             'tag' => 'nullable|string|in:ok,ng,hold',
+            'date_income' => 'nullable|date',
+            'time_income' => 'nullable|date_format:H:i:s',
         ]);
 
         $stockSlock = StockSlock::findOrFail($id);
@@ -156,6 +160,14 @@ class StockSlockController extends Controller
 
         if ($request->has('tag') && $request->tag !== null) {
             $stockSlock->tag = $request->tag;
+        }
+
+        if ($request->has('date_income') && $request->date_income !== null) {
+            $stockSlock->date_income = $request->date_income;
+        }
+
+        if ($request->has('time_income') && $request->time_income !== null) {
+            $stockSlock->time_income = $request->time_income;
         }
 
         $stockSlock->save();
