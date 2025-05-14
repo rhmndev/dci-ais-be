@@ -41,6 +41,8 @@ class OutgoingGood extends Model
         'acknowledged_date', // Date when the outgoing good was acknowledged
         'requested_by', // Person who requested the outgoing good
         'requested_date', // Date when the outgoing good was requested
+        'completed_tp_at', // Date and time when the outgoing good was completed
+        'completed_tp_by', // User who completed the outgoing good
     ];
 
     public function items()
