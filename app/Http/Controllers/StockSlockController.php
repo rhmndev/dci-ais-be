@@ -394,8 +394,8 @@ class StockSlockController extends Controller
                     $allItemsScanned = $items->every(function ($item) {
                         return $item->quantity_out >= $item->quantity_needed;
                     });
-                    if ($allItemsScanned && $outgoingGood->status !== 'completed') {
-                        $outgoingGood->status = 'completed';
+                    if ($allItemsScanned && ($outgoingGood->status !== 'waiting_tp' || $outgoingGood->status !== 'completed')) {
+                        $outgoingGood->status = 'waiting_tp';
                         $outgoingGood->completed_at = Carbon::now()->toDateTimeString();
                         $outgoingGood->completed_by = auth()->user()->username;
                         $outgoingGood->is_completed = true;
@@ -558,27 +558,58 @@ class StockSlockController extends Controller
         $request->validate([
             'slock_code' => 'required|string',
             'rack_code' => 'required|string',
-            'job_seq' => 'required|string',
+            'id' => 'required|string',
         ]);
 
-        $stockSlock = StockSlock::where('job_seq', $request->job_seq)->first();
+        $session = null;
+        try {
+            // Start MongoDB session
+            $session = DB::connection('mongodb')->getMongoClient()->startSession();
+            $session->startTransaction();
 
-        if (!$stockSlock) {
-            return response()->json(['error' => 'Stock slock not found'], 404);
+            $stockSlock = StockSlock::where('_id', $request->id)->first();
+
+            if (!$stockSlock) {
+                $session->abortTransaction();
+                return response()->json(['error' => 'Stock slock not found'], 404);
+            }
+
+            // check rack code is already used
+            $rackCode = StockSlock::where('rack_code', $request->rack_code)
+                ->where('slock_code', $request->slock_code)
+                ->first();
+                
+            if ($rackCode) {
+                $session->abortTransaction();
+                return response()->json(['error' => 'Rack code already used'], 400);
+            }
+
+            // Update within transaction
+            $stockSlock->update([
+                'slock_code' => $request->slock_code,
+                'rack_code' => $request->rack_code,
+            ]);
+            
+            // Commit transaction
+            $session->commitTransaction();
+
+            return response()->json(['message' => 'Stock slock moved successfully'], 200);
+        } catch (\Throwable $th) {
+            // Rollback transaction if it exists
+            if ($session) {
+                $session->abortTransaction();
+            }
+            
+            return response()->json([
+                'error' => 'Failed to move stock slock',
+                'message' => $th->getMessage()
+            ], 500);
+        } finally {
+            // Always end the session
+            if ($session) {
+                $session->endSession();
+            }
         }
-
-        // check rack code is already used
-        $rackCode = StockSlock::where('rack_code', $request->rack_code)->where('slock_code', $request->slock_code)->first();
-        if ($rackCode) {
-            return response()->json(['error' => 'Rack code already used'], 400);
-        }
-
-        // $stockSlock->update([
-        //     'slock_code' => $request->slock_code,
-        //     'rack_code' => $request->rack_code,
-        // ]);
-        
-        return response()->json(['message' => 'Stock slock moved successfully'], 200);
     }
 
     public function getStockByJobSeq(Request $request)

@@ -387,6 +387,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::delete('/a/templates/{id}', 'OutgoingGoodController@deleteTemplate');
                 Route::get('/g/check-barcode', 'OutgoingGoodController@checkBarcode');
                 Route::post('/a/start-scan', 'OutgoingGoodController@startScanBarcode');
+                Route::post('/{id}/mark-completed', 'OutgoingGoodController@markCompleted');
                 // Template Routes
         });
 

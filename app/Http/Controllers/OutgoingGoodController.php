@@ -56,7 +56,7 @@ class OutgoingGoodController extends Controller
         }
 
         if($request->has('multiple_status') && is_array($request->multiple_status)) {
-            $query->whereNotIn('status', ['completed', 'cancelled']);
+            $query->whereNotIn('status', ['completed', 'cancelled','waiting_tp']);
         }
 
         $perPage = $request->input('per_page', 10); // default 10 items per page
@@ -325,8 +325,8 @@ class OutgoingGoodController extends Controller
         $outgoingGood->save();
 
         // Update StockSlocTakeOutTemp records based on status
-        if (in_array($request->status, ['completed', 'cancelled'])) {
-            $status = $request->status === 'completed' ? 'finished' : 'cancelled';
+        if (in_array($request->status, ['completed', 'cancelled','waiting_tp'])) {
+            $status = $request->status === 'completed' ? 'finished' : ($request->status === 'waiting_tp' ? 'waiting_tp' : 'cancelled');
             
             StockSlocTakeOutTemp::where('note', 'like', '%' . $outgoingGood->number . '%')
                 ->update([
@@ -575,6 +575,29 @@ class OutgoingGoodController extends Controller
             'success' => true,
             'data' => $outgoingGood
         ]);
+    }
+
+    public function markCompleted(Request $request, $id)
+    {
+        try {
+            $outgoingGood = OutgoingGood::findOrFail($id);
+
+            $outgoingGood->status = 'completed';
+            $outgoingGood->completed_tp_at = Carbon::now()->format('Y-m-d H:i:s');
+            $outgoingGood->completed_tp_by = auth()->user()->npk;
+            $outgoingGood->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Outgoing good marked as completed'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark outgoing good as completed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function storeItems(Request $request, $id)
