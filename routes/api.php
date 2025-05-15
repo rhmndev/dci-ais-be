@@ -92,6 +92,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/materialexport', 'MaterialController@export');
         Route::post('/materialexport2', 'MaterialController@export2');
         Route::get('/material-types', 'MaterialController@getMaterialType');
+        Route::post('/material/{id}/generate-qr', 'MaterialController@generateQR');
         #endregion
 
         

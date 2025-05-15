@@ -13,6 +13,7 @@ use Image;
 use App\Exports\MaterialsExport;
 use App\Exports\MaterialsExport2;
 use Excel;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 // use Maatwebsite\Excel\Facades\Excel;
 
 class MaterialController extends Controller
@@ -210,6 +211,35 @@ class MaterialController extends Controller
                 'message' => 'Err: ' . $e . '.',
                 'data' => NULL,
 
+            ], 400);
+        }
+    }
+
+    public function generateQR(Request $request,$id)
+    {
+        try{
+            $Material = Material::findOrFail($id);
+
+            $code = $Material->code;
+
+            // generate qr and save to storage 
+            $qr = QrCode::format('png')->size(200)->generate($code);
+            $fileName = $code . '.png';
+            $path = '/images/material' . '/' . $fileName;
+            Storage::disk('public')->put($path, $qr, 'public');
+
+            $Material->qr = $path;
+            $Material->save();
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $Material
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
             ], 400);
         }
     }
