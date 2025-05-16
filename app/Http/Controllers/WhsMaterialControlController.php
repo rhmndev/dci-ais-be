@@ -27,6 +27,16 @@ class WhsMaterialControlController extends Controller
             if ($request->has('status') && $request->status != '') {
                 $query->where('status',  'like', $request->status);
             }
+            if($request->has('pkg_no') && $request->pkg_no != '') {
+                $query->whereHas('StockSlockDetails', function($q) use ($request) {
+                    $q->where('pkg_no', 'regexp', new \MongoDB\BSON\Regex($request->pkg_no, 'i'));
+                });
+            }
+            if($request->has('inventory_no') && $request->inventory_no != '') {
+                $query->whereHas('StockSlockDetails', function($q) use ($request) {
+                    $q->where('inventory_no', 'LIKE', '%' . $request->inventory_no . '%');
+                });
+            }
             if ($request->has('start_date') && $request->start_date != '') {
                 $query->where('created_at', '>=', Carbon::parse($request->start_date)->startOfDay());
             }

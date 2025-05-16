@@ -3,9 +3,12 @@
 namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\SoftDeletes;
 
 class Material extends Model
 {
+    use SoftDeletes;
+
     //
     protected $fillable = ['code'];
 

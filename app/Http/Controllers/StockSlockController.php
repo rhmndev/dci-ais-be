@@ -42,6 +42,29 @@ class StockSlockController extends Controller
             if ($request->has('s_job_seq')) {
                 $stockSlocks->where('job_seq', 'like', '%'.$request->s_job_seq.'%');
             }
+            // find by material description
+            if ($request->has('s_material_desc')) {
+                $stockSlocks->where('material.description', 'like', '%'.$request->s_material_desc.'%');
+            }
+
+            // pkg no
+            if ($request->has('s_pkg_no')) {
+                $stockSlocks->where('pkg_no', 'like', '%'.$request->s_pkg_no.'%');
+            }
+
+            // inventory no
+            if ($request->has('s_inventory_no')) {
+                $stockSlocks->where('inventory_no', 'like', '%'.$request->s_inventory_no.'%');
+            }
+
+            // slock code and rack code
+            if ($request->has('s_slock_code')) {
+                $stockSlocks->where('slock_code', 'like', '%'.$request->s_slock_code.'%');
+            }
+
+            if ($request->has('s_rack_code')) {
+                $stockSlocks->where('rack_code', 'like', '%'.$request->s_rack_code.'%');
+            }
 
             if($request->has('show_all') && $request->show_all === 'true') {
                 $stockSlocks->where('slock_code', '!=', '000000000000000000000000');
@@ -168,6 +191,14 @@ class StockSlockController extends Controller
 
         if ($request->has('time_income') && $request->time_income !== null) {
             $stockSlock->time_income = $request->time_income;
+        }
+ 
+        if ($request->has('pkg_no') && $request->pkg_no !== null) {
+            $stockSlock->pkg_no = $request->pkg_no;
+        }
+
+        if ($request->has('inventory_no') && $request->inventory_no !== null) {
+            $stockSlock->inventory_no = $request->inventory_no;
         }
 
         $stockSlock->save();
@@ -444,6 +475,39 @@ class StockSlockController extends Controller
             // start mongodb transaction
             $session = DB::connection('mongodb')->getMongoClient()->startSession();
             $session->startTransaction();
+
+            // if slock_code is RAW01, then check for not duplicate for pkg_no and inventory_no
+            if ($request->slock_code === 'RAW01') {
+                // Only check for duplicates if both inventory_no and pkg_no are provided
+                if ($request->has('inventory_no') && $request->inventory_no !== null &&
+                    $request->has('pkg_no') && $request->pkg_no !== null) {
+                    
+                    $duplicate = StockSlock::where('slock_code', $request->slock_code)
+                        ->where('material_code', $request->material_code)
+                        ->where(function($query) use ($request) {
+                            $query->where('inventory_no', $request->inventory_no)
+                                  ->orWhere('pkg_no', $request->pkg_no);
+                        })
+                        ->first();
+
+                    if ($duplicate) {
+                        $errorMessage = 'Duplicate found: ';
+                        if ($duplicate->inventory_no === $request->inventory_no) {
+                            $errorMessage .= 'This inventory number is already in use';
+                        }
+                        if ($duplicate->pkg_no === $request->pkg_no) {
+                            $errorMessage .= ($duplicate->inventory_no === $request->inventory_no ? ' and ' : '') . 
+                                           'This package number is already in use';
+                        }
+
+                        return response()->json([
+                            'error' => $errorMessage,
+                            'data' => $duplicate,
+                            'message' => $errorMessage,
+                        ], 400);
+                    }
+                }
+            }
 
             $stockSlock = StockSlock::create([
                 'slock_code' => $request->slock_code,
