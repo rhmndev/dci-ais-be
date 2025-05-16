@@ -2,10 +2,13 @@
 
 namespace App;
 
+use App\Traits\LogsOutgoingGoodActivity;
 use Jenssegers\Mongodb\Eloquent\Model;
 
 class OutgoingGood extends Model
 {
+    use LogsOutgoingGoodActivity;
+
     protected $fillable = [
         'number', // Unique identifier for the outgoing good
         'date', // Date of the outgoing good
@@ -55,6 +58,12 @@ class OutgoingGood extends Model
         return $this->belongsTo(User::class, 'assigned_to', '_id');
     }
 
+    public function activityLogs()
+    {
+        return $this->hasMany(OutgoingGoodLog::class, 'outgoing_good_number', 'number')
+                    ->orderBy('performed_at', 'desc');
+    }
+
     /**
      * Check if all items in the outgoing good have been scanned
      *
@@ -62,6 +71,87 @@ class OutgoingGood extends Model
      */
     public function allItemsScanned()
     {
-        return $this->items()->where('status', '!=', 'scanned')->count() === 0;
+        $allScanned = $this->items()->where('status', '!=', 'scanned')->count() === 0;
+        
+        if ($allScanned) {
+            $this->logActivity('all_items_scanned', [], 'All items have been successfully scanned');
+        }
+        
+        return $allScanned;
+    }
+
+    /**
+     * Mark the outgoing good as completed
+     *
+     * @param string|null $notes
+     * @return void
+     */
+    public function markAsCompleted($notes = null)
+    {
+        $this->is_completed = true;
+        $this->completed_at = new \MongoDB\BSON\UTCDateTime(now()->getPreciseTimestamp(3));
+        $this->completed_by = auth()->user()->_id ?? null;
+        $this->save();
+
+        $this->logActivity('completed', [
+            'completed_at' => $this->completed_at,
+            'completed_by' => $this->completed_by
+        ], $notes);
+    }
+
+    /**
+     * Record when the outgoing good is received
+     *
+     * @param string $receivedBy
+     * @param string|null $notes
+     * @return void
+     */
+    public function markAsReceived($receivedBy, $notes = null)
+    {
+        $this->received_by = $receivedBy;
+        $this->received_date = new \MongoDB\BSON\UTCDateTime(now()->getPreciseTimestamp(3));
+        $this->save();
+
+        $this->logActivity('received', [
+            'received_by' => $receivedBy,
+            'received_date' => $this->received_date
+        ], $notes);
+    }
+
+    /**
+     * Record when the outgoing good is handed over
+     *
+     * @param string|null $notes
+     * @return void
+     */
+    public function markAsHandedOver($notes = null)
+    {
+        $this->handed_over_by = auth()->user()->_id ?? null;
+        $this->handed_over_date = new \MongoDB\BSON\UTCDateTime(now()->getPreciseTimestamp(3));
+        $this->save();
+
+        $this->logActivity('handed_over', [
+            'handed_over_by' => $this->handed_over_by,
+            'handed_over_date' => $this->handed_over_date
+        ], $notes);
+    }
+
+    /**
+     * Record when the outgoing good is acknowledged
+     *
+     * @param string $acknowledgedBy
+     * @param string|null $notes
+     * @return void
+     */
+    public function markAsAcknowledged($acknowledgedBy, $notes = null)
+    {
+        $this->acknowledged_by = $acknowledgedBy;
+        $this->acknowledged_date = new \MongoDB\BSON\UTCDateTime(now()->getPreciseTimestamp(3));
+        $this->save();
+
+        $this->logActivity('acknowledged', [
+            'acknowledged_by' => $acknowledgedBy,
+            'acknowledged_date' => $this->acknowledged_date
+        ], $notes);
     }
 }

@@ -57,6 +57,18 @@ class OutgoingGoodItem extends Model
             ];
             $this->list_need_scans = $scans;
             $this->save();
+
+            // Log the activity in the parent OutgoingGood
+            $this->outgoingGood->logActivity('scan_list_updated', [
+                'item_id' => $this->_id,
+                'material_code' => $this->material_code,
+                'added_scan' => [
+                    'job_seq' => $jobSeq,
+                    'rack_code' => $rack,
+                    'quantity' => $quantity,
+                    'uom' => $uom
+                ]
+            ], 'Added new scan requirement');
         }
     }
 
@@ -72,7 +84,7 @@ class OutgoingGoodItem extends Model
     public function addScan($qrCode, $userId, $quantity, $uom, $additionalInfo = [])
     {
         $scans = $this->scans ?? [];
-        $scans[] = [
+        $newScan = [
             'qr_code' => $qrCode,
             'scanned_at' => now(),
             'scanned_by' => $userId,
@@ -81,10 +93,26 @@ class OutgoingGoodItem extends Model
             'reference' => $additionalInfo
         ];
         
+        $scans[] = $newScan;
         $this->scans = $scans;
         $this->quantity_out = $this->calculateTotalScannedQuantity();
+        $oldStatus = $this->status;
         $this->status = $this->quantity_out >= $this->quantity_needed ? 'scanned' : 'partially_scanned';
         $this->save();
+
+        // Log the activity in the parent OutgoingGood
+        $this->outgoingGood->logActivity('item_scanned', [
+            'item_id' => $this->_id,
+            'material_code' => $this->material_code,
+            'scan_details' => $newScan,
+            'old_status' => $oldStatus,
+            'new_status' => $this->status,
+            'quantity_out' => $this->quantity_out,
+            'quantity_needed' => $this->quantity_needed
+        ]);
+
+        // If all items are scanned, this will trigger the logging in the parent
+        $this->outgoingGood->allItemsScanned();
     }
 
     /**

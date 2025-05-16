@@ -380,7 +380,12 @@ class MaterialController extends Controller
         ]);
 
         try {
-
+            // make delete all data from material but still use soft delete
+            // $materials = Material::all();
+            // foreach ($materials as $material) {
+            //     $material->delete();
+            // }
+    
             if ($files = $request->file('file')) {
 
                 //store file into document folder
@@ -394,6 +399,10 @@ class MaterialController extends Controller
                         //store your file into database
                         $Material = Material::firstOrNew(['code' => $Excel['code']]);
                         $Material->code = $this->stringtoupper(strval($Excel['code']));
+
+                        // if($Material->exists){
+                        //     $Material->restore();
+                        // }
                         
                         // Only update fields if they exist in the import data
                         if (isset($Excel['description'])) {
