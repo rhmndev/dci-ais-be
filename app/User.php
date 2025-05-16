@@ -6,10 +6,11 @@ use Jenssegers\Mongodb\Auth\User as Authenticable;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
+use Jenssegers\Mongodb\Eloquent\SoftDeletes;
 
 class User extends Authenticable
 {
-    use HasRoles, Notifiable;
+    use HasRoles, Notifiable, SoftDeletes;
 
     protected $hidden = [
         'password',
@@ -18,14 +19,20 @@ class User extends Authenticable
 
     protected $fillable = ['username', 'npk', 'is_admin'];
 
+    protected $dates = ['deleted_at'];
+
     public function role()
     {
         return $this->belongsTo('App\Role', 'role_name', 'name');
     }
 
-    public function getList($keyword, $type = '', $takeAll = false)
+    public function getList($keyword, $type = '', $takeAll = false, $withTrashed = false)
     {
         $query = User::query();
+
+        if ($withTrashed) {
+            $query = $query->withTrashed();
+        }
 
         if ($type != '') {
             $query = $query->where('type', $type);

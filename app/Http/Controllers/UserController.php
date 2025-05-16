@@ -19,8 +19,15 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $skip = $request->perpage * ($request->page - 1);
-        $users = User::where(function ($where) use ($request) {
+        $withTrashed = $request->with_trashed == 'true' ? true : false;
 
+        $query = User::query();
+        
+        if ($withTrashed) {
+            $query->withTrashed();
+        } 
+
+        $users = $query->where(function ($where) use ($request) {
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
                     if ($index == 0) {
@@ -38,8 +45,13 @@ class UserController extends Controller
             ->skip((int)$skip)
             ->get();
 
-        $total = User::where(function ($where) use ($request) {
+        $totalQuery = User::query();
+        
+        if ($withTrashed) {
+            $totalQuery->withTrashed();
+        }
 
+        $total = $totalQuery->where(function ($where) use ($request) {
             if (!empty($request->keyword)) {
                 foreach ($request->columns as $index => $column) {
                     if ($index == 0) {
@@ -82,20 +94,18 @@ class UserController extends Controller
 
     public function list(Request $request)
     {
-
         $keyword = ($request->keyword != null) ? $request->keyword : '';
         $type = $request->type != null ? $request->type : '';
+        $withTrashed = $request->with_trashed == 'true' ? true : false;
         $data = array();
 
         try {
-
             $User = new User;
             if (!empty($request->takeAll)) {
-                $results = $User->getList($keyword, $type, true);
+                $results = $User->getList($keyword, $type, true, $withTrashed);
             } else {
-                $results = $User->getList($keyword, $type);
+                $results = $User->getList($keyword, $type, false, $withTrashed);
             }
-            // $results = $User->getList($keyword, $type);
 
             return response()->json([
                 'type' => 'success',
