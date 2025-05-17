@@ -486,7 +486,7 @@ class StockSlockController extends Controller
                         ->where('material_code', $request->material_code)
                         ->where(function($query) use ($request) {
                             $query->where('inventory_no', $request->inventory_no)
-                                  ->orWhere('pkg_no', $request->pkg_no);
+                                  ->where('pkg_no', $request->pkg_no);
                         })
                         ->first();
 
