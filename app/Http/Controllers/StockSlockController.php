@@ -523,8 +523,8 @@ class StockSlockController extends Controller
             ]);
 
             $stockSlock->update([
-                'date_income' => Carbon::now()->toDateString(),
-                'time_income' => Carbon::now()->toTimeString(),
+                'date_income' => $request->date_income ?? Carbon::now()->toDateString(),
+                'time_income' => $request->time_income ?? Carbon::now()->toTimeString(),
                 'take_out_at' => null,
                 'take_in_at' => Carbon::now()->toDateTimeString(),
                 'last_time_take_in' => Carbon::now()->toDateTimeString(),
