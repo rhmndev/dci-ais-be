@@ -163,7 +163,7 @@ class StockSlockController extends Controller
             'uom' => 'nullable|string',
             'tag' => 'nullable|string|in:ok,ng,hold',
             'date_income' => 'nullable|date',
-            'time_income' => 'nullable|date_format:H:i:s',
+            'time_income' => 'nullable|date_format:H:i',
         ]);
 
         $stockSlock = StockSlock::findOrFail($id);
