@@ -3,12 +3,14 @@
 namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vendor extends Model
 {
+    use SoftDeletes;
     //
-    protected $fillable = ['code'];
-
+    protected $fillable = ['id_vendor','code','purch_org','nm_vendor','name','allias','street','district','postal_code','city','country','region','phone_1','vat_reg','order_curr','pay_term','sales_person','phone_2','vend_email','email','status_vendor'];
+    
     public function getAllData($keyword, $columns, $sort, $order)
     {
 
