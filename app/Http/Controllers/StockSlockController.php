@@ -51,6 +51,12 @@ class StockSlockController extends Controller
                 $stockSlocks->where('material.description', 'like', '%'.$request->s_material_desc.'%');
             }
 
+            if ($request->has('s_description')) {
+                $stockSlocks->whereHas('material', function($query) use ($request) {
+                    $query->where('description', 'like', '%'.$request->s_description.'%');
+                });
+            }
+
             // pkg no
             if ($request->has('s_pkg_no')) {
                 $stockSlocks->where('pkg_no', 'like', '%'.$request->s_pkg_no.'%');
