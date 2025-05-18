@@ -144,40 +144,45 @@ class OutgoingGoodController extends Controller
 
         $itemsData = [];
 
-        $request->merge(['slock_code' => 'RAW01']);
+        $request->merge(['slock_code' => 'RAW01', 'tag' => 'ok']);
 
         // remove material code from request
         unset($request['material_code']);
 
-        $stockSlock = new StockSlockController();
-        $stockSlockData = $stockSlock->index($request);
-        $stockSlockData = $stockSlockData->original['data'] ?? [];
-
+        
         // Save items
         foreach ($request->items as $item) {
+            $stockSlock = new StockSlockController();
+            // $stockSlockData = $stockSlock->index($request);
+            // request merge with material code
             $material = Material::where('code', $item['material_code'])->first();
-
+            
             $outgoingItem = new OutgoingGoodItem();
             $outgoingItem->outgoing_good_id = $outgoingGood->id;
             $outgoingItem->outgoing_good_number = $refNumber;
             $outgoingItem->created_by = auth()->user()->npk;
             $outgoingItem->material_code = $item['material_code'];
             $outgoingItem->material_name = $material->description;
-            $outgoingItem->quantity_needed = $item['quantity_needed'];
+            $outgoingItem->quantity_needed = floatval($item['quantity_needed']);
             $outgoingItem->quantity_out = 0;
             $outgoingItem->uom_needed = $material->unit;
             $outgoingItem->uom_out = $material->unit;
             $outgoingItem->save();
 
+            $request->merge(['material_code' => $item['material_code']]);
+            $stockSlockData = $stockSlock->getStockMaterialAvailable($request);
+            $stockSlockData = $stockSlockData->original['data'] ?? [];
+            
             $filteredStockData = collect($stockSlockData)
-                ->where('material_code', $item['material_code'])
-                ->sortBy(function($item) {
-                    return $item['date_income'] . ' ' . $item['time_income'];
-                })
-                ->values();
-
+            ->where('material_code', $item['material_code'])
+            ->where('available_qty', '>', 0)
+            ->sortBy(function($item) {
+                return $item['date_income'] . ' ' . $item['time_income'];
+            })
+            ->values(); 
+            
             if ($filteredStockData->count() > 0) {
-                $stockNeeded = (int)$item['quantity_needed'];
+                $stockNeeded = floatval($item['quantity_needed']);
                 $stockOut = 0;
                 foreach ($filteredStockData as $stock) {
                     if ($stockNeeded <= 0) {
@@ -210,6 +215,7 @@ class OutgoingGoodController extends Controller
                     $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
                 }
             }
+            unset($request['material_code']);
         }
 
         return response()->json([

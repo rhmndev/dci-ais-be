@@ -172,6 +172,10 @@ class MaterialController extends Controller
             $Material->minQty = $request->minQty;
             $Material->maxQty = $request->maxQty;
 
+            if ($request->has('is_partially_out')) {
+                $Material->is_partially_out = $request->is_partially_out === true;
+            }
+
             if ($request->photo != null && $request->hasFile('photo')) {
 
                 if (Storage::disk('public')->exists('/images/material/' . $Material->photo)) {
@@ -275,6 +279,11 @@ class MaterialController extends Controller
                 $Material->maxQty = floatval($request->maxQty);
             }
 
+            // Handle is_partially_out in update method
+            if ($request->has('is_partially_out')) {
+                $Material->is_partially_out = $request->is_partially_out === true;
+            }
+
             $Material->updated_by = auth()->user()->username;
             $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
 
@@ -283,13 +292,13 @@ class MaterialController extends Controller
             return response()->json([
                 'type' => 'success',
                 'message' => 'Data updated successfully!',
-                'data' => NULL,
+                'data' => $Material
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'failed',
                 'message' => 'Err: ' . $th->getMessage() . '.',
-                'data' => NULL,
+                'data' => $Material,
             ], 400);
         }
     }

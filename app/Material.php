@@ -9,8 +9,7 @@ class Material extends Model
 {
     use SoftDeletes;
 
-    //
-    protected $fillable = ['code'];
+    protected $fillable = ['code','is_partially_out'];
 
     public function getAllData($keyword, $columns, $sort, $order, $category = null)
     {

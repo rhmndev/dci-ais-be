@@ -33,6 +33,10 @@ class StockSlockController extends Controller
                 $stockSlocks->where('rack_code', $request->rack_code);
             } 
 
+            if ($request->has('tag') && $request->tag != null) {
+                $stockSlocks->where('tag', $request->tag);
+            }
+
             if ($request->has('material_code')) {
                 $stockSlocks->where('material_code', $request->material_code);
             }
@@ -817,8 +821,12 @@ class StockSlockController extends Controller
             'sloc_code' => 'nullable|string',
         ]);
 
-        // Base query for stock slock records
-        $stockSlockQuery = StockSlock::where('material_code', $request->material_code);
+        // Base query for stock slock records with tag 'ok' or 'OK'
+        $stockSlockQuery = StockSlock::where('material_code', $request->material_code)
+            ->where(function($query) {
+                $query->where('tag', 'ok')
+                      ->orWhere('tag', 'OK');
+            });
         
         // Add sloc_code condition only if it's provided
         if ($request->has('sloc_code') && $request->sloc_code) {
@@ -841,27 +849,36 @@ class StockSlockController extends Controller
         // Create a map of material_code and sloc_code to track reserved quantities
         $reservedQuantities = [];
         foreach ($activeTakeOutTemps as $temp) {
-            $key = $temp->material_code . '_' . $temp->sloc_code;
+            $key = $temp->material_code . '_' . $temp->job_seq;
             if (!isset($reservedQuantities[$key])) {
                 $reservedQuantities[$key] = 0;
             }
             $reservedQuantities[$key] += $temp->qty_take_out;
         }
+        // return response()->json([
+        //     'message' => 'failed',
+        //     'data' => $reservedQuantities,
+        //     'activeTakeOutTemps' => $activeTakeOutTemps,
+        //     'stockSlock' => $stockSlock
+        // ], 400);
+
 
         // Process each stock slock record
         $stockSlock->each(function ($item) use ($reservedQuantities) {
-            $key = $item->material_code . '_' . $item->slock_code;
+            $key = $item->material_code . '_' . $item->job_seq;
             $reservedQty = $reservedQuantities[$key] ?? 0;
-            
+
             // Calculate available quantity by subtracting reserved quantity
             $item->available_qty = max(0, $item->valuated_stock - $reservedQty);
             
             // Set default values for other fields
-            $item->rack_code = $item->rack_code ?? '-';
-            $item->job_seq = $item->job_seq ?? '-';
-            $item->date_income = $item->date_income ?? '-';
-            $item->time_income = $item->time_income ?? '-';
+            // $item->rack_code = $item->rack_code ?? '-';
+            // $item->job_seq = $item->job_seq ?? '-';
+            // $item->date_income = $item->date_income ?? '-';
+            // $item->time_income = $item->time_income ?? '-';
         });
+
+
 
         return response()->json([
             'message' => 'success',
