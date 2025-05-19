@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\DB;
 
 class OutgoingGoodController extends Controller
 {
@@ -85,7 +86,6 @@ class OutgoingGoodController extends Controller
             'priority' => 'required|in:low,normal,high,urgent',
             'outgoing_location' => 'required|string',
             'handle_for' => 'required|string',
-            // 'part_number' => 'required|string',
             'part_name' => 'required|string',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -101,132 +101,171 @@ class OutgoingGoodController extends Controller
             ], 422);
         }
 
-        // Generate a unique reference number with monthly sequence
-        $currentMonth = date('Ym');
-        $lastOutgoingGood = OutgoingGood::where('number', 'like', 'OG-' . $currentMonth . '-%')
-            ->orderBy('number', 'desc')
-            ->first();
+        $session = null;
+        try {
+            // Start MongoDB transaction
+            $session = DB::getMongoClient()->startSession();
+         $session->startTransaction();
 
-        $sequence = 1;
-        if ($lastOutgoingGood) {
-            $lastSequence = (int) substr($lastOutgoingGood->number, -4);
-            $sequence = $lastSequence + 1;
-        }
+            // Generate a unique reference number with monthly sequence
+            $currentMonth = date('Ym');
+            $lastOutgoingGood = OutgoingGood::where('number', 'like', 'OG-' . $currentMonth . '-%')
+                ->orderBy('number', 'desc')
+                ->first();
 
-        $refNumber = 'OG-' . $currentMonth . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
-
-        $outgoingGood = new OutgoingGood();
-        $outgoingGood->number = $refNumber;
-        $outgoingGood->date = $request->date;
-        $outgoingGood->time = $request->time;
-        $outgoingGood->part_number = $request->part_number;
-        $outgoingGood->part_name = $request->part_name;
-        $outgoingGood->priority = $request->priority;
-        $outgoingGood->shift = $request->shift ?? '1';
-        $outgoingGood->outgoing_location = $request->outgoing_location;
-        $outgoingGood->handle_for = $request->handle_for;
-        $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal'; // Default to 'internal' if not provided
-        $outgoingGood->handle_for_id = $request->handle_for_id ?? null; // Default to null if not provided
-        $outgoingGood->status = 'ready';
-        $outgoingGood->is_assigned = ($request->handle_for) ? true : false;
-        $outgoingGood->is_completed = false;
-        $outgoingGood->created_by = auth()->user()->npk;
-        $outgoingGood->notes = $request->notes;
-
-        $outgoingGood->assigned_to = $request->handle_for_id;
-        // === QR Code Generation ===
-        $qrPath = 'whs/bkb/qr/' . $refNumber . '.png';
-        $qrCode = QrCode::format('png')->size(300)->generate($refNumber);
-        Storage::disk('public')->put($qrPath, $qrCode);
-        $outgoingGood->qr_code_path = $qrPath;
-        $outgoingGood->take_material_from_location = $request->take_material_from_location ?? null; // Default to null if not provided
-
-        $outgoingGood->save();
-
-        $itemsData = [];
-
-        $request->merge(['slock_code' => 'RAW01', 'tag' => 'ok']);
-
-        // remove material code from request
-        unset($request['material_code']);
-
-        
-        // Save items
-        foreach ($request->items as $item) {
-            $stockSlock = new StockSlockController();
-            // $stockSlockData = $stockSlock->index($request);
-            // request merge with material code
-            $material = Material::where('code', $item['material_code'])->first();
-            
-            $outgoingItem = new OutgoingGoodItem();
-            $outgoingItem->outgoing_good_id = $outgoingGood->id;
-            $outgoingItem->outgoing_good_number = $refNumber;
-            $outgoingItem->created_by = auth()->user()->npk;
-            $outgoingItem->material_code = $item['material_code'];
-            $outgoingItem->material_name = $material->description;
-            $outgoingItem->quantity_needed = floatval($item['quantity_needed']);
-            $outgoingItem->quantity_out = 0;
-            $outgoingItem->uom_needed = $material->unit;
-            $outgoingItem->uom_out = $material->unit;
-            $outgoingItem->save();
-
-            $request->merge(['material_code' => $item['material_code']]);
-            $stockSlockData = $stockSlock->getStockMaterialAvailable($request);
-            $stockSlockData = $stockSlockData->original['data'] ?? [];
-            
-            $filteredStockData = collect($stockSlockData)
-            ->where('material_code', $item['material_code'])
-            ->where('available_qty', '>', 0)
-            ->sortBy(function($item) {
-                return $item['date_income'] . ' ' . $item['time_income'];
-            })
-            ->values(); 
-            
-            if ($filteredStockData->count() > 0) {
-                $stockNeeded = floatval($item['quantity_needed']);
-                $stockOut = 0;
-                foreach ($filteredStockData as $stock) {
-                    if ($stockNeeded <= 0) {
-                        break;
-                    }
-
-                    $stockOut = min($stockNeeded, $stock['valuated_stock']);
-                    $stockNeeded -= $stockOut;
-
-                    // Create temporary record for stock take out
-                    $tempStock = new StockSlocTakeOutTemp();
-                    $tempStock->job_seq = $stock['job_seq'];
-                    $tempStock->material_code = $item['material_code'];
-                    $tempStock->sloc_code = $stock['slock_code'];
-                    $tempStock->rack_code = $stock['rack_code'];
-                    $tempStock->uom = $stock['uom'];
-                    $tempStock->qty = $stock['valuated_stock'];
-                    $tempStock->uom_take_out = $material->unit;
-                   
-                    $tempStock->qty_take_out = $stockOut;
-                    $tempStock->user_id = auth()->user()->npk;
-                    $tempStock->status = 'ready';
-                    $tempStock->note = 'Temporary hold for outgoing good: ' . $refNumber;
-                    $tempStock->is_success = false;
-                    $tempStock->save();
-
-                    $itemsData[] = [
-                        'rack_code' => $stock['rack_code'],
-                        'job_seq' => $stock['job_seq'],
-                    ];
-                    $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
-                }
+            $sequence = 1;
+            if ($lastOutgoingGood) {
+                $lastSequence = (int) substr($lastOutgoingGood->number, -4);
+                $sequence = $lastSequence + 1;
             }
+
+            $refNumber = 'OG-' . $currentMonth . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+            $outgoingGood = new OutgoingGood();
+            $outgoingGood->number = $refNumber;
+            $outgoingGood->date = $request->date;
+            $outgoingGood->time = $request->time;
+            $outgoingGood->part_number = $request->part_number;
+            $outgoingGood->part_name = $request->part_name;
+            $outgoingGood->priority = $request->priority;
+            $outgoingGood->shift = $request->shift ?? '1';
+            $outgoingGood->outgoing_location = $request->outgoing_location;
+            $outgoingGood->handle_for = $request->handle_for;
+            $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal';
+            $outgoingGood->handle_for_id = $request->handle_for_id ?? null;
+            $outgoingGood->status = 'ready';
+            $outgoingGood->is_assigned = ($request->handle_for) ? true : false;
+            $outgoingGood->is_completed = false;
+            $outgoingGood->created_by = auth()->user()->npk;
+            $outgoingGood->notes = $request->notes;
+            $outgoingGood->assigned_to = $request->handle_for_id;
+
+            // === QR Code Generation ===
+            $qrPath = 'whs/bkb/qr/' . $refNumber . '.png';
+            $qrCode = QrCode::format('png')->size(300)->generate($refNumber);
+            Storage::disk('public')->put($qrPath, $qrCode);
+            $outgoingGood->qr_code_path = $qrPath;
+            $outgoingGood->take_material_from_location = $request->take_material_from_location ?? null;
+
+            $outgoingGood->save();
+
+            $itemsData = [];
+
+            $request->merge(['slock_code' => 'RAW01', 'tag' => 'ok']);
             unset($request['material_code']);
+
+            // Save items
+            foreach ($request->items as $item) {
+                $stockSlock = new StockSlockController();
+                $material = Material::where('code', $item['material_code'])->first();
+                
+                $outgoingItem = new OutgoingGoodItem();
+                $outgoingItem->outgoing_good_id = $outgoingGood->id;
+                $outgoingItem->outgoing_good_number = $refNumber;
+                $outgoingItem->created_by = auth()->user()->npk;
+                $outgoingItem->material_code = $item['material_code'];
+                $outgoingItem->material_name = $material->description;
+                $outgoingItem->quantity_needed = floatval($item['quantity_needed']);
+                $outgoingItem->quantity_out = 0;
+                $outgoingItem->uom_needed = $material->unit;
+                $outgoingItem->uom_out = $material->unit;
+                $outgoingItem->save();
+
+                $request->merge(['material_code' => $item['material_code']]);
+                $stockSlockData = $stockSlock->getStockMaterialAvailable($request);
+                $stockSlockData = $stockSlockData->original['data'] ?? [];
+                
+                $filteredStockData = collect($stockSlockData)
+                ->where('material_code', $item['material_code'])
+                ->where('available_qty', '>', 0)
+                ->sortBy(function($item) {
+                    return $item['date_income'] . ' ' . $item['time_income'];
+                })
+                ->values(); 
+                
+                if ($filteredStockData->count() > 0) {
+                    $stockNeeded = floatval($item['quantity_needed']);
+                    $stockOut = 0;
+                    $totalAvailable = $filteredStockData->sum('available_qty');
+
+                    // return response()->json([
+                    //     'success' => false,
+                    //     'message' => 'Stock data',
+                    //     'data' => $filteredStockData
+                    // ],400);
+
+                    // Check if we have enough total stock
+                    if ($totalAvailable >= $stockNeeded) { 
+                        foreach ($filteredStockData as $stock) {
+                            if ($stockNeeded <= 0) {
+                                break;
+                            }
+
+                            // Take the available stock
+                            // $stockOut = min($stockNeeded, $stock['available_qty']);
+                            if($material->is_partially_out == null || $material->is_partially_out == false) {
+                                $stockOut += $stock['available_qty'];
+                                $stockNeeded -= $stock['available_qty']; 
+                            } else {
+                                $stockOut = $stock['available_qty'];
+                                $stockNeeded -= $stock['available_qty']; 
+                            }
+
+                            // Create temporary record for stock take out
+                            $tempStock = new StockSlocTakeOutTemp();
+                            $tempStock->job_seq = $stock['job_seq'];
+                            $tempStock->material_code = $item['material_code'];
+                            $tempStock->sloc_code = $stock['slock_code'];
+                            $tempStock->rack_code = $stock['rack_code'];
+                            $tempStock->uom = $stock['uom'];
+                            $tempStock->qty = $stock['valuated_stock'];
+                            $tempStock->uom_take_out = $material->unit;
+                           
+                            $tempStock->qty_take_out = $stockOut;
+                            $tempStock->user_id = auth()->user()->npk;
+                            $tempStock->status = 'ready';
+                            $tempStock->note = 'Temporary hold for outgoing good: ' . $refNumber;
+                            $tempStock->is_success = false;
+                            $tempStock->save();
+
+                            $itemsData[] = [
+                                'rack_code' => $stock['rack_code'],
+                                'job_seq' => $stock['job_seq'],
+                            ];
+                            $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
+                        }
+                    } else {
+                        throw new \Exception('Not enough stock available. Required: ' . $item['quantity_needed'] . ', Available: ' . $totalAvailable);
+                    }
+                }
+                unset($request['material_code']);
+            }
+
+            // Commit MongoDB transaction
+            $session->commitTransaction();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Outgoing request created successfully',
+                'data' => $outgoingGood->load('items'),
+                'qr_code_url' => asset('storage/' . $qrPath)
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Rollback MongoDB transaction
+            $session->abortTransaction();
+            
+            // Delete QR code if it was created
+            if (isset($qrPath) && Storage::disk('public')->exists($qrPath)) {
+                Storage::disk('public')->delete($qrPath);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create outgoing request',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Outgoing request created successfully',
-            'data' => $outgoingGood->load('items'),
-
-            'qr_code_url' => asset('storage/' . $qrPath)
-        ], 201);
     }
 
     /**
