@@ -122,6 +122,7 @@ class OutgoingGoodController extends Controller
         $outgoingGood->part_number = $request->part_number;
         $outgoingGood->part_name = $request->part_name;
         $outgoingGood->priority = $request->priority;
+        $outgoingGood->shift = $request->shift ?? '1';
         $outgoingGood->outgoing_location = $request->outgoing_location;
         $outgoingGood->handle_for = $request->handle_for;
         $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal'; // Default to 'internal' if not provided
@@ -201,6 +202,7 @@ class OutgoingGoodController extends Controller
                     $tempStock->uom = $stock['uom'];
                     $tempStock->qty = $stock['valuated_stock'];
                     $tempStock->uom_take_out = $material->unit;
+                   
                     $tempStock->qty_take_out = $stockOut;
                     $tempStock->user_id = auth()->user()->npk;
                     $tempStock->status = 'ready';
@@ -773,7 +775,7 @@ class OutgoingGoodController extends Controller
         $query->orderBy($sortColumn, $sortOrder);
 
         // Handle pagination
-        $perPage = $request->input('per_page', 10);
+        $perPage = $request->input('per_page',30);
         $page = $request->input('page', 1);
 
         // Get paginated results
