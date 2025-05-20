@@ -187,12 +187,7 @@ class OutgoingGoodController extends Controller
                     $stockNeeded = floatval($item['quantity_needed']);
                     $stockOut = 0;
                     $totalAvailable = $filteredStockData->sum('available_qty');
-
-                    // return response()->json([
-                    //     'success' => false,
-                    //     'message' => 'Stock data',
-                    //     'data' => $filteredStockData
-                    // ],400);
+                    $stockAvailable = 0; 
 
                     // Check if we have enough total stock
                     if ($totalAvailable >= $stockNeeded) { 
@@ -201,13 +196,14 @@ class OutgoingGoodController extends Controller
                                 break;
                             }
 
-                            // Take the available stock
-                            // $stockOut = min($stockNeeded, $stock['available_qty']);
+                            // Take the available stock 
                             if($material->is_partially_out == null || $material->is_partially_out == false) {
                                 $stockOut += $stock['available_qty'];
+                                $stockAvailable = $stock['available_qty'];
                                 $stockNeeded -= $stock['available_qty']; 
                             } else {
                                 $stockOut = $stock['available_qty'];
+                                $stockAvailable = $stock['available_qty'];
                                 $stockNeeded -= $stock['available_qty']; 
                             }
 
@@ -221,7 +217,7 @@ class OutgoingGoodController extends Controller
                             $tempStock->qty = $stock['valuated_stock'];
                             $tempStock->uom_take_out = $material->unit;
                            
-                            $tempStock->qty_take_out = $stockOut;
+                            $tempStock->qty_take_out = $stockAvailable;
                             $tempStock->user_id = auth()->user()->npk;
                             $tempStock->status = 'ready';
                             $tempStock->note = 'Temporary hold for outgoing good: ' . $refNumber;
@@ -232,7 +228,7 @@ class OutgoingGoodController extends Controller
                                 'rack_code' => $stock['rack_code'],
                                 'job_seq' => $stock['job_seq'],
                             ];
-                            $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
+                            $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockAvailable, $stock['uom']);
                         }
                     } else {
                         throw new \Exception('Not enough stock available. Required: ' . $item['quantity_needed'] . ', Available: ' . $totalAvailable);
