@@ -328,7 +328,7 @@ class StockSlockController extends Controller
         }
 
         if (floatval($stockSlock->valuated_stock) < floatval($request->stock)) {
-            return response()->json(['error' => 'Stock slock is not enough'], 400);
+            return response()->json(['error' => 'Stock slock is not enough', 'data' => $stockSlock->valuated_stock, 'stock' => $request->stock], 400);
         }
 
         $remainingStock = (float)$stockSlock->valuated_stock - (float)$request->stock;
