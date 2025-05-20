@@ -28,13 +28,15 @@ class WhsMaterialControlController extends Controller
                 $query->where('status',  'like', $request->status);
             }
             if($request->has('pkg_no') && $request->pkg_no != '') {
-                $query->whereHas('StockSlockDetails', function($q) use ($request) {
-                    $q->where('pkg_no', 'regexp', new \MongoDB\BSON\Regex($request->pkg_no, 'i'));
+                $pkgNo = $request->pkg_no;
+                $query->whereHas('StockSlockDetails', function ($q) use ($pkgNo) {
+                    $q->where('pkg_no', 'LIKE', '%' . $pkgNo . '%');
                 });
             }
             if($request->has('inventory_no') && $request->inventory_no != '') {
-                $query->whereHas('StockSlockDetails', function($q) use ($request) {
-                    $q->where('inventory_no', 'LIKE', '%' . $request->inventory_no . '%');
+                $inventoryNo = $request->inventory_no;
+                $query->whereHas('StockSlockDetails', function ($q) use ($inventoryNo) {
+                    $q->where('inventory_no', 'LIKE', '%' . $inventoryNo . '%');
                 });
             }
             if ($request->has('start_date') && $request->start_date != '') {

@@ -59,6 +59,11 @@ class OutgoingGood extends Model
         return $this->belongsTo(User::class, 'assigned_to', '_id');
     }
 
+    public function StockSlockDetails()
+    {
+        return $this->hasMany(StockSlock::class, 'outgoing_good_number', 'number');
+    }
+
     public function activityLogs()
     {
         return $this->hasMany(OutgoingGoodLog::class, 'outgoing_good_number', 'number')
