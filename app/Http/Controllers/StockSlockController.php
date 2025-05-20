@@ -295,6 +295,7 @@ class StockSlockController extends Controller
     public function takeOut(Request $request)
     {
         $request->validate([
+            'job_seq' => 'required|string',
             'slock_code' => 'required|string',
             'rack_code' => 'required|string',
             'material_code' => 'required|string',
@@ -321,6 +322,7 @@ class StockSlockController extends Controller
             ->where('rack_code', $request->rack_code)
             ->where('material_code', $request->material_code)
             ->where('uom', $request->uom)
+            ->where('job_seq', $request->job_seq)
             ->first();
 
         if (!$stockSlock) {
