@@ -28,6 +28,11 @@ class OutgoingGoodItem extends Model
         'list_need_scans' => 'array',
     ];
 
+    public function material()
+    {
+        return $this->belongsTo(Material::class, 'material_code', 'code');
+    }
+
     public function outgoingGood()
     {
         return $this->belongsTo(OutgoingGood::class, 'outgoing_good_number', 'number');
@@ -36,7 +41,10 @@ class OutgoingGoodItem extends Model
     public function getListNeedScans()
     {
         $scans = $this->list_need_scans ?? [];
-        return $scans;
+        return collect($scans)->map(function($scan) {
+            $scan['material'] = $this->material;
+            return $scan;
+        });
     }
 
     public function addListNeedScans($jobSeq, $rack, $quantity, $uom)
