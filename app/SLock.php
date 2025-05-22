@@ -3,15 +3,22 @@
 namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\SoftDeletes;
 
 class SLock extends Model
 {
+    use SoftDeletes;
+
     protected $table = 's_locks';
+    protected $dates = ['deleted_at'];
 
     protected $fillable = [
         'code',
         'description',
         'capacity',
+        'is_external',
+        'driver_name',
+        'driver_plate_number',
     ];
 
     public function purchaseOrders()

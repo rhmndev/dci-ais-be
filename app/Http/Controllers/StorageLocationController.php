@@ -61,11 +61,17 @@ class StorageLocationController extends Controller
             'code' => 'required|string',
             'description' => 'required|string',
             'capacity' => 'numeric',
+            'is_external' => 'nullable',
+            'driver_name' => 'nullable',
+            'driver_plate_number' => 'nullable',
         ]);
 
         $storageLocation = SLock::firstOrNew(['code' => $request->code]);
         $storageLocation->description = $request->description;
         $storageLocation->capacity = $request->capacity;
+        $storageLocation->is_external = $request->is_external ?? false;
+        $storageLocation->driver_name = $request->driver_name ?? '';
+        $storageLocation->driver_plate_number = $request->driver_plate_number ?? '';
         $storageLocation->save();
 
         return response()->json([
@@ -122,6 +128,9 @@ class StorageLocationController extends Controller
         $storageLocation->name = $request->name;
         $storageLocation->description = $request->description;
         $storageLocation->capacity = $request->capacity;
+        $storageLocation->is_external = $request->is_external ?? false;
+        $storageLocation->driver_name = $request->driver_name ?? '';
+        $storageLocation->driver_plate_number = $request->driver_plate_number ?? '';
         $storageLocation->save();
 
         return response()->json([

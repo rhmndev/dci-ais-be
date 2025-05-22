@@ -105,7 +105,7 @@ class OutgoingGoodController extends Controller
         try {
             // Start MongoDB transaction
             $session = DB::getMongoClient()->startSession();
-         $session->startTransaction();
+            $session->startTransaction();
 
             // Generate a unique reference number with monthly sequence
             $currentMonth = date('Ym');
@@ -133,6 +133,7 @@ class OutgoingGoodController extends Controller
             $outgoingGood->handle_for = $request->handle_for;
             $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal';
             $outgoingGood->handle_for_id = $request->handle_for_id ?? null;
+            $outgoingGood->external_company = $request->external_company ?? null;
             $outgoingGood->status = 'ready';
             $outgoingGood->is_assigned = ($request->handle_for) ? true : false;
             $outgoingGood->is_completed = false;
@@ -203,8 +204,8 @@ class OutgoingGoodController extends Controller
                                 $stockNeeded -= $stock['available_qty']; 
                             } else {
                                 $stockOut = $stock['available_qty'];
-                                $stockAvailable = $stock['available_qty'];
                                 $stockNeeded -= $stock['available_qty']; 
+                                $stockAvailable = $stock['available_qty'];
                             }
 
                             // Create temporary record for stock take out
@@ -214,7 +215,7 @@ class OutgoingGoodController extends Controller
                             $tempStock->sloc_code = $stock['slock_code'];
                             $tempStock->rack_code = $stock['rack_code'];
                             $tempStock->uom = $stock['uom'];
-                            $tempStock->qty = $stock['valuated_stock'];
+                            $tempStock->qty = $stock['valuated_stock']; 
                             $tempStock->uom_take_out = $material->unit;
                            
                             $tempStock->qty_take_out = $stockAvailable;

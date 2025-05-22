@@ -22,6 +22,7 @@ class OutgoingGood extends Model
         'component_name', // Name of the component being sent out
         'outgoing_location', // Location where the part is sent out
         'shift', // Shift of the outgoing good
+        'external_company', // External company of the outgoing good
         'handle_for', // Person or entity handling the outgoing good
         'handle_for_type', // Type of person or entity handling the outgoing good (e.g., 'internal', 'external')
         'handle_for_id', // ID of the person or entity handling the outgoing good
