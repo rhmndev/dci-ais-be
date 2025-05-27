@@ -102,9 +102,9 @@
                 <th>Min</th>
                 <th>Max</th>
                 <th class="stock-column">Stock</th>
-                <th>Actual Stock</th>
-                <th class="changed-column">Changed Min Stock</th>
-                <th class="changed-column">Changed Max Stock</th>
+                <th>Actual</th>
+                <th class="changed-column">Chgd. Min</th>
+                <th class="changed-column">Chgd. Max</th>
             </tr>
         </thead>
         <tbody>

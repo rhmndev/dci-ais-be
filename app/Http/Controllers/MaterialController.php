@@ -15,6 +15,7 @@ use App\Exports\MaterialsExport2;
 use Excel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use PDF;
+use App\StockSlockHistory;
 // use Maatwebsite\Excel\Facades\Excel;
 
 class MaterialController extends Controller
@@ -215,6 +216,259 @@ class MaterialController extends Controller
         }
     }
 
+    public function getStocksMaterialAnalytics(Request $request)
+    {
+        try {
+            $query = Material::query();
+            $selectedSlock = $request->selectedSlock ?? '';
+
+            if($request->has('selectedSlock') && $request->selectedSlock != ''){
+                $query->where('type', $request->selectedSlock);
+            }
+
+            $query->with(['StockSlockData' => function($q) {
+                $q->orderBy('created_at', 'desc');
+            }]);
+            $materials = $query->get();
+
+            // Initialize analytics data
+            $analytics = [
+                'stock_levels' => [
+                    'low_stock' => 0,
+                    'ok_stock' => 0,
+                    'high_stock' => 0
+                ],
+                'material_types' => [],
+                'total_stock_value' => 0,
+                'stock_status' => [
+                    'total_materials' => $materials->count(),
+                    'materials_with_stock' => 0,
+                    'materials_without_stock' => 0
+                ],
+                'stock_distribution' => []
+            ];
+
+            // Process each material
+            foreach ($materials as $material) {
+                $totalStock = $material->StockSlockData->sum('valuated_stock');
+                
+                // Calculate stock level status
+                if ($material->minQty !== null && $material->maxQty !== null) {
+                    if ($totalStock <= $material->minQty) {
+                        $analytics['stock_levels']['low_stock']++;
+                    } elseif ($totalStock >= $material->maxQty) {
+                        $analytics['stock_levels']['high_stock']++;
+                    } else {
+                        $analytics['stock_levels']['ok_stock']++;
+                    }
+                }
+
+                // Track material types
+                if (!isset($analytics['material_types'][$material->type])) {
+                    $analytics['material_types'][$material->type] = 0;
+                }
+                $analytics['material_types'][$material->type]++;
+
+                // Update stock status counts
+                if ($totalStock > 0) {
+                    $analytics['stock_status']['materials_with_stock']++;
+                } else {
+                    $analytics['stock_status']['materials_without_stock']++;
+                }
+
+                // Add to stock distribution
+                $analytics['stock_distribution'][] = [
+                    'code' => $material->code,
+                    'description' => $material->description,
+                    'type' => $material->type,
+                    'current_stock' => $totalStock,
+                    'min_qty' => $material->minQty,
+                    'max_qty' => $material->maxQty,
+                    'status' => $totalStock <= $material->minQty ? 'low' : 
+                               ($totalStock >= $material->maxQty ? 'high' : 'ok')
+                ];
+            }
+
+            // Calculate percentages for stock levels
+            $totalMaterials = $materials->count();
+            if ($totalMaterials > 0) {
+                $analytics['stock_levels_percentage'] = [
+                    'low_stock' => round(($analytics['stock_levels']['low_stock'] / $totalMaterials) * 100, 2),
+                    'ok_stock' => round(($analytics['stock_levels']['ok_stock'] / $totalMaterials) * 100, 2),
+                    'high_stock' => round(($analytics['stock_levels']['high_stock'] / $totalMaterials) * 100, 2)
+                ];
+            }
+
+            // Format material types for chart
+            $analytics['material_types_chart'] = [
+                'labels' => array_keys($analytics['material_types']),
+                'data' => array_values($analytics['material_types'])
+            ];
+
+            // Sort stock distribution by current stock
+            usort($analytics['stock_distribution'], function($a, $b) {
+                return $b['current_stock'] <=> $a['current_stock'];
+            });
+
+            // Calculate stock trends (last 6 months)
+            $stockTrends = [];
+            $months = collect(range(5, 0))->map(function($i) {
+                return now()->subMonths($i);
+            });
+
+            foreach ($months as $month) {
+                $monthStart = $month->startOfMonth();
+                $monthEnd = $month->copy()->endOfMonth();
+                
+                $monthlyStock = $materials->sum(function($material) use ($monthStart, $monthEnd) {
+                    return $material->StockSlockData
+                        ->whereBetween('created_at', [$monthStart, $monthEnd])
+                        ->sum('valuated_stock');
+                });
+
+                $stockTrends[] = [
+                    'month' => $month->format('M'),
+                    'stock' => $monthlyStock,
+                    'low' => $materials->sum('minQty'),
+                    'high' => $materials->sum('maxQty')
+                ];
+            }
+            $analytics['stock_trends'] = $stockTrends;
+
+            // Calculate stock value by category
+            $stockValue = [];
+            foreach ($analytics['material_types'] as $type => $count) {
+                $typeValue = $materials->where('type', $type)->sum(function($material) {
+                    return $material->StockSlockData->sum('valuated_stock');
+                });
+                $stockValue[] = [
+                    'category' => $type,
+                    'value' => $typeValue
+                ];
+            }
+            $analytics['stock_value'] = $stockValue;
+
+            // Calculate stock movement
+            $stockMovement = [
+                [
+                    'type' => 'Put In',
+                    'count' => StockSlockHistory::where('status', 'put_in')->count(),
+                    'materialTypes' => StockSlockHistory::where('status', 'put_in')
+                        ->with('material')
+                        ->get()
+                        ->groupBy(function($history) {
+                            return $history->material->type ?? 'Unknown';
+                        })
+                        ->map(function($histories) {
+                            return $histories->count();
+                        })->toArray()
+                ],
+                [
+                    'type' => 'Take Out',
+                    'count' => StockSlockHistory::where('status', 'take_out')->count(),
+                    'materialTypes' => StockSlockHistory::where('status', 'take_out')
+                        ->with('material')
+                        ->get()
+                        ->groupBy(function($history) {
+                            return $history->material->type ?? 'Unknown';
+                        })
+                        ->map(function($histories) {
+                            return $histories->count();
+                        })->toArray()
+                ]
+            ];
+            $analytics['stock_movement'] = $stockMovement;
+
+            // Calculate stock aging
+            $now = now();
+            $stockAging = [
+                ['range' => '0-30 days', 'count' => 0, 'value' => 0],
+                ['range' => '31-60 days', 'count' => 0, 'value' => 0],
+                ['range' => '61-90 days', 'count' => 0, 'value' => 0],
+                ['range' => '91-180 days', 'count' => 0, 'value' => 0],
+                ['range' => '>180 days', 'count' => 0, 'value' => 0],
+            ];
+
+            foreach ($materials as $material) {
+                foreach ($material->StockSlockData as $stock) {
+                    $age = $now->diffInDays($stock->created_at);
+                    $value = $stock->valuated_stock;
+
+                    if ($age <= 30) {
+                        $stockAging[0]['count']++;
+                        $stockAging[0]['value'] += $value;
+                    } elseif ($age <= 60) {
+                        $stockAging[1]['count']++;
+                        $stockAging[1]['value'] += $value;
+                    } elseif ($age <= 90) {
+                        $stockAging[2]['count']++;
+                        $stockAging[2]['value'] += $value;
+                    } elseif ($age <= 180) {
+                        $stockAging[3]['count']++;
+                        $stockAging[3]['value'] += $value;
+                    } else {
+                        $stockAging[4]['count']++;
+                        $stockAging[4]['value'] += $value;
+                    }
+                }
+            }
+            $analytics['stock_aging'] = $stockAging;
+
+            // Calculate turnover rate (last 6 months)
+            $turnoverRate = [];
+            foreach ($months as $month) {
+                $monthStart = $month->startOfMonth();
+                $monthEnd = $month->copy()->endOfMonth();
+                
+                $monthlyOut = $materials->sum(function($material) use ($monthStart, $monthEnd) {
+                    return $material->StockSlockData
+                        ->whereBetween('created_at', [$monthStart, $monthEnd])
+                        ->where('movement_type', 'out')
+                        ->sum('valuated_stock');
+                });
+
+                $avgInventory = $materials->sum(function($material) use ($monthStart, $monthEnd) {
+                    return $material->StockSlockData
+                        ->whereBetween('created_at', [$monthStart, $monthEnd])
+                        ->avg('valuated_stock');
+                });
+
+                $rate = $avgInventory > 0 ? $monthlyOut / $avgInventory : 0;
+                
+                $turnoverRate[] = [
+                    'month' => $month->format('M'),
+                    'rate' => round($rate, 2),
+                    'target' => 2.0 // This could be configurable
+                ];
+            }
+            $analytics['turnover_rate'] = $turnoverRate;
+
+            // Calculate location distribution
+            $locationDistribution = StockSlockHistory::with('material')
+                ->get()
+                ->groupBy('slock_code')
+                ->map(function($histories) {
+                    return [
+                        'location' => $histories->first()->slock_code ?? 'Unknown',
+                        'items' => $histories->count(),
+                        'value' => $histories->sum('valuated_stock')
+                    ];
+                })->values()->toArray();
+            $analytics['location_distribution'] = $locationDistribution;
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $analytics
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
     public function getStocksMaterialPrint(Request $request)
     {
         try {
@@ -287,6 +541,9 @@ class MaterialController extends Controller
 
             if ($request->has('is_partially_out')) {
                 $Material->is_partially_out = $request->is_partially_out === true;
+            }
+            if ($request->has('is_dead_stock')) {
+                $Material->is_dead_stock = $request->is_dead_stock === true;
             }
 
             if ($request->photo != null && $request->hasFile('photo')) {
@@ -395,6 +652,11 @@ class MaterialController extends Controller
             // Handle is_partially_out in update method
             if ($request->has('is_partially_out')) {
                 $Material->is_partially_out = $request->is_partially_out === true;
+            }
+
+            // Handle is_dead_stock in update method
+            if ($request->has('is_dead_stock')) {
+                $Material->is_dead_stock = $request->is_dead_stock === true;
             }
 
             $Material->updated_by = auth()->user()->username;

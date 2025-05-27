@@ -95,7 +95,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/material/{id}/generate-qr', 'MaterialController@generateQR');
         Route::get('/materials/g/stocks-material', 'MaterialController@getStocksMaterial');
         Route::post('/materials/g/stocks-material-print', 'MaterialController@getStocksMaterialPrint');        #endregion
-
+        Route::get('/materials/g/stocks-material-analytics', 'MaterialController@getStocksMaterialAnalytics');
         
 
 // Role Material Type Routes
