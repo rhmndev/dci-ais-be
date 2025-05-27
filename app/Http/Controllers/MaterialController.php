@@ -14,6 +14,7 @@ use App\Exports\MaterialsExport;
 use App\Exports\MaterialsExport2;
 use Excel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use PDF;
 // use Maatwebsite\Excel\Facades\Excel;
 
 class MaterialController extends Controller
@@ -132,6 +133,118 @@ class MaterialController extends Controller
                 'type' => 'failed',
                 'message' => 'Err: ' . $e->getMessage() . '.',
                 'data' => NULL,
+            ], 400);
+        }
+    }
+    public function getStocksMaterial(Request $request)
+    {
+        try {
+            $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
+            $query = Material::query();
+             // Get user's role
+             $userRole = auth()->user()->role;
+
+            $query = $query->with('StockSlockData');
+            // Apply role filtering
+            $query = $query->whereHas('roleMaterialTypes', function($q) use ($userRole) {
+                $q->where('role_id', $userRole->_id);
+            }); 
+            if ($request->has('code') && $request->code != '') {
+                $query->where('code', 'like', '%' . $request->code . '%');
+            }
+
+            if ($request->has('description') && $request->description != '') {
+                $query->where('description', 'like', '%' . $request->description . '%');
+            }   
+            
+            if ($request->has('type') && $request->type != '') {
+                $query->where('type', $request->type);
+            }
+
+            if ($request->has('unit') && $request->unit != '') {
+                $query->where('unit', $request->unit);
+            } 
+
+            if($request->has('category') && $request->category != ''){
+                $query->where('category', $request->category);
+            }
+
+            if($request->has('order') && $request->order != ''){
+                $order = $request->order;
+            }else{
+                $order = 'ascend';
+            }
+
+             // Apply keyword search if exists
+             if (!empty($keyword)) {
+                 foreach ($request->columns as $index => $column) {
+                     if ($index == 0) {
+                         $query = $query->where($column, 'like', '%' . $keyword . '%');
+                     } else {
+                         $query = $query->orWhere($column, 'like', '%' . $keyword . '%');
+                     }
+                 }
+             }
+ 
+             // Apply category filter if exists
+             if(isset($category)){
+                if ($category && $category != '') {
+                    $query = $query->where('category', $category);
+                }
+             }
+ 
+             // Apply sorting
+             $query = $query->orderBy($request->sort ?? 'code', $order == 'ascend' ? 'asc' : 'desc');
+ 
+             // Get all results for total count
+             $resultAlls = $query->get();
+ 
+             // Get paginated results
+             $results = $query->paginate($perPage, ['*'], 'page', $request->page);
+
+            return response()->json([
+                'type' => 'success',
+                'data' => $results, 
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Err: ' . $e->getMessage() . '.',
+                'data' => NULL,
+            ], 400);
+        }
+    }
+
+    public function getStocksMaterialPrint(Request $request)
+    {
+        try {
+            $query = Material::query();
+            $selectedSlock = $request->selectedSlock ?? '';
+
+            if($request->has('selectedSlock') && $request->selectedSlock != ''){
+                $query->where('type', $request->selectedSlock);
+            }
+
+            $query = $query->with('StockSlockData');
+
+            $materials = $query->get();
+
+            // Calculate total quantity for each material
+            $materials->each(function ($material) {
+                $material->quantity = $material->StockSlockData->sum('valuated_stock');
+            });
+
+            $pdf = PDF::loadView('reports.materials-stock', [
+                'materials' => $materials,
+                'date' => now()->format('d/m/Y H:i:s'),
+                'title' => 'Material Stock Report'
+            ]);
+
+            return $pdf->download('material-stock-report.pdf');
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error generating PDF: ' . $e->getMessage()
             ], 400);
         }
     }

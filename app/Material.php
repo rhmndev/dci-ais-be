@@ -91,4 +91,9 @@ class Material extends Model
     {
         return $this->hasMany(RoleMaterialType::class, 'material_type', 'type');
     }
+
+    public function StockSlockData()
+    {
+        return $this->hasMany(StockSlock::class, 'material_code', 'code');
+    }
 }

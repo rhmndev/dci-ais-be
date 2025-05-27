@@ -468,6 +468,36 @@ class StockSlockController extends Controller
         return response()->json(['message' => 'Stock has been taken out successfully', 'data' => $dataTempStockSlock], 200);
     }
 
+    public function getMaterialLocation(Request $request,$material_code)
+    {
+        $request->validate([ 
+            'status' => 'nullable|array',
+            'slock_code' => 'nullable|string',
+        ]);
+
+        try {
+
+            $request->merge(['material_code' => $material_code]);
+            $stockSlockData = $this->getStockMaterialAvailable($request);
+            $stockSlockData = $stockSlockData->original['data'] ?? [];
+            
+            $filteredStockData = collect($stockSlockData)
+                ->where('material_code', $material_code)
+                ->where('available_qty', '>', 0)
+                ->sortBy(function($item) {
+                    return $item['date_income'] . ' ' . $item['time_income'];
+                })
+                ->values(); 
+
+            return response()->json(['data' => $filteredStockData]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error' => 'Failed to get material location',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
     public function putIn(Request $request)
     {
         $request->validate([
@@ -652,6 +682,7 @@ class StockSlockController extends Controller
             // check rack code is already used
             $rackCode = StockSlock::where('rack_code', $request->rack_code)
                 ->where('slock_code', $request->slock_code)
+                ->where('rack_code', '!=', 'IN_AREA')
                 ->first();
                 
             if ($rackCode) {

@@ -59,4 +59,9 @@ class StockSlock extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'npk');
     }
+
+    public function StockSlocTakeOutTemp()
+    {
+        return $this->hasMany(StockSlocTakeOutTemp::class, 'job_seq', 'job_seq');
+    }
 }

@@ -93,6 +93,8 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/materialexport2', 'MaterialController@export2');
         Route::get('/material-types', 'MaterialController@getMaterialType');
         Route::post('/material/{id}/generate-qr', 'MaterialController@generateQR');
+        Route::get('/materials/g/stocks-material', 'MaterialController@getStocksMaterial');
+        Route::post('/materials/g/stocks-material-print', 'MaterialController@getStocksMaterialPrint');
         #endregion
 
         
@@ -364,6 +366,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/g/history', 'StockSlockController@getHistory');
                 Route::get('/a/print-activity', 'StockSlockController@printToPdf');
                 Route::get('/a/print-activity-history', 'StockSlockController@printHistoryStockSloc');
+
+                Route::get('/g/material-location/{material_code}', 'StockSlockController@getMaterialLocation');
         });
 
         Route::prefix('outgoing-goods')->group(function () {

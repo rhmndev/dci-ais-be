@@ -22,4 +22,9 @@ class StockSlocTakeOutTemp extends Model
         'note',
         'is_success',
     ];
+
+    public function StockSlock()
+    {
+        return $this->belongsTo(StockSlock::class, 'job_seq', 'job_seq');
+    }
 }

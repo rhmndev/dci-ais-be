@@ -133,7 +133,7 @@ class OutgoingGoodController extends Controller
             $outgoingGood->handle_for = $request->handle_for;
             $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal';
             $outgoingGood->handle_for_id = $request->handle_for_id ?? null;
-            $outgoingGood->external_company = $request->external_company ?? null;
+            $outgoingGood->external_company = $request->external_company ?? '';
             $outgoingGood->status = 'ready';
             $outgoingGood->is_assigned = ($request->handle_for) ? true : false;
             $outgoingGood->is_completed = false;
