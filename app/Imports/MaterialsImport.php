@@ -20,8 +20,8 @@ class MaterialsImport implements ToModel, WithHeadingRow, WithCalculatedFormulas
             'description' => $row[1],
             'type' => $row[2],
             'unit' => $row[3],
-            'minQty' => $row[4],
-            'maxQty' => $row[5],
+            'minqty' => $row[4],
+            'maxqty' => $row[5],
         ]);
     }
     

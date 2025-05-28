@@ -795,14 +795,14 @@ class MaterialController extends Controller
                         if (isset($Excel['type'])) {
                             $Material->type = $this->stringtoupper($Excel['type']);
                         }
-                        if (isset($Excel['unit_uom'])) {
-                            $Material->unit = $this->stringtoupper($Excel['unit_uom']);
+                        if (isset($Excel['unit'])) {
+                            $Material->unit = $this->stringtoupper($Excel['unit']);
                         }
-                        if (isset($Excel['min_qty'])) {
-                            $Material->minQty = $this->stringtoupper($Excel['min_qty']);
+                        if (isset($Excel['minqty'])) {
+                            $Material->minQty = floatval($Excel['minqty']);
                         }
-                        if (isset($Excel['max_qty'])) {
-                            $Material->maxQty = $this->stringtoupper($Excel['max_qty']);
+                        if (isset($Excel['maxqty'])) {
+                            $Material->maxQty = floatval($Excel['maxqty']);
                         }
                         if (isset($Excel['origin'])) {
                             $Material->origin = $this->stringtoupper($Excel['origin']);
@@ -821,6 +821,8 @@ class MaterialController extends Controller
                         $Material->updated_by = auth()->user()->username;
                         $Material->updated_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
                         $Material->save();
+
+                        $data[] = $Excel;
                     }
                 }
 
