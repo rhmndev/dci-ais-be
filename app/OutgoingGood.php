@@ -23,6 +23,7 @@ class OutgoingGood extends Model
         'outgoing_location', // Location where the part is sent out
         'shift', // Shift of the outgoing good
         'external_company', // External company of the outgoing good
+        'assign_to', // Person or entity assigned to handle the outgoing good
         'handle_for', // Person or entity handling the outgoing good
         'handle_for_type', // Type of person or entity handling the outgoing good (e.g., 'internal', 'external')
         'handle_for_id', // ID of the person or entity handling the outgoing good
@@ -47,7 +48,11 @@ class OutgoingGood extends Model
         'requested_by', // Person who requested the outgoing good
         'requested_date', // Date when the outgoing good was requested
         'completed_tp_at', // Date and time when the outgoing good was completed
-        'completed_tp_by', // User who completed the outgoing good
+        'completed_tp_by', // User who completed the outgoing good,
+        'signature_received_by', // Person who received the signature
+        'signature_handed_over_by', // Person who handed over the signature
+        'signature_acknowledged_by', // Person who acknowledged the signature
+        'signature_requested_by', // Person who requested the signature
     ];
 
     public function items()

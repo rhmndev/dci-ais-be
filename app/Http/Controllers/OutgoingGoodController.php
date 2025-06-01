@@ -31,9 +31,39 @@ class OutgoingGoodController extends Controller
         //     $query->where('is_assigned', $request->is_assigned);
         // }
 
-        if($request->has('handle_for_id') && $request->handle_for_id !== '') {
-            $query->where('handle_for_id', $request->handle_for_id);
+        // how to add relations inside items
+        $query->with(['items.material']);
+        // request assign_to is array
+        if($request->has('assign_to') && is_array($request->assign_to)) {
+            $query->where(function($q) use ($request) {
+                if(in_array('group', $request->assign_to)) {
+                    $q->orWhere('assign_to', 'group'); 
+                }
+
+                if(in_array('individual', $request->assign_to)) {
+                    $q->orWhere(function($subQ) use ($request) {
+                        $subQ->where(function($innerQ) {
+                            $innerQ->where('assign_to', 'individual')
+                                  ->orWhereNull('assign_to');
+                        });
+                        if($request->has('handle_for_id') && $request->handle_for_id !== '') {
+                            $subQ->where('handle_for_id', $request->handle_for_id);
+                        }
+                    });
+                }
+            });
         }
+
+        // return response()->json($request);
+
+        // if($request->has('handle_for_id') && $request->handle_for_id !== '') {
+        //     $query->where('handle_for_id', $request->handle_for_id);
+        // }
+
+        // if($request->has('handle_for_group') && $request->handle_for_group !== '') {
+        //     $query->where('handle_for_group', $request->handle_for_group);
+        // }
+        
 
         if($request->has('keyword') && $request->keyword !== '') {
             $query->where('number', 'like', '%' . $request->keyword . '%');
@@ -85,7 +115,9 @@ class OutgoingGoodController extends Controller
             'time' => 'required|string',
             'priority' => 'required|in:low,normal,high,urgent',
             'outgoing_location' => 'required|string',
-            'handle_for' => 'required|string',
+            'assign_to' => 'required|string|in:individual,group',
+            'handle_for_group' => 'required_if:assign_to,group',
+            'handle_for' => 'required_if:assign_to,individual',
             'part_name' => 'required|string',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -130,7 +162,9 @@ class OutgoingGoodController extends Controller
             $outgoingGood->priority = $request->priority;
             $outgoingGood->shift = $request->shift ?? '1';
             $outgoingGood->outgoing_location = $request->outgoing_location;
-            $outgoingGood->handle_for = $request->handle_for;
+            $outgoingGood->assign_to = $request->assign_to ?? 'individual';
+            $outgoingGood->handle_for_group = $request->handle_for_group ?? null;
+            $outgoingGood->handle_for = $request->handle_for ?? null;
             $outgoingGood->handle_for_type = $request->handle_for_type ?? 'internal';
             $outgoingGood->handle_for_id = $request->handle_for_id ?? null;
             $outgoingGood->external_company = $request->external_company ?? '';
@@ -152,7 +186,7 @@ class OutgoingGoodController extends Controller
 
             $itemsData = [];
 
-            $request->merge(['slock_code' => 'RAW01', 'tag' => 'ok']);
+            $request->merge(['slock_code' => $request->type_of_outgoing_good ?? 'RAW01', 'tag' => 'ok']);
             unset($request['material_code']);
 
             // Save items
@@ -190,23 +224,47 @@ class OutgoingGoodController extends Controller
                     $totalAvailable = $filteredStockData->sum('available_qty');
                     $stockAvailable = 0; 
 
+                    // stock needed is 2
+                    // stock available is 3000, 2000
+                    // stock available total is 5000
+
                     // Check if we have enough total stock
                     if ($totalAvailable >= $stockNeeded) { 
                         foreach ($filteredStockData as $stock) {
+                            $stockNeededByStock = $stock['available_qty'];
                             if ($stockNeeded <= 0) {
                                 break;
                             }
 
                             // Take the available stock 
-                            if($material->is_partially_out == null || $material->is_partially_out == false) {
+                            if($material->is_partially_out === null || $material->is_partially_out === 'undefined' || $material->is_partially_out === false) {
                                 $stockOut += $stock['available_qty'];
                                 $stockAvailable = $stock['available_qty'];
-                                $stockNeeded -= $stock['available_qty']; 
+                                $stockNeeded -= $stock['available_qty'];  
                             } else {
-                                $stockOut = $stock['available_qty'];
-                                $stockNeeded -= $stock['available_qty']; 
-                                $stockAvailable = $stock['available_qty'];
+                                if($stock['available_qty'] - $stockNeeded > 0) {
+                                    $stockOut = $stockNeeded ;
+                                    $stockAvailable = $stockNeeded;
+                                    $stockNeeded -= $stock['available_qty']; 
+                                } else {
+                                    $stockOut = $stock['available_qty'];
+                                    $stockAvailable = $stock['available_qty'];
+                                    $stockNeeded -= $stock['available_qty']; 
+                                }
                             }
+
+                            // return response()->json([
+                            //     'success' => false,
+                            //     'message' => 'Stock not enough',
+                            //     'data' => [
+                            //         'material' => $material,
+                            //         'stockNeeded1' => $stock['available_qty'],
+                            //         'stockNeeded2' => floatval($item['quantity_needed']),
+                            //         'stockNeeded3' => $stockNeeded, 
+                            //         'stockOut' => $stockOut,
+                            //         'stockAvailable' => $stockAvailable
+                            //     ]
+                            // ]);
 
                             // Create temporary record for stock take out
                             $tempStock = new StockSlocTakeOutTemp();
@@ -217,8 +275,11 @@ class OutgoingGoodController extends Controller
                             $tempStock->uom = $stock['uom'];
                             $tempStock->qty = $stock['valuated_stock']; 
                             $tempStock->uom_take_out = $material->unit;
-                           
-                            $tempStock->qty_take_out = $stockAvailable;
+                            if($material->is_partially_out == null || $material->is_partially_out == 'undefined' || $material->is_partially_out == false) {
+                                $tempStock->qty_take_out = $stockAvailable;
+                            } else {
+                                $tempStock->qty_take_out = $stockOut;
+                            }
                             $tempStock->user_id = auth()->user()->npk;
                             $tempStock->status = 'ready';
                             $tempStock->note = 'Temporary hold for outgoing good: ' . $refNumber;
@@ -229,7 +290,11 @@ class OutgoingGoodController extends Controller
                                 'rack_code' => $stock['rack_code'],
                                 'job_seq' => $stock['job_seq'],
                             ];
-                            $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockAvailable, $stock['uom']);
+                            if($material->is_partially_out == null || $material->is_partially_out == 'undefined' || $material->is_partially_out == false) {
+                                $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockAvailable, $stock['uom']);
+                            } else {
+                                $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
+                            }
                         }
                     } else {
                         throw new \Exception('Not enough stock available. Required: ' . $item['quantity_needed'] . ', Available: ' . $totalAvailable);
@@ -492,6 +557,70 @@ class OutgoingGoodController extends Controller
         $outgoingGood->requested_date = Carbon::now()->format('Y-m-d H:i:s');
     }
 
+    public function assignDocument(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'assign_type' => 'required|string|in:received,handed_over,acknowledged,requested',
+            'canvas_signature' => 'required|string',
+            'outgoing_good_id' => 'required|exists:outgoing_goods,_id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $outgoingGood = OutgoingGood::findOrFail($request->outgoing_good_id);
+            $user = auth()->user();
+
+            // Handle different assignment types
+            switch ($request->assign_type) {
+                case 'received':
+                    $outgoingGood->received_by = $user->npk;
+                    $outgoingGood->received_date = Carbon::now()->format('Y-m-d H:i');
+                    $outgoingGood->received_signature = $request->canvas_signature;
+                    break;
+
+                case 'handed_over':
+                    $outgoingGood->handed_over_by = $user->npk;
+                    $outgoingGood->handed_over_date = Carbon::now()->format('Y-m-d H:i');
+                    $outgoingGood->handed_over_signature = $request->canvas_signature;
+                    break;
+
+                case 'acknowledged':
+                    $outgoingGood->acknowledged_by = $user->npk;
+                    $outgoingGood->acknowledged_date = Carbon::now()->format('Y-m-d H:i');
+                    $outgoingGood->acknowledged_signature = $request->canvas_signature;
+                    break;
+
+                case 'requested':
+                    $outgoingGood->requested_by = $user->npk;
+                    $outgoingGood->requested_date = Carbon::now()->format('Y-m-d H:i');
+                    $outgoingGood->requested_signature = $request->canvas_signature;
+                    break;
+            }
+
+            $outgoingGood->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document assigned successfully',
+                'data' => $outgoingGood
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign document',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Generate a receipt for a completed outgoing good
      */
@@ -606,15 +735,34 @@ class OutgoingGoodController extends Controller
 
         $barcode = $request->barcode;
         $handleForId = $request->handle_for_id;
-        $outgoingGood = OutgoingGood::where('number', $barcode)->where('handle_for_id', $handleForId)->first();
-
+        $outgoingGood = OutgoingGood::where('number', $barcode)->first();
+        
         if (!$outgoingGood) {
             return response()->json([
                 'success' => false,
                 'message' => 'Outgoing good not found'
             ], 404);
         }
-        
+
+        if($outgoingGood->assigned_to === 'individual') {
+            if($outgoingGood->handle_for_id !== $handleForId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Outgoing good not found'
+                ], 404);
+            }
+        }
+
+        if($outgoingGood->assigned_to === 'group') {
+            // if($outgoingGood->handle_for_id !== $handleForId) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Outgoing good not found'
+            //     ], 404);
+            // }
+        }
+
+
         return response()->json([
             'success' => true,
             'data' => $outgoingGood

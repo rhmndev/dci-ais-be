@@ -392,6 +392,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/g/check-barcode', 'OutgoingGoodController@checkBarcode');
                 Route::post('/a/start-scan', 'OutgoingGoodController@startScanBarcode');
                 Route::post('/{id}/mark-completed', 'OutgoingGoodController@markCompleted');
+                Route::post('/a/assign-document', 'OutgoingGoodController@assignDocument');
                 // Template Routes
         });
 
@@ -403,6 +404,13 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::group(['prefix' => 'rack'], function () {
                 Route::delete('/{id}', 'RackController@destroy');
                 Route::get('/g/qrcode/{slock}/print', 'RackController@printQrRackSloc');
+        });
+
+        Route::group(['prefix' => 'storage-sloc-area'], function () {
+                Route::get('/', 'StorageSlocAreaController@index');
+                Route::post('/', 'StorageSlocAreaController@store');
+                Route::put('/{id}', 'StorageSlocAreaController@update');
+                Route::delete('/{id}', 'StorageSlocAreaController@destroy');
         });
 
         Route::group(['prefix' => 'planning-productions'], function () {

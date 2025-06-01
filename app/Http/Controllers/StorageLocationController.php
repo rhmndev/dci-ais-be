@@ -157,11 +157,12 @@ class StorageLocationController extends Controller
 
     public function list(Request $request)
     {
+        $takeReq = $request->take ?? 10;
         $storageLocations = SLock::when($request->keyword, function ($query) use ($request) {
             if (!empty($request->keyword)) {
                 $query->where('name', 'like', '%' . $request->keyword . '%');
             }
-        })->take(10)
+        })->take($takeReq)
             ->get();
 
         return response()->json([

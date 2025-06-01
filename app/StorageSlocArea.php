@@ -4,19 +4,17 @@ namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class StoMaterial extends Model
+class StorageSlocArea extends Model
 {
     protected $connection = 'mongodb';
-    protected $collection = 'sto_materials';
 
     protected $fillable = [
+        'plant',
+        'sloc',
         'code',
         'name',
-        'date_sto',
-        'status',
+        'alias',
         'created_at',
         'updated_at',
-        'completed_at',
-        'completed_by',
     ];
 }
