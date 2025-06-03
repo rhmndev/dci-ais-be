@@ -7,6 +7,7 @@ use App\News;
 use App\User;
 use App\Vendor;
 use App\Material;
+use App\Role;
 use App\Receiving;
 
 class DashboardController extends Controller
@@ -100,6 +101,35 @@ class DashboardController extends Controller
             $data['last_update_date_receiving'] = $resReceiving[0]->updated_at;
         }
         #endregion
+
+        // get user logged
+        $userLogged = auth()->user();
+        $data['user_role'] = $userLogged->role_name;
+
+        
+        $data['user_role_id'] = $userLogged->role_id;
+        
+        $RoleData = Role::where('id', '!=', $userLogged->role_id)->first(); 
+        // make shortcut for user have role 
+
+        $data['shortcut'] = [];
+
+        $roleWHS = ['Warehouse', 'WHS Admin', 'WHS Supply','Admin','WHS Supply Backup','PPIC MRP STAFF'];
+
+        if(isset($RoleData)){
+            if (in_array($RoleData->name, $roleWHS)){
+                $data['shortcut'] = [
+                    'menu' => [
+                        'outgoing_goods' => [
+                            'name' => 'Outgoing Good',
+                            'url' => '/outgoing-goods',
+                            'icon' => 'fa fa-truck',
+                            'color' => 'primary',
+                        ]
+                    ]
+                ];
+            }
+        }
 
         return response()->json([
             'type' => 'success',
