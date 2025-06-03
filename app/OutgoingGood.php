@@ -39,6 +39,9 @@ class OutgoingGood extends Model
         'is_completed', // Flag to indicate if the outgoing good has been completed
         'completed_at', // Date and time when the outgoing good was completed
         'completed_by', // User who completed the outgoing good
+        'cancelled_at', // Date and time when the outgoing good was cancelled
+        'cancelled_by', // User who cancelled the outgoing good
+        'cancelled_reason', // Reason for cancelling the outgoing good
         'received_by', // Person who received the outgoing good
         'received_date', // Date when the outgoing good was received
         'handed_over_by', // Person who handed over the outgoing good

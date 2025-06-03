@@ -431,6 +431,16 @@ class OutgoingGoodController extends Controller
             }
         }
 
+        if($request->status === 'cancelled'){
+            $outgoingGood->is_completed = false;
+            $outgoingGood->completed_at = null;
+            $outgoingGood->completed_by = null;
+            $outgoingGood->completion_notes = null;
+            $outgoingGood->cancelled_at = Carbon::now();
+            $outgoingGood->cancelled_by = auth()->user()->npk;
+            $outgoingGood->cancelled_reason = $request->cancelled_reason ?? null;
+        }
+
         $outgoingGood->save();
 
         // Update StockSlocTakeOutTemp records based on status
