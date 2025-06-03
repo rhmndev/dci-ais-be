@@ -110,7 +110,6 @@ class DashboardController extends Controller
         // $data['user_role_id'] = $userLogged->role_id;
         
         $RoleData = Role::where('_id', $userLogged->role_id)->first(); 
-        $data['RoleData'] = $RoleData;
         // make shortcut for user have role 
 
         $data['shortcut'] = [];
