@@ -10,6 +10,7 @@ use Excel;
 use App\Exports\SupplierExport;
 use App\Role;
 use App\User;
+use App\UserSupplier;
 
 class SupplierController extends Controller
 {
@@ -58,7 +59,6 @@ class SupplierController extends Controller
         $request->validate([
             'code' => 'required|string',
             'name' => 'required|string',
-            'can_have_account' => 'required|boolean',
             'address' => 'exclude_if:can_have_account,false|string',
             'phone' => 'exclude_if:can_have_account,false|string',
             'emails' => 'exclude_if:can_have_account,false|required|array',
@@ -77,28 +77,40 @@ class SupplierController extends Controller
             $Supplier->emails = $request->emails;
             $Supplier->contact = $request->contact;
             $Supplier->currency = $request->currency;
-            $Supplier->can_have_account = $request->can_have_account;
+            $Supplier->can_have_account = $request->is_create_user_account;
 
             $Supplier->created_by = auth()->user()->username;
             $Supplier->updated_by = auth()->user()->username;
 
             $Supplier->save();
 
-            if ($request->is_create_user_account && $request->can_have_account) {
+            if ($request->is_create_user_account ) {
                 foreach ($request->emails as $email) {
-                    $user = User::firstOrNew(['username' => $email]);
-                    $user->email = $email;
-                    $user->full_name = $Supplier->name;
-                    $user->password = bcrypt($email);
-                    $user->type = 2;
-                    $user->role_id = Role::where('name', 'Supplier')->first()->id;
-                    $user->role_name = 'Supplier';
-                    $user->vendor_code = $request->code;
-                    $user->vendor_name = $Supplier->name;
-                    $user->created_by = auth()->user()->username;
-                    $user->updated_by = auth()->user()->username;
+                    // $user = User::firstOrNew(['username' => $email]);
+                    // $user->email = $email;
+                    // $user->full_name = $Supplier->name;
+                    // $user->password = bcrypt($email);
+                    // $user->type = 2;
+                    // $user->role_id = Role::where('name', 'Supplier')->first()->id;
+                    // $user->role_name = 'Supplier';
+                    // $user->vendor_code = $request->code;
+                    // $user->vendor_name = $Supplier->name;
+                    // $user->created_by = auth()->user()->username;
+                    // $user->updated_by = auth()->user()->username;
 
-                    $user->save();
+                    $userAccount = UserSupplier::firstOrNew(['username' => $email]);
+
+                    $userAccount->email = $email;
+                    $userAccount->full_name = $Supplier->name;
+                    $userAccount->password = bcrypt($email);
+                    $userAccount->type = 2;
+                    $userAccount->role_id = Role::where('name', 'Supplier')->first()->id;
+                    $userAccount->role_name = 'Supplier';
+                    $userAccount->vendor_code = $request->code;
+                    $userAccount->vendor_name = $Supplier->name;
+                    $userAccount->created_by = auth()->user()->username;
+                    $userAccount->updated_by = auth()->user()->username;
+                    $userAccount->save();
                 }
             }
 

@@ -498,6 +498,134 @@ class StockSlockController extends Controller
         }
     }
 
+    public function subconPutIn(Request $request)
+    {
+        $request->validate([
+            'ref_sj' => 'nullable|string',
+            'slock_code' => 'required|string',
+            'rack_code' => 'required|string',
+            'date_income' => 'required|date',
+            'time_income' => 'required|date_format:H:i',
+            'material_code' => 'required|string',
+            'valuated_stock' => 'required|numeric',
+            'uom' => 'required|string',
+            'tag' => 'required|string|in:ok,ng,hold',
+            'note' => 'nullable|string',
+        ]); 
+
+        try {
+            $session = DB::connection('mongodb')->getMongoClient()->startSession();
+            $session->startTransaction();
+
+            $stockSlock = StockSlock::create([
+                'ref_sj' => $request->ref_sj ?? null,
+                'slock_code' => $request->slock_code,
+                'rack_code' => $request->rack_code,
+                'inventory_no' => $request->inventory_no ?? null,
+                'material_code' => $request->material_code,
+                'valuated_stock' => floatval($request->valuated_stock),
+                'uom' => $request->uom,
+                'tag' => $request->tag,
+                'pkg_no' => $request->pkg_no ?? null,
+                'note' => $request->note ?? null,
+                'user_id' => auth()->user()->npk
+            ]);
+
+            $stockSlock->update([
+                'date_income' => $request->date_income ?? Carbon::now()->toDateString(),
+                'time_income' => $request->time_income ?? Carbon::now()->toTimeString(),
+                'take_out_at' => null,
+                'take_in_at' => Carbon::now()->toDateTimeString(),
+                'last_time_take_in' => Carbon::now()->toDateTimeString(),
+            ]);
+
+            $logStockSlock = StockSlockHistory::create([
+                'ref_sj' => $request->ref_sj ?? null,
+                'slock_code' => $request->slock_code,
+                'rack_code' => $request->rack_code,
+                'material_code' => $request->material_code,
+                'val_stock_value' => floatval($request->val_stock_value),
+                'valuated_stock' => floatval($request->valuated_stock),
+                'uom' => $request->uom,
+                'date_time' => Carbon::now()->toDateTimeString(),
+                'scanned_by' => auth()->user()->npk,
+                'status' => 'put_in',
+                'inventory_no' => $stockSlock->inventory_no,
+                'date_income' => $stockSlock->date_income,
+                'time_income' => Carbon::parse($stockSlock->time_income)->format('H:i'),
+                'last_time_take_in' => $stockSlock->last_time_take_in,
+                'last_time_take_out' => $stockSlock->last_time_take_out,
+                'user_id' => auth()->user()->npk,
+                'tag' => $request->tag,
+                'note' => $request->note ?? null,
+                'is_success' => true
+            ]);
+
+            $request->merge([
+                'material_code' => $request->material_code,
+                'loc_in' => $request->slock_code,
+                'uom' => $request->uom,
+                'stock' => floatval($request->valuated_stock),
+                'note' => $request->note ?? null,
+            ]);
+
+            $inWhsMaterial = new WhsMaterialControlController();
+            $resWhsIn = $inWhsMaterial->inWhsMaterial($request);
+
+            if (isset($resWhsIn->original['message']) && $resWhsIn->original['message'] === 'success') {
+                $jobSeq = $resWhsIn->original['data']->job_seq ?? null; // Extract job_seq if available
+
+                if ($jobSeq) {
+                    $stockSlock->update([
+                        'job_seq' => $jobSeq,
+                    ]);
+                    $logStockSlock->update([
+                        'job_seq' => $jobSeq,
+                        'is_success' => true
+                    ]);
+                    $session->commitTransaction();
+
+                    $stockSlock->load('material', 'WhsMatControl','CreatedBy');
+
+                    return response()->json([
+                        'message' => 'Stock successfully put in!',
+                        'data' => $stockSlock,
+                        'job_seq' => $jobSeq
+                    ], 201);
+                } else {
+                    $stockSlock->update([
+                        'job_seq' => null,
+                        'is_success' => false
+                    ]);
+                    $logStockSlock->update([
+                        'is_success' => false
+                    ]);
+                    $stockSlock->load('material', 'WhsMatControl','CreatedBy');
+                    $session->abortTransaction();
+
+                    return response()->json([
+                        'message' => 'Stock successfully put in, but job_seq not found!',
+                        'data' => $stockSlock,
+                    ], 201);
+                }
+            } else {
+                // Handle failure case
+                $session->abortTransaction();
+                return response()->json([
+                    'error' => 'Failed to put in stock slock',
+                    'data' => $resWhsIn,
+                    'message' => $resWhsIn->original['error'] ?? 'Unknown error',
+                ], 400);
+            }
+        } catch (\Throwable $th) {
+            $session->abortTransaction();
+            return response()->json([
+                'error' => 'Failed to put in stock slock',
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
+
     public function putIn(Request $request)
     {
         $request->validate([

@@ -57,8 +57,11 @@ class OutgoingGoodItem extends Model
         });
 
         if (!$exists) {
+            // get slock_code from job_seq for new scan
+            $slocCode = StockSlock::where('job_seq', $jobSeq)->first()->slock_code;
             $scans[] = [
                 'job_seq' => $jobSeq,
+                'sloc_code' => $slocCode,
                 'rack_code' => $rack,
                 'quantity' => $quantity,
                 'uom' => $uom
@@ -72,6 +75,7 @@ class OutgoingGoodItem extends Model
                 'material_code' => $this->material_code,
                 'added_scan' => [
                     'job_seq' => $jobSeq,
+                    'sloc_code' => $slocCode,
                     'rack_code' => $rack,
                     'quantity' => $quantity,
                     'uom' => $uom

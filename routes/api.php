@@ -360,6 +360,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/a/import', 'StockSlockController@import');
                 Route::post('/a/take-out', 'StockSlockController@takeOut');
                 Route::post('/a/put-in', 'StockSlockController@putIn');
+                Route::post('/subcon/a/put-in', 'StockSlockController@subconPutIn');
                 Route::post('/a/destroy/{id}', 'StockSlockController@destroy');
 
                 Route::get('/g/history', 'StockSlockController@getHistory');

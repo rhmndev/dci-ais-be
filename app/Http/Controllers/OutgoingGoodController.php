@@ -950,6 +950,7 @@ class OutgoingGoodController extends Controller
         if($request->has('search') && $request->search !== '' && $request->search !== null) {
             $query->where('part_name', 'like', '%' . $request->search . '%')
                 ->orWhere('part_number', 'like', '%' . $request->search . '%')
+                ->orWhere('material_code', 'like', '%' . $request->search . '%')
                 ->orWhere('name_template', 'like', '%' . $request->search . '%');
         }
 
