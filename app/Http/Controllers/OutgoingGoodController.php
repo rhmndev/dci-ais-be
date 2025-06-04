@@ -970,7 +970,7 @@ class OutgoingGoodController extends Controller
         $query->orderBy($sortColumn, $sortOrder);
 
         // Handle pagination
-        $perPage = $request->input('per_page',30);
+        $perPage = $request->input('per_page',100);
         $page = $request->input('page', 1);
 
         // Get paginated results
