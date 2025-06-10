@@ -378,6 +378,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::post('/{id}/items', 'OutgoingGoodController@storeItems');
                 Route::put('/{id}/items/{code_item}', 'OutgoingGoodController@updateItem');
                 Route::delete('/{id}/items/{code_item}', 'OutgoingGoodController@destroyItem');
+                Route::post('/{id}/items/{code_item}/restore', 'OutgoingGoodController@restoreTakeOutItem');
+                Route::post('/{id}/items/{code_item}/change-quantity', 'OutgoingGoodController@changeQuantityTakeOut');
                 Route::post('/assign', 'OutgoingGoodController@assign');
                 Route::put('/{id}/status', 'OutgoingGoodController@updateStatus');
                 Route::put('/{id}/assign', 'OutgoingGoodController@changeAssign');

@@ -8,6 +8,8 @@ use App\OutgoingGoodItem;
 use App\OutgoingGoodTemplate;
 use App\OutgoingGoodTemplateItem;
 use App\StockSlocTakeOutTemp;
+use App\StockSlockHistory;
+use App\StockSlock;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -398,6 +400,219 @@ class OutgoingGoodController extends Controller
             'success' => true,
             'message' => 'Items successfully assigned'
         ]);
+    }
+
+    public function restoreListNeedScanItem(Request $request, $id, $code_item)
+    {
+        $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
+        
+        if(!$outgoingItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outgoing item not found'
+            ], 404);
+        }
+        
+        foreach($outgoingItem->list_need_scans as $scan){
+            return;
+        }
+        return;
+        // $outgoingItem->save();
+    }
+
+    public function changeQuantityTakeOut(Request $request, $id, $code_item)
+    {
+        try { 
+            $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
+            // check if the quantity needed is less than the quantity out
+            $outgoingItem->quantity_needed = $request->quantity_needed;
+            $outgoingItem->quantity_out = 0;
+
+            // if($outgoingItem->scans->count() > 0){
+            //     foreach($outgoingItem->scans as $scan){
+            //         $this->restoreTakeOutItem($request, $id, $scan['_id']);
+            //     }
+            // }
+
+            if($outgoingItem->list_need_scans->count() > 0){
+                foreach($outgoingItem->list_need_scans as $scan){
+                    $this->restoreListNeedScanItem($request, $id, $scan['_id']);
+                }
+            }
+
+            // $outgoingItem->scans = [];
+            
+            
+            // $outgoingItem->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quantity take out changed successfully',
+                'data' => $outgoingItem
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change quantity take out',
+                'error' => $th->getMessage()
+            ], 500);
+        }    
+    }
+
+    public function restoreTakeOutItem(Request $request, $id, $code_item)
+    {
+        $validator = Validator::make($request->all(), [
+            'job_seq' => 'required',
+            'rack_code' => 'required',
+            'sloc_code' => 'nullable',
+            'uom' => 'required',
+            'quantity' => 'required',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
+
+        if(!$outgoingItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Outgoing item not found'
+            ], 404);
+        }
+
+        $outGoingNumber = OutgoingGood::findOrFail($id)->number;
+
+        // find job seq in outgoingItem scans
+        $DataScan = $outgoingItem->getListNeedScans()->where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('quantity', $request->quantity)->first();
+
+        if(!$DataScan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Job seq not found'
+            ], 404);
+        } 
+
+        $stockSlock = StockSlocTakeOutTemp::where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('material_code', $outgoingItem->material_code)->where('note', 'Temporary hold for outgoing good: ' . $outGoingNumber)->where('status','finished')->first();
+        
+        if(!$stockSlock) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stock slock not found'
+            ], 404);
+        }
+        
+        // Get data from stockslock
+        $stockSlockData = [
+            'job_seq' => $stockSlock->job_seq,
+            'material_code' => $stockSlock->material_code,
+            'rack_code' => $stockSlock->rack_code,
+            'sloc_code' => $stockSlock->sloc_code,
+            'uom' => $stockSlock->uom,
+            'uom_take_out' => $stockSlock->uom_take_out,
+            'user_id' => $stockSlock->user_id,
+            'quantity' => $stockSlock->qty,
+            'status' => $stockSlock->status,
+            'note' => $stockSlock->note,
+            'is_success' => $stockSlock->is_success,
+            'qty_take_out' => $stockSlock->qty_take_out,
+            'uom_take_out' => $stockSlock->uom_take_out,
+        ];
+
+        $stockSlockHistory = StockSlockHistory::where('job_seq', $request->job_seq)->where('slock_code', $stockSlock->sloc_code)->where('rack_code', $request->rack_code)->where('material_code', $stockSlock->material_code)->where('status','take_out')->first();
+
+        if(!$stockSlockHistory) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stock slock history not found'
+            ], 404);
+        }
+
+        $stockSlockHistoryDateIncome = $stockSlockHistory->date_income;
+        $stockSlockHistoryTimeIncome = $stockSlockHistory->time_income;
+
+        $StockSlockRestore = StockSlock::where('slock_code', $stockSlock->sloc_code)->where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('material_code', $stockSlock->material_code)->where('inventory_no', $stockSlock->inventory_no)->where('pkg_no', $stockSlock->pkg_no)->first();
+        
+        if(!$StockSlockRestore) {
+            $StockSlockRestore = new StockSlock();
+            $StockSlockRestore->slock_code = $stockSlock->sloc_code;
+            $StockSlockRestore->job_seq = $request->job_seq;
+            $StockSlockRestore->rack_code = $request->rack_code;
+            $StockSlockRestore->material_code = $stockSlock->material_code;
+            $StockSlockRestore->inventory_no = $stockSlock->inventory_no;
+            $StockSlockRestore->pkg_no = $stockSlock->pkg_no;
+            $StockSlockRestore->status = 'put_in';
+
+            $StockSlockRestore->valuated_stock = $stockSlock->qty_take_out;
+            $StockSlockRestore->uom = $stockSlock->uom;
+            $StockSlockRestore->tag = $stockSlock->tag ?? "ok";
+            $StockSlockRestore->date_income = $stockSlockHistoryDateIncome;
+            $StockSlockRestore->time_income = $stockSlockHistoryTimeIncome;
+            $StockSlockRestore->created_by = auth()->user()->npk;
+            $StockSlockRestore->updated_by = auth()->user()->npk;
+            $StockSlockRestore->updated_at = Carbon::now();
+            $StockSlockRestore->save();
+        }else{
+            $StockSlockRestore->valuated_stock = floatval($StockSlockRestore->valuated_stock) + floatval($stockSlock->qty_take_out);
+            $StockSlockRestore->updated_by = auth()->user()->npk;
+            $StockSlockRestore->updated_at = Carbon::now();
+            $StockSlockRestore->save();
+        } 
+
+        $scansItem = $outgoingItem->scans;
+
+        foreach($scansItem as $key => $scan){
+            // delete if same with $DataScan
+            if($scan['job_seq'] == $DataScan['job_seq'] && $scan['rack_code'] == $DataScan['rack_code'] && $scan['quantity'] == $DataScan['quantity']){
+                unset($scansItem[$key]);
+                $outgoingItem->quantity_out -= $scan['quantity'];
+            }
+        }
+
+        $scansItem = array_values($scansItem);
+
+
+        $outgoingItem->scans = $scansItem;
+        $outgoingItem->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Stock data retrieved successfully',
+            'data' => $outgoingItem, 
+        ]);
+    }
+
+    public function removeTakeOutItem(Request $request, $id, $code_item)
+    {
+        try {
+            $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
+
+            // before delete, we need check for the scan then delete the scans
+            $scansItem = $outgoingItem->scans;
+            foreach($scansItem as $scan){
+                // delete function scan that will restore the all stock slock
+                $this->restoreTakeOutItem($request, $id, $scan['_id']);
+            }
+
+            $outgoingItem->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Take out item removed successfully',
+                'data' => $outgoingItem
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove take out item',
+                'error' => $th->getMessage()
+            ], 500);
+        }
     }
 
     /**
