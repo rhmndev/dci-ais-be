@@ -4,19 +4,14 @@ namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class StorageSlocArea extends Model
+class StorageSlocAreaRack extends Model
 {
     protected $connection = 'mongodb';
 
     protected $fillable = [
-        'plant',
-        'sloc',
+        'storage_sloc_area_code',
         'code',
         'name',
-        'alias',
-        'type',
         'position',
-        'created_at',
-        'updated_at',
     ];
 }

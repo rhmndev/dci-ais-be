@@ -143,9 +143,14 @@ class MaterialController extends Controller
             $perPage = $request->get('per_page', 15); // Default to 15 items per page if not specified
             $query = Material::query();
              // Get user's role
-             $userRole = auth()->user()->role;
+            $userRole = auth()->user()->role;
 
-            $query = $query->with('StockSlockData');
+            $query = $query->with(['StockSlockData' => function($q) {
+                $q->where(function ($subQ) {
+                    $subQ->where('tag', 'ok')->orWhere('tag', 'OK');
+                });
+            }]);
+            
             // Apply role filtering
             $query = $query->whereHas('roleMaterialTypes', function($q) use ($userRole) {
                 $q->where('role_id', $userRole->_id);
@@ -226,8 +231,10 @@ class MaterialController extends Controller
                 $query->where('type', $request->selectedSlock);
             }
 
-            $query->with(['StockSlockData' => function($q) {
-                $q->orderBy('created_at', 'desc');
+            $query = $query->with(['StockSlockData' => function($q) {
+                $q->where(function ($subQ) {
+                    $subQ->where('tag', 'ok')->orWhere('tag', 'OK');
+                })->orderBy('created_at', 'desc');
             }]);
             $materials = $query->get();
 
@@ -479,7 +486,11 @@ class MaterialController extends Controller
                 $query->where('type', $request->selectedSlock);
             }
 
-            $query = $query->with('StockSlockData');
+            $query = $query->with(['StockSlockData' => function($q) {
+                $q->where(function ($subQ) {
+                    $subQ->where('tag', 'ok')->orWhere('tag', 'OK');
+                });
+            }]);
 
             $materials = $query->get();
 

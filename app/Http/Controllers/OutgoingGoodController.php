@@ -402,27 +402,78 @@ class OutgoingGoodController extends Controller
         ]);
     }
 
-    public function restoreListNeedScanItem(Request $request, $id, $code_item)
+    public function restoreListNeedScanItem(Request $request, $id, $code_item, $dataScan)
     {
-        $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
-        
-        if(!$outgoingItem) {
+        $session = null;
+        try { 
+            $session = DB::getMongoClient()->startSession();
+            $session->startTransaction();
+
+            $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
+            
+            if(!$outgoingItem) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Outgoing item not found'
+                ], 404);
+            }
+            
+            $StockSlockTemp = StockSlocTakeOutTemp::where('job_seq', $dataScan['job_seq'])->where('rack_code', $dataScan['rack_code'])->where('material_code', $outgoingItem->material_code)->where('note', 'Temporary hold for outgoing good: ' . $outgoingItem->outgoing_good_number)->where('status','ready')->first();
+
+            if(!$StockSlockTemp) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stock slock temp not found'
+                ], 404);
+            } 
+
+            $StockSlockTemp->status = 'cancelled';
+            $StockSlockTemp->save(); 
+
+            // $StockSlock = StockSloc::where('job_seq', $dataScan['job_seq'])->where('rack_code', $dataScan['rack_code'])->where('material_code', $outgoingItem->material_code)->where('status','take_out')->first();
+            // if($StockSlock){
+            //     $StockSlock->valuated_stock += floatval($dataScan['quantity']) + floatval($StockSlockTemp->qty_take_out);
+            //     $StockSlock->save();
+            // }
+
+            $outgoingItem->list_need_scans = collect($outgoingItem->list_need_scans)->reject(function($item) use ($dataScan) {
+                return $item['job_seq'] == $dataScan['job_seq'] && $item['rack_code'] == $dataScan['rack_code'];
+            })->values()->all();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'List need scan item restored successfully',
+                'data' => $outgoingItem
+            ]);
+        } catch (\Throwable $th) {
+            $session->abortTransaction();
             return response()->json([
                 'success' => false,
-                'message' => 'Outgoing item not found'
-            ], 404);
+                'message' => 'Failed to restore list need scan item',
+                'error' => $th->getMessage()
+            ], 500);
         }
-        
-        foreach($outgoingItem->list_need_scans as $scan){
-            return;
-        }
-        return;
-        // $outgoingItem->save();
     }
 
     public function changeQuantityTakeOut(Request $request, $id, $code_item)
     {
+        $validator = Validator::make($request->all(), [
+            'quantity_needed' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $session = null;
         try { 
+            $session = DB::getMongoClient()->startSession();
+            $session->startTransaction();
+
             $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
             // check if the quantity needed is less than the quantity out
             $outgoingItem->quantity_needed = $request->quantity_needed;
@@ -432,11 +483,26 @@ class OutgoingGoodController extends Controller
             //     foreach($outgoingItem->scans as $scan){
             //         $this->restoreTakeOutItem($request, $id, $scan['_id']);
             //     }
-            // }
+            // } 
 
-            if($outgoingItem->list_need_scans->count() > 0){
+            
+            if($outgoingItem->list_need_scans){ 
                 foreach($outgoingItem->list_need_scans as $scan){
-                    $this->restoreListNeedScanItem($request, $id, $scan['_id']);
+                    // check if $scan['job_seq'] have in $outgoingItem->scans
+                    $scans = $outgoingItem->scans ?? [];
+                    $haveScannedData = false;
+                    foreach($scans as $scanItem){
+                        if($scanItem['job_seq'] == $scan['job_seq']){
+                            $haveScannedData = true;
+                        }
+                    }
+
+                    if($haveScannedData){
+                        return response()->json([
+                            'data' => $scans,
+                        ]);
+                    }
+                    return $this->restoreListNeedScanItem($request, $id, $code_item, $scan);
                 }
             }
 
@@ -444,13 +510,14 @@ class OutgoingGoodController extends Controller
             
             
             // $outgoingItem->save();
-
+            $session->commitTransaction();
             return response()->json([
                 'success' => true,
                 'message' => 'Quantity take out changed successfully',
                 'data' => $outgoingItem
             ]);
         } catch (\Throwable $th) {
+            $session->abortTransaction();
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change quantity take out',
