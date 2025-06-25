@@ -39,13 +39,36 @@ class StorageSlocAreaController extends Controller
         }
     }
 
+    public function show(Request $request, $id)
+    {
+        try {
+            $SlocArea = StorageSlocArea::find($id);
+            if (!$SlocArea) {
+                return response()->json(['error' => 'Storage sloc area not found'], 404);
+            }
+            // If no ID is provided, return all records
+            if (!$id) {
+                return response()->json(StorageSlocArea::all());
+            }
+            // If an ID is provided, return the specific record
+
+            return response()->json($SlocArea);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Storage sloc area not found'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch storage sloc area: ' . $e->getMessage()], 500);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => 'An unexpected error occurred: ' . $th->getMessage()], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
             // Validate the request
             $validator = \Validator::make($request->all(), [
                 'plant' => 'required',
-                'sloc' => 'required',
+                'slock' => 'required',
                 'code' => 'required',
                 'name' => 'required',
                 'alias' => 'nullable'
@@ -57,7 +80,7 @@ class StorageSlocAreaController extends Controller
 
             // Check for existing record with same plant, sloc, and code
             $exists = StorageSlocArea::where('plant', $request->plant)
-                ->where('sloc', $request->sloc)
+                ->where('sloc', $request->slock)
                 ->where('code', $request->code)
                 ->exists();
 

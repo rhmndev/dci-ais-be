@@ -413,6 +413,7 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::get('/', 'StorageSlocAreaController@index');
                 Route::post('/', 'StorageSlocAreaController@store');
                 Route::put('/{id}', 'StorageSlocAreaController@update');
+                Route::get('/{id}','StorageSlocAreaController@show');
                 Route::delete('/{id}', 'StorageSlocAreaController@destroy');
         });
 

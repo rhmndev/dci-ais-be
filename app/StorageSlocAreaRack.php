@@ -11,6 +11,7 @@ class StorageSlocAreaRack extends Model
     protected $fillable = [
         'storage_sloc_area_code',
         'code',
+        'segment',
         'name',
         'position',
     ];
