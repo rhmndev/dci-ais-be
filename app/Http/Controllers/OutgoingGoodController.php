@@ -720,7 +720,7 @@ class OutgoingGoodController extends Controller
             $outgoingGood->completion_notes = null;
             $outgoingGood->cancelled_at = Carbon::now();
             $outgoingGood->cancelled_by = auth()->user()->npk;
-            $outgoingGood->cancelled_reason = $request->cancelled_reason ?? null;
+            $outgoingGood->cancelled_reason = $request->cancel_reason ?? null;
         }
 
         $outgoingGood->save();

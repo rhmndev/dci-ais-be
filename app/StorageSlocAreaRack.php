@@ -14,5 +14,12 @@ class StorageSlocAreaRack extends Model
         'segment',
         'name',
         'position',
+        'can_more_item',
+        'barcode'
     ];
+
+    public function StorageSlockArea()
+    {
+        return $this->belongsTo(StorageSlocArea::class,'code','storage_sloc_area_code');
+    }
 }

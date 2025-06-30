@@ -415,6 +415,8 @@ Route::group(['middleware' => ['auth:api']], function () {
                 Route::put('/{id}', 'StorageSlocAreaController@update');
                 Route::get('/{id}','StorageSlocAreaController@show');
                 Route::delete('/{id}', 'StorageSlocAreaController@destroy');
+                Route::post('/a/rack', 'StorageSlocAreaController@storeRack');
+                Route::get('/g/rack', 'StorageSlocAreaController@getRack');
         });
 
         Route::group(['prefix' => 'planning-productions'], function () {

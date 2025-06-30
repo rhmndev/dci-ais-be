@@ -125,7 +125,13 @@ class DashboardController extends Controller
                             'url' => '/outgoing-goods',
                             'icon' => 'fa fa-truck',
                             'color' => 'primary',
-                        ]
+                        ],
+                        'track_location_material' => [
+                            'name' => 'Material Location',
+                            'url' => '/search-material-and-rack',
+                            'icon' => 'fa fa-location',
+                            'color' => 'primary',
+                        ],
                     ]
                 ];
             }

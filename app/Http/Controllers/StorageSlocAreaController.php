@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\StorageSlocArea;
+use App\StorageSlocAreaRack;
 
 class StorageSlocAreaController extends Controller
 {
@@ -120,6 +121,42 @@ class StorageSlocAreaController extends Controller
             return response()->json(['error' => 'Storage sloc area not found'], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to delete storage sloc area: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function getRack(Request $request)
+    {
+        try {
+            $racks = StorageSlocAreaRack::get();
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $racks
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()]);
+        }
+    }
+
+    public function storeRack(Request $request)
+    {
+        try {
+            $request->validate([
+                'code_area' => 'required',
+                'position'=> 'required',
+                'name' => 'required',
+            ]);
+
+            $code = $request->code_area . '|'.$request->position;
+
+            $Rack = StorageSlocAreaRack::create($request->all());
+            $Rack->code = $code;
+            $Rack->save();
+
+
+            return response()->json($Rack,201);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => $th->getMessage()]);
         }
     }
 }

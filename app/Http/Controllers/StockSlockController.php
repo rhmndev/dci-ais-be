@@ -24,6 +24,10 @@ class StockSlockController extends Controller
 
             $stockSlocks->with('material', 'RackDetails', 'WhsMatControl','CreatedBy');
             
+            if ($request->has('f_job_seq')) {
+                $stockSlocks->where('job_seq', $request->f_job_seq);
+            }
+
             if ($request->has('slock_code')) {
                 $stockSlocks->where('slock_code', $request->slock_code);
             }

@@ -19,4 +19,9 @@ class StorageSlocArea extends Model
         'created_at',
         'updated_at',
     ];
+
+    public function Racks()
+    {
+        return $this->hasMany(StorageSlocAreaRack::class,'storage_sloc_area_code','code');
+    }
 }
