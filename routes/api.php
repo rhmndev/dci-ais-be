@@ -370,7 +370,14 @@ Route::group(['middleware' => ['auth:api']], function () {
 
                 Route::get('/g/material-location/{material_code}', 'StockSlockController@getMaterialLocation');
         });
-
+        
+        Route::prefix('outgoing-goods-settings')->group(function () {
+                Route::get('/label-color','OutgoingGoodLabelColorController@index');
+                Route::put('/label-color/{id}','OutgoingGoodLabelColorController@update');
+                Route::post('/label-color','OutgoingGoodLabelColorController@store');
+                Route::delete('/label-color/{id}','OutgoingGoodLabelColorController@destroy');
+        });
+        
         Route::prefix('outgoing-goods')->group(function () {
                 Route::get('/', 'OutgoingGoodController@index');
                 Route::post('/', 'OutgoingGoodController@store');

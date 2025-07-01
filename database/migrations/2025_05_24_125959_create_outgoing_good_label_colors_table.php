@@ -15,6 +15,9 @@ class CreateOutgoingGoodLabelColorsTable extends Migration
     {
         Schema::create('outgoing_good_label_colors', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->string('type');
+            $table->string('month');
+            $table->string('color');
             $table->timestamps();
         });
     }
