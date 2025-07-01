@@ -17,7 +17,7 @@ class User extends Authenticable
         'api_token'
     ];
 
-    protected $fillable = ['username', 'npk', 'is_admin'];
+    protected $fillable = ['username', 'npk', 'is_admin', 'login_attempts', 'is_locked'];
 
     protected $dates = ['deleted_at'];
 

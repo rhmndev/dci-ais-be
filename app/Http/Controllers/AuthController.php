@@ -41,12 +41,25 @@ class AuthController extends Controller
         $token = Str::random(25);
         $user = User::where('username', $request->username)->first();
 
+        // Check if user is locked
+        if ($user->is_locked ?? false) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Your account is locked. Please contact admin to unlock.',
+                'errors' => [
+                    'locked' => [
+                        'Your account is locked due to too many failed login attempts.'
+                    ]
+                ]
+            ], 423);
+        }
+
         if (Hash::check($request->password, $user->password)) {
-
+            // Reset login attempts on successful login
             $user->forceFill([
-                'api_token' => hash('sha256', $token)
+                'api_token' => hash('sha256', $token),
+                'login_attempts' => 0
             ])->save();
-
 
             $permissions = Permission::whereNull('parent_id')->orderBy('order_number')->get();
             $permission_allowed = $permissions->map(function ($permission) use ($user) {
@@ -73,7 +86,6 @@ class AuthController extends Controller
                 }
             });
 
-
             $user->photo_url = asset('storage/images/users/' . $user->photo);
 
             return response()->json([
@@ -85,12 +97,19 @@ class AuthController extends Controller
                 'redirect' => Permission::find($user->role->permissions->where('allow', true)->first()->permission_id)->url
             ], 200);
         } else {
+            // Increment login attempts
+            $user->login_attempts = ($user->login_attempts ?? 0) + 1;
+            // Lock user if attempts >= 3
+            if ($user->login_attempts >= 3) {
+                $user->is_locked = true;
+            }
+            $user->save();
             return response()->json([
                 'type' => 'error',
-                'message' => 'Please check your email or password!',
+                'message' => $user->is_locked ? 'Your account is locked due to too many failed login attempts.' : 'Please check your email or password!',
                 'errors' => [
                     'password' => [
-                        'Your password is invalid!'
+                        $user->is_locked ? 'Your account is locked. Please contact admin to unlock.' : 'Your password is invalid!'
                     ]
                 ]
             ], 422);
@@ -167,5 +186,19 @@ class AuthController extends Controller
 
             ], 400);
         }
+    }
+
+    public function unlockUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $user->is_locked = false;
+        $user->login_attempts = 0;
+        $user->save();
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'User unlocked successfully.',
+            'data' => $user
+        ], 200);
     }
 }

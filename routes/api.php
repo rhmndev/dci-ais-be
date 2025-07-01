@@ -26,6 +26,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::get('/dashboardV', 'DashboardController@indexV');
         #endregion
         Route::put('/admin/reset-password/{id}', 'AdminController@resetPassword');
+        Route::put('/admin/unlock-user/{id}', 'AuthController@unlockUser');
 
         Route::group(['middleware' => ['checkPermission:user']], function () {
                 #region Master User
