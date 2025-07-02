@@ -373,6 +373,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         
         Route::prefix('outgoing-goods-settings')->group(function () {
                 Route::get('/label-color','OutgoingGoodLabelColorController@index');
+                Route::get('/label-color-list','OutgoingGoodLabelColorController@getListLabelColor');
                 Route::put('/label-color/{id}','OutgoingGoodLabelColorController@update');
                 Route::post('/label-color','OutgoingGoodLabelColorController@store');
                 Route::delete('/label-color/{id}','OutgoingGoodLabelColorController@destroy');
@@ -541,9 +542,11 @@ Route::group(['prefix' => 'rack'], function () {
 Route::get('/rack/g/qr-code/{id}', 'RackController@showDataByQrCode');
 
 Route::post('/login', 'AuthController@login');
+Route::post('/forgot-password', 'AuthController@forgotPassword');
 Route::post('/resetpassword', 'AuthController@resetpassword');
 Route::get('/resetpassword/{token}', 'AuthController@show');
 Route::post('/resetpassword/{token}', 'AuthController@resetpassword');
+Route::post('/reset-password', 'AuthController@resetPasswordWithToken');
 
 Route::get('/dataVendorSAP', 'SAPController@getVendor');
 Route::post('/dataVendorSAP', 'SAPController@storeVendor');

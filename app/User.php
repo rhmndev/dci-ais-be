@@ -17,7 +17,7 @@ class User extends Authenticable
         'api_token'
     ];
 
-    protected $fillable = ['username', 'npk', 'is_admin', 'login_attempts', 'is_locked'];
+    protected $fillable = ['username', 'npk', 'email', 'is_admin', 'login_attempts', 'is_locked', 'reset_token'];
 
     protected $dates = ['deleted_at'];
 
@@ -59,5 +59,16 @@ class User extends Authenticable
     public function partControls()
     {
         return $this->hasMany(PartControl::class, 'created_by', 'npk');
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
 }

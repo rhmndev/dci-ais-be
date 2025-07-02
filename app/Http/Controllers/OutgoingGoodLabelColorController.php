@@ -104,4 +104,20 @@ class OutgoingGoodLabelColorController extends Controller
             ], 500);
         }
     }
+
+    public function getAllList()
+    {
+        try {
+            $labelColors = OutgoingGoodLabelColor::all();
+            return response()->json([
+                'message' => 'success',
+                'data' => $labelColors
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 }
