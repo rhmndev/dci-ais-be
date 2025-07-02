@@ -10,5 +10,6 @@ class OutgoingGoodLabelColor extends Model
         'type', 
         'month',
         'color',
+        'text_color'
     ];
 }

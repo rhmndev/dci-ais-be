@@ -31,6 +31,29 @@ class OutgoingGoodLabelColorController extends Controller
         }
     }
 
+    public function getListLabelColor(Request $request)
+    {
+        try {
+            $query = OutgoingGoodLabelColor::query();
+
+            if ($request->has('type') && $request->type != '') {
+                $query->where('type', 'like', '%' . $request->type . '%');
+            }
+
+            $labelColors = $query->get();
+
+            return response()->json([
+                'message' => 'success',
+                'data' => $labelColors
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'failed',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
@@ -38,6 +61,7 @@ class OutgoingGoodLabelColorController extends Controller
                 'type' => 'required|string',
                 'month' => 'required|string',
                 'color' => 'required|string',
+                'text_color' => 'required|string',
             ]);
 
             $labelColor = OutgoingGoodLabelColor::create($request->only(['type', 'month', 'color']));
@@ -66,10 +90,11 @@ class OutgoingGoodLabelColorController extends Controller
                 'type' => 'sometimes|required|string',
                 'month' => 'sometimes|required|string',
                 'color' => 'sometimes|required|string',
+                'text_color' => 'sometimes|required|string',
             ]);
 
             $labelColor = OutgoingGoodLabelColor::findOrFail($id);
-            $labelColor->update($request->only(['type', 'month', 'color']));
+            $labelColor->update($request->only(['type', 'month', 'color','text_color']));
 
             return response()->json([
                 'message' => 'success',
