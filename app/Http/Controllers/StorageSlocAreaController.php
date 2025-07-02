@@ -18,7 +18,7 @@ class StorageSlocAreaController extends Controller
                 $query->where('plant', 'like', '%' . $request->plant . '%');
             }
             if ($request->has('sloc')) {
-                $query->where('sloc', 'like', '%' . $request->sloc . '%');
+                $query->where('slock', 'like', '%' . $request->sloc . '%');
             }
             if ($request->has('code')) {
                 $query->where('code', 'like', '%' . $request->code . '%');
@@ -70,6 +70,7 @@ class StorageSlocAreaController extends Controller
             $validator = \Validator::make($request->all(), [
                 'plant' => 'required',
                 'slock' => 'required',
+                'index' => 'required',
                 'code' => 'required',
                 'name' => 'required',
                 'alias' => 'nullable'
@@ -81,7 +82,7 @@ class StorageSlocAreaController extends Controller
 
             // Check for existing record with same plant, sloc, and code
             $exists = StorageSlocArea::where('plant', $request->plant)
-                ->where('sloc', $request->slock)
+                ->where('slock', $request->slock)
                 ->where('code', $request->code)
                 ->exists();
 
@@ -91,7 +92,10 @@ class StorageSlocAreaController extends Controller
                 ], 409);
             }
 
-            $storageSlocArea = StorageSlocArea::create($request->all());
+            $data = $request->only(['plant', 'slock', 'code', 'name', 'alias']);
+            $data['index'] = (int) $request->input('index'); 
+
+            $storageSlocArea = StorageSlocArea::create($data);
             return response()->json($storageSlocArea, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to create storage sloc area: ' . $e->getMessage()], 500);
@@ -102,7 +106,26 @@ class StorageSlocAreaController extends Controller
     {
         try {
             $storageSlocArea = StorageSlocArea::findOrFail($id);
-            $storageSlocArea->update($request->all());
+
+            $validator = \Validator::make($request->all(), [
+                'plant' => 'required',
+                'slock' => 'required',
+                'index' => 'required|integer',
+                'code' => 'required',
+                'name' => 'required',
+                'alias' => 'nullable'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            // Ambil data yang dibutuhkan saja, dan pastikan index adalah integer
+            $data = $request->only(['plant', 'slock', 'code', 'name', 'alias']);
+            $data['index'] = (int) $request->input('index');
+
+            $storageSlocArea->update($data);
+
             return response()->json($storageSlocArea, 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['error' => 'Storage sloc area not found'], 404);
@@ -127,7 +150,7 @@ class StorageSlocAreaController extends Controller
     public function getRack(Request $request)
     {
         try {
-            $racks = StorageSlocAreaRack::get();
+            $racks = StorageSlocAreaRack::where('storage_sloc_area_code',$request->storage_sloc_area_code)->get();
 
             return response()->json([
                 'message' => 'success',
@@ -142,6 +165,7 @@ class StorageSlocAreaController extends Controller
     {
         try {
             $request->validate([
+                'storage_sloc_area_code' => 'required',
                 'code_area' => 'required',
                 'position'=> 'required',
                 'name' => 'required',

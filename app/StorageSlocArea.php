@@ -10,9 +10,10 @@ class StorageSlocArea extends Model
 
     protected $fillable = [
         'plant',
-        'sloc',
+        'slock',
         'code',
         'name',
+        'index',
         'alias',
         'type',
         'position',
