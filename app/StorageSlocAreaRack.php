@@ -20,6 +20,6 @@ class StorageSlocAreaRack extends Model
 
     public function StorageSlockArea()
     {
-        return $this->belongsTo(StorageSlocArea::class,'code','storage_sloc_area_code');
+        return $this->hasOne(StorageSlocArea::class,'_id','storage_sloc_area_code');
     }
 }

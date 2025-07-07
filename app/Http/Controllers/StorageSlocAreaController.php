@@ -150,7 +150,7 @@ class StorageSlocAreaController extends Controller
     public function getRack(Request $request)
     {
         try {
-            $racks = StorageSlocAreaRack::where('storage_sloc_area_code',$request->storage_sloc_area_code)->get();
+            $racks = StorageSlocAreaRack::where('storage_sloc_area_code',$request->storage_sloc_area_code)->with('StorageSlockArea')->get();
 
             return response()->json([
                 'message' => 'success',
