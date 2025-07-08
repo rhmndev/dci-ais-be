@@ -36,19 +36,19 @@ class OutgoingGoodController extends Controller
         // how to add relations inside items
         $query->with(['items.material']);
         // request assign_to is array
-        if($request->has('assign_to') && is_array($request->assign_to)) {
-            $query->where(function($q) use ($request) {
-                if(in_array('group', $request->assign_to)) {
-                    $q->orWhere('assign_to', 'group'); 
+        if ($request->has('assign_to') && is_array($request->assign_to)) {
+            $query->where(function ($q) use ($request) {
+                if (in_array('group', $request->assign_to)) {
+                    $q->orWhere('assign_to', 'group');
                 }
 
-                if(in_array('individual', $request->assign_to)) {
-                    $q->orWhere(function($subQ) use ($request) {
-                        $subQ->where(function($innerQ) {
+                if (in_array('individual', $request->assign_to)) {
+                    $q->orWhere(function ($subQ) use ($request) {
+                        $subQ->where(function ($innerQ) {
                             $innerQ->where('assign_to', 'individual')
-                                  ->orWhereNull('assign_to');
+                                ->orWhereNull('assign_to');
                         });
-                        if($request->has('handle_for_id') && $request->handle_for_id !== '') {
+                        if ($request->has('handle_for_id') && $request->handle_for_id !== '') {
                             $subQ->where('handle_for_id', $request->handle_for_id);
                         }
                     });
@@ -65,9 +65,9 @@ class OutgoingGoodController extends Controller
         // if($request->has('handle_for_group') && $request->handle_for_group !== '') {
         //     $query->where('handle_for_group', $request->handle_for_group);
         // }
-        
 
-        if($request->has('keyword') && $request->keyword !== '') {
+
+        if ($request->has('keyword') && $request->keyword !== '') {
             $query->where('number', 'like', '%' . $request->keyword . '%');
         }
 
@@ -81,15 +81,15 @@ class OutgoingGoodController extends Controller
             $query->where('status', $request->status);
         }
 
-        if($request->has('part_number') && $request->part_number !== '') {
+        if ($request->has('part_number') && $request->part_number !== '') {
             $query->where('part_number', 'like', '%' . $request->part_number . '%');
         }
-        if($request->has('part_name') && $request->part_name !== '') {
+        if ($request->has('part_name') && $request->part_name !== '') {
             $query->where('part_name', 'like', '%' . $request->part_name . '%');
         }
 
-        if($request->has('multiple_status') && is_array($request->multiple_status)) {
-            $query->whereNotIn('status', ['completed', 'cancelled','waiting_tp']);
+        if ($request->has('multiple_status') && is_array($request->multiple_status)) {
+            $query->whereNotIn('status', ['completed', 'cancelled', 'waiting_tp']);
         }
 
         $perPage = $request->input('per_page', 10); // default 10 items per page
@@ -195,7 +195,7 @@ class OutgoingGoodController extends Controller
             foreach ($request->items as $item) {
                 $stockSlock = new StockSlockController();
                 $material = Material::where('code', $item['material_code'])->first();
-                
+
                 $outgoingItem = new OutgoingGoodItem();
                 $outgoingItem->outgoing_good_id = $outgoingGood->id;
                 $outgoingItem->outgoing_good_number = $refNumber;
@@ -211,27 +211,27 @@ class OutgoingGoodController extends Controller
                 $request->merge(['material_code' => $item['material_code']]);
                 $stockSlockData = $stockSlock->getStockMaterialAvailable($request);
                 $stockSlockData = $stockSlockData->original['data'] ?? [];
-                
+
                 $filteredStockData = collect($stockSlockData)
-                ->where('material_code', $item['material_code'])
-                ->where('available_qty', '>', 0)
-                ->sortBy(function($item) {
-                    return $item['date_income'] . ' ' . $item['time_income'];
-                })
-                ->values(); 
-                
+                    ->where('material_code', $item['material_code'])
+                    ->where('available_qty', '>', 0)
+                    ->sortBy(function ($item) {
+                        return $item['date_income'] . ' ' . $item['time_income'];
+                    })
+                    ->values();
+
                 if ($filteredStockData->count() > 0) {
                     $stockNeeded = floatval($item['quantity_needed']);
                     $stockOut = 0;
                     $totalAvailable = $filteredStockData->sum('available_qty');
-                    $stockAvailable = 0; 
+                    $stockAvailable = 0;
 
                     // stock needed is 2
                     // stock available is 3000, 2000
                     // stock available total is 5000
 
                     // Check if we have enough total stock
-                    if ($totalAvailable >= $stockNeeded) { 
+                    if ($totalAvailable >= $stockNeeded) {
                         foreach ($filteredStockData as $stock) {
                             $stockNeededByStock = $stock['available_qty'];
                             if ($stockNeeded <= 0) {
@@ -239,19 +239,19 @@ class OutgoingGoodController extends Controller
                             }
 
                             // Take the available stock 
-                            if($material->is_partially_out === null || $material->is_partially_out === 'undefined' || $material->is_partially_out === false) {
+                            if ($material->is_partially_out === null || $material->is_partially_out === 'undefined' || $material->is_partially_out === false) {
                                 $stockOut += $stock['available_qty'];
                                 $stockAvailable = $stock['available_qty'];
-                                $stockNeeded -= $stock['available_qty'];  
+                                $stockNeeded -= $stock['available_qty'];
                             } else {
-                                if($stock['available_qty'] - $stockNeeded > 0) {
-                                    $stockOut = $stockNeeded ;
+                                if ($stock['available_qty'] - $stockNeeded > 0) {
+                                    $stockOut = $stockNeeded;
                                     $stockAvailable = $stockNeeded;
-                                    $stockNeeded -= $stock['available_qty']; 
+                                    $stockNeeded -= $stock['available_qty'];
                                 } else {
                                     $stockOut = $stock['available_qty'];
                                     $stockAvailable = $stock['available_qty'];
-                                    $stockNeeded -= $stock['available_qty']; 
+                                    $stockNeeded -= $stock['available_qty'];
                                 }
                             }
 
@@ -274,10 +274,11 @@ class OutgoingGoodController extends Controller
                             $tempStock->material_code = $item['material_code'];
                             $tempStock->sloc_code = $stock['slock_code'];
                             $tempStock->rack_code = $stock['rack_code'];
+                            $tempStock->pkg_no = $stock['pkg_no'] ?? '';
                             $tempStock->uom = $stock['uom'];
-                            $tempStock->qty = $stock['valuated_stock']; 
+                            $tempStock->qty = $stock['valuated_stock'];
                             $tempStock->uom_take_out = $material->unit;
-                            if($material->is_partially_out == null || $material->is_partially_out == 'undefined' || $material->is_partially_out == false) {
+                            if ($material->is_partially_out == null || $material->is_partially_out == 'undefined' || $material->is_partially_out == false) {
                                 $tempStock->qty_take_out = $stockAvailable;
                             } else {
                                 $tempStock->qty_take_out = $stockOut;
@@ -292,7 +293,7 @@ class OutgoingGoodController extends Controller
                                 'rack_code' => $stock['rack_code'],
                                 'job_seq' => $stock['job_seq'],
                             ];
-                            if($material->is_partially_out == null || $material->is_partially_out == 'undefined' || $material->is_partially_out == false) {
+                            if ($material->is_partially_out == null || $material->is_partially_out == 'undefined' || $material->is_partially_out == false) {
                                 $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockAvailable, $stock['uom']);
                             } else {
                                 $outgoingItem->addListNeedScans($stock['job_seq'], $stock['rack_code'], $stockOut, $stock['uom']);
@@ -314,11 +315,10 @@ class OutgoingGoodController extends Controller
                 'data' => $outgoingGood->load('items'),
                 'qr_code_url' => asset('storage/' . $qrPath)
             ], 201);
-
         } catch (\Exception $e) {
             // Rollback MongoDB transaction
             $session->abortTransaction();
-            
+
             // Delete QR code if it was created
             if (isset($qrPath) && Storage::disk('public')->exists($qrPath)) {
                 Storage::disk('public')->delete($qrPath);
@@ -405,30 +405,30 @@ class OutgoingGoodController extends Controller
     public function restoreListNeedScanItem(Request $request, $id, $code_item, $dataScan)
     {
         $session = null;
-        try { 
+        try {
             $session = DB::getMongoClient()->startSession();
             $session->startTransaction();
 
             $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
-            
-            if(!$outgoingItem) {
+
+            if (!$outgoingItem) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Outgoing item not found'
                 ], 404);
             }
-            
-            $StockSlockTemp = StockSlocTakeOutTemp::where('job_seq', $dataScan['job_seq'])->where('rack_code', $dataScan['rack_code'])->where('material_code', $outgoingItem->material_code)->where('note', 'Temporary hold for outgoing good: ' . $outgoingItem->outgoing_good_number)->where('status','ready')->first();
 
-            if(!$StockSlockTemp) {
+            $StockSlockTemp = StockSlocTakeOutTemp::where('job_seq', $dataScan['job_seq'])->where('rack_code', $dataScan['rack_code'])->where('material_code', $outgoingItem->material_code)->where('note', 'Temporary hold for outgoing good: ' . $outgoingItem->outgoing_good_number)->where('status', 'ready')->first();
+
+            if (!$StockSlockTemp) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Stock slock temp not found'
                 ], 404);
-            } 
+            }
 
             $StockSlockTemp->status = 'cancelled';
-            $StockSlockTemp->save(); 
+            $StockSlockTemp->save();
 
             // $StockSlock = StockSloc::where('job_seq', $dataScan['job_seq'])->where('rack_code', $dataScan['rack_code'])->where('material_code', $outgoingItem->material_code)->where('status','take_out')->first();
             // if($StockSlock){
@@ -436,7 +436,7 @@ class OutgoingGoodController extends Controller
             //     $StockSlock->save();
             // }
 
-            $outgoingItem->list_need_scans = collect($outgoingItem->list_need_scans)->reject(function($item) use ($dataScan) {
+            $outgoingItem->list_need_scans = collect($outgoingItem->list_need_scans)->reject(function ($item) use ($dataScan) {
                 return $item['job_seq'] == $dataScan['job_seq'] && $item['rack_code'] == $dataScan['rack_code'];
             })->values()->all();
 
@@ -470,7 +470,7 @@ class OutgoingGoodController extends Controller
         }
 
         $session = null;
-        try { 
+        try {
             $session = DB::getMongoClient()->startSession();
             $session->startTransaction();
 
@@ -485,19 +485,19 @@ class OutgoingGoodController extends Controller
             //     }
             // } 
 
-            
-            if($outgoingItem->list_need_scans){ 
-                foreach($outgoingItem->list_need_scans as $scan){
+
+            if ($outgoingItem->list_need_scans) {
+                foreach ($outgoingItem->list_need_scans as $scan) {
                     // check if $scan['job_seq'] have in $outgoingItem->scans
                     $scans = $outgoingItem->scans ?? [];
                     $haveScannedData = false;
-                    foreach($scans as $scanItem){
-                        if($scanItem['job_seq'] == $scan['job_seq']){
+                    foreach ($scans as $scanItem) {
+                        if ($scanItem['job_seq'] == $scan['job_seq']) {
                             $haveScannedData = true;
                         }
                     }
 
-                    if($haveScannedData){
+                    if ($haveScannedData) {
                         return response()->json([
                             'data' => $scans,
                         ]);
@@ -507,8 +507,8 @@ class OutgoingGoodController extends Controller
             }
 
             // $outgoingItem->scans = [];
-            
-            
+
+
             // $outgoingItem->save();
             $session->commitTransaction();
             return response()->json([
@@ -523,7 +523,7 @@ class OutgoingGoodController extends Controller
                 'message' => 'Failed to change quantity take out',
                 'error' => $th->getMessage()
             ], 500);
-        }    
+        }
     }
 
     public function restoreTakeOutItem(Request $request, $id, $code_item)
@@ -535,7 +535,7 @@ class OutgoingGoodController extends Controller
             'uom' => 'required',
             'quantity' => 'required',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -546,7 +546,7 @@ class OutgoingGoodController extends Controller
 
         $outgoingItem = OutgoingGoodItem::where('outgoing_good_id', $id)->where('_id', $code_item)->first();
 
-        if(!$outgoingItem) {
+        if (!$outgoingItem) {
             return response()->json([
                 'success' => false,
                 'message' => 'Outgoing item not found'
@@ -558,22 +558,22 @@ class OutgoingGoodController extends Controller
         // find job seq in outgoingItem scans
         $DataScan = $outgoingItem->getListNeedScans()->where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('quantity', $request->quantity)->first();
 
-        if(!$DataScan) {
+        if (!$DataScan) {
             return response()->json([
                 'success' => false,
                 'message' => 'Job seq not found'
             ], 404);
-        } 
+        }
 
-        $stockSlock = StockSlocTakeOutTemp::where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('material_code', $outgoingItem->material_code)->where('note', 'Temporary hold for outgoing good: ' . $outGoingNumber)->where('status','finished')->first();
-        
-        if(!$stockSlock) {
+        $stockSlock = StockSlocTakeOutTemp::where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('material_code', $outgoingItem->material_code)->where('note', 'Temporary hold for outgoing good: ' . $outGoingNumber)->where('status', 'finished')->first();
+
+        if (!$stockSlock) {
             return response()->json([
                 'success' => false,
                 'message' => 'Stock slock not found'
             ], 404);
         }
-        
+
         // Get data from stockslock
         $stockSlockData = [
             'job_seq' => $stockSlock->job_seq,
@@ -591,9 +591,9 @@ class OutgoingGoodController extends Controller
             'uom_take_out' => $stockSlock->uom_take_out,
         ];
 
-        $stockSlockHistory = StockSlockHistory::where('job_seq', $request->job_seq)->where('slock_code', $stockSlock->sloc_code)->where('rack_code', $request->rack_code)->where('material_code', $stockSlock->material_code)->where('status','take_out')->first();
+        $stockSlockHistory = StockSlockHistory::where('job_seq', $request->job_seq)->where('slock_code', $stockSlock->sloc_code)->where('rack_code', $request->rack_code)->where('material_code', $stockSlock->material_code)->where('status', 'take_out')->first();
 
-        if(!$stockSlockHistory) {
+        if (!$stockSlockHistory) {
             return response()->json([
                 'success' => false,
                 'message' => 'Stock slock history not found'
@@ -604,8 +604,8 @@ class OutgoingGoodController extends Controller
         $stockSlockHistoryTimeIncome = $stockSlockHistory->time_income;
 
         $StockSlockRestore = StockSlock::where('slock_code', $stockSlock->sloc_code)->where('job_seq', $request->job_seq)->where('rack_code', $request->rack_code)->where('material_code', $stockSlock->material_code)->where('inventory_no', $stockSlock->inventory_no)->where('pkg_no', $stockSlock->pkg_no)->first();
-        
-        if(!$StockSlockRestore) {
+
+        if (!$StockSlockRestore) {
             $StockSlockRestore = new StockSlock();
             $StockSlockRestore->slock_code = $stockSlock->sloc_code;
             $StockSlockRestore->job_seq = $request->job_seq;
@@ -617,6 +617,7 @@ class OutgoingGoodController extends Controller
 
             $StockSlockRestore->valuated_stock = $stockSlock->qty_take_out;
             $StockSlockRestore->uom = $stockSlock->uom;
+            $StockSlockRestore->pkg_no = $stockSlock->pkg_no;
             $StockSlockRestore->tag = $stockSlock->tag ?? "ok";
             $StockSlockRestore->date_income = $stockSlockHistoryDateIncome;
             $StockSlockRestore->time_income = $stockSlockHistoryTimeIncome;
@@ -624,18 +625,18 @@ class OutgoingGoodController extends Controller
             $StockSlockRestore->updated_by = auth()->user()->npk;
             $StockSlockRestore->updated_at = Carbon::now();
             $StockSlockRestore->save();
-        }else{
+        } else {
             $StockSlockRestore->valuated_stock = floatval($StockSlockRestore->valuated_stock) + floatval($stockSlock->qty_take_out);
             $StockSlockRestore->updated_by = auth()->user()->npk;
             $StockSlockRestore->updated_at = Carbon::now();
             $StockSlockRestore->save();
-        } 
+        }
 
         $scansItem = $outgoingItem->scans;
 
-        foreach($scansItem as $key => $scan){
+        foreach ($scansItem as $key => $scan) {
             // delete if same with $DataScan
-            if($scan['job_seq'] == $DataScan['job_seq'] && $scan['rack_code'] == $DataScan['rack_code'] && $scan['quantity'] == $DataScan['quantity']){
+            if ($scan['job_seq'] == $DataScan['job_seq'] && $scan['rack_code'] == $DataScan['rack_code'] && $scan['quantity'] == $DataScan['quantity']) {
                 unset($scansItem[$key]);
                 $outgoingItem->quantity_out -= $scan['quantity'];
             }
@@ -650,7 +651,7 @@ class OutgoingGoodController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Stock data retrieved successfully',
-            'data' => $outgoingItem, 
+            'data' => $outgoingItem,
         ]);
     }
 
@@ -661,7 +662,7 @@ class OutgoingGoodController extends Controller
 
             // before delete, we need check for the scan then delete the scans
             $scansItem = $outgoingItem->scans;
-            foreach($scansItem as $scan){
+            foreach ($scansItem as $scan) {
                 // delete function scan that will restore the all stock slock
                 $this->restoreTakeOutItem($request, $id, $scan['_id']);
             }
@@ -713,7 +714,7 @@ class OutgoingGoodController extends Controller
             }
         }
 
-        if($request->status === 'cancelled'){
+        if ($request->status === 'cancelled') {
             $outgoingGood->is_completed = false;
             $outgoingGood->completed_at = null;
             $outgoingGood->completed_by = null;
@@ -726,9 +727,9 @@ class OutgoingGoodController extends Controller
         $outgoingGood->save();
 
         // Update StockSlocTakeOutTemp records based on status
-        if (in_array($request->status, ['completed', 'cancelled','waiting_tp'])) {
+        if (in_array($request->status, ['completed', 'cancelled', 'waiting_tp'])) {
             $status = $request->status === 'completed' ? 'finished' : ($request->status === 'waiting_tp' ? 'waiting_tp' : 'cancelled');
-            
+
             StockSlocTakeOutTemp::where('note', 'like', '%' . $outgoingGood->number . '%')
                 ->update([
                     'status' => $status,
@@ -747,32 +748,32 @@ class OutgoingGoodController extends Controller
     public function update(Request $request, $id)
     {
         $outgoingGood = OutgoingGood::findOrFail($id);
-        
+
         // adding condition if request has data
-        if($request->has('note') && $request->note !== '') {                
+        if ($request->has('note') && $request->note !== '') {
             $outgoingGood->note = $request->note;
         }
-        if($request->has('priority') && $request->priority !== '') {
+        if ($request->has('priority') && $request->priority !== '') {
             $outgoingGood->priority = $request->priority;
         }
-        if($request->has('outgoing_location') && $request->outgoing_location !== '') {
+        if ($request->has('outgoing_location') && $request->outgoing_location !== '') {
             $outgoingGood->outgoing_location = $request->outgoing_location;
         }
-        if($request->has('handle_for') && $request->handle_for !== '') {
+        if ($request->has('handle_for') && $request->handle_for !== '') {
             $outgoingGood->handle_for = $request->handle_for;
         }
-        if($request->has('handle_for_type') && $request->handle_for_type !== '') {
+        if ($request->has('handle_for_type') && $request->handle_for_type !== '') {
             $outgoingGood->handle_for_type = $request->handle_for_type;
         }
-        if($request->has('handle_for_id') && $request->handle_for_id !== '') {
+        if ($request->has('handle_for_id') && $request->handle_for_id !== '') {
             $outgoingGood->handle_for_id = $request->handle_for_id;
         }
 
-        if($request->has('take_material_from_location') && $request->take_material_from_location !== '') {
+        if ($request->has('take_material_from_location') && $request->take_material_from_location !== '') {
             $outgoingGood->take_material_from_location = $request->take_material_from_location;
         }
 
-        if($request->has('assigned_to') && $request->assigned_to !== '') {
+        if ($request->has('assigned_to') && $request->assigned_to !== '') {
             $outgoingGood->assigned_to = $request->assigned_to;
         }
 
@@ -790,13 +791,13 @@ class OutgoingGoodController extends Controller
         $outgoingGood = OutgoingGood::findOrFail($id);
         $userData = User::findOrFail($request->user_id);
 
-        if(!$userData) {
+        if (!$userData) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not found'
             ], 404);
         }
-        
+
         $outgoingGood->handle_for = $userData->full_name;
         $outgoingGood->handle_for_type = $userData->type;
         $outgoingGood->handle_for_id = $request->user_id;
@@ -903,7 +904,6 @@ class OutgoingGoodController extends Controller
                 'message' => 'Document assigned successfully',
                 'data' => $outgoingGood
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -954,8 +954,8 @@ class OutgoingGoodController extends Controller
             ], 422);
         }
 
-        $outgoingGood = OutgoingGood::findOrFail($request->outgoing_good_id);   
-        
+        $outgoingGood = OutgoingGood::findOrFail($request->outgoing_good_id);
+
         $outgoingGood->status = 'in_progress';
 
         // $request->merge(['slock_code' => 'RAW01']);
@@ -964,7 +964,7 @@ class OutgoingGoodController extends Controller
         // $stockSlockData = $stockSlock->index($request);
         // $stockSlockData = $stockSlockData->original['data'] ?? [];
 
-        // // $itemsData = [];
+        $itemsData = [];
 
         // foreach ($outgoingGood->items as $item) {
         //     // check if stockSlockData has data with material_code = $item->material_code
@@ -1028,7 +1028,7 @@ class OutgoingGoodController extends Controller
         $barcode = $request->barcode;
         $handleForId = $request->handle_for_id;
         $outgoingGood = OutgoingGood::where('number', $barcode)->first();
-        
+
         if (!$outgoingGood) {
             return response()->json([
                 'success' => false,
@@ -1036,8 +1036,8 @@ class OutgoingGoodController extends Controller
             ], 404);
         }
 
-        if($outgoingGood->assigned_to === 'individual') {
-            if($outgoingGood->handle_for_id !== $handleForId) {
+        if ($outgoingGood->assigned_to === 'individual') {
+            if ($outgoingGood->handle_for_id !== $handleForId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Outgoing good not found'
@@ -1045,7 +1045,7 @@ class OutgoingGoodController extends Controller
             }
         }
 
-        if($outgoingGood->assigned_to === 'group') {
+        if ($outgoingGood->assigned_to === 'group') {
             // if($outgoingGood->handle_for_id !== $handleForId) {
             //     return response()->json([
             //         'success' => false,
@@ -1102,7 +1102,7 @@ class OutgoingGoodController extends Controller
 
         $outgoingGood = OutgoingGood::findOrFail($id);
 
-        if(!$outgoingGood) {
+        if (!$outgoingGood) {
             return response()->json([
                 'success' => false,
                 'message' => 'Outgoing good not found'
@@ -1111,7 +1111,7 @@ class OutgoingGoodController extends Controller
 
         $material = Material::where('code', $request->material_code)->first();
 
-        if(!$material) {
+        if (!$material) {
             return response()->json([
                 'success' => false,
                 'message' => 'Material not found'
@@ -1137,16 +1137,16 @@ class OutgoingGoodController extends Controller
 
         $filteredStockData = collect($stockSlockData)
             ->where('material_code', $request->material_code)
-            ->sortBy(function($item) {
+            ->sortBy(function ($item) {
                 return $item['date_income'] . ' ' . $item['time_income'];
             })
             ->values();
 
-        if($filteredStockData->count() > 0) {
+        if ($filteredStockData->count() > 0) {
             $stockNeeded = (int)$request->quantity_needed;
             $stockOut = 0;
             foreach ($filteredStockData as $stock) {
-                if($stockNeeded <= 0) {
+                if ($stockNeeded <= 0) {
                     break;
                 }
 
@@ -1207,10 +1207,10 @@ class OutgoingGoodController extends Controller
 
         $stockSlocTakeOutTemp = StockSlocTakeOutTemp::where('job_seq', $outgoingItem->job_seq)->where('material_code', $code_item)->first();
 
-        if($stockSlocTakeOutTemp) {
+        if ($stockSlocTakeOutTemp) {
             $stockSlocTakeOutTemp->delete();
         }
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Item deleted successfully'
@@ -1239,7 +1239,7 @@ class OutgoingGoodController extends Controller
             $query->where('name_template', 'like', '%' . $request->name_template . '%');
         }
 
-        if($request->has('search') && $request->search !== '' && $request->search !== null) {
+        if ($request->has('search') && $request->search !== '' && $request->search !== null) {
             $query->where('part_name', 'like', '%' . $request->search . '%')
                 ->orWhere('part_number', 'like', '%' . $request->search . '%')
                 ->orWhere('material_code', 'like', '%' . $request->search . '%')
@@ -1252,7 +1252,7 @@ class OutgoingGoodController extends Controller
         $query->orderBy($sortColumn, $sortOrder);
 
         // Handle pagination
-        $perPage = $request->input('per_page',100);
+        $perPage = $request->input('per_page', 100);
         $page = $request->input('page', 1);
 
         // Get paginated results
@@ -1303,8 +1303,8 @@ class OutgoingGoodController extends Controller
         // check if code_template is already exists
         $template = OutgoingGoodTemplate::where('code_template', $request->code_template)->first();
 
-        if($template) {
-            $isUpdate = true;   
+        if ($template) {
+            $isUpdate = true;
         } else {
             $isUpdate = false;
         }
@@ -1384,20 +1384,20 @@ class OutgoingGoodController extends Controller
 
         $template = OutgoingGoodTemplate::findOrFail($id);
 
-        if($request->has('name_template') && $request->name_template !== '') {
+        if ($request->has('name_template') && $request->name_template !== '') {
             $template->name_template = $request->name_template;
         }
-        if($request->has('part_name') && $request->part_name !== '') {
+        if ($request->has('part_name') && $request->part_name !== '') {
             $template->part_name = $request->part_name;
         }
 
-        if($request->has('material_code') && $request->material_code !== '') {
+        if ($request->has('material_code') && $request->material_code !== '') {
             $template->material_code = $request->material_code;
         }
-        if($request->has('part_number') && $request->part_number !== '') {
+        if ($request->has('part_number') && $request->part_number !== '') {
             $template->part_number = $request->part_number;
         }
-        if($request->has('notes') && $request->notes !== '') {
+        if ($request->has('notes') && $request->notes !== '') {
             $template->notes = $request->notes;
         }
         $template->save();
@@ -1425,7 +1425,7 @@ class OutgoingGoodController extends Controller
                 ->where('material_code', $item['material_code'])
                 ->first();
 
-            if($templateItem) {
+            if ($templateItem) {
                 $templateItem->part_number = $item['part_number'] ?? $templateItem->part_number;
                 $templateItem->alias = $item['alias'] ?? $templateItem->alias;
                 $templateItem->quantity_needed = $item['quantity_needed'] ?? $templateItem->quantity_needed;
@@ -1465,4 +1465,3 @@ class OutgoingGoodController extends Controller
         ]);
     }
 }
-
