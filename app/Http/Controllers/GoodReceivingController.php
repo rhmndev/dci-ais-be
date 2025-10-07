@@ -11,6 +11,7 @@ use App\Settings;
 use App\Scale;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
+use App\OutgoingGoodTemplate;
 
 class GoodReceivingController extends Controller
 {
@@ -254,6 +255,15 @@ class GoodReceivingController extends Controller
                 'data' => NULL,
 
             ], 400);
+        }
+    }
+
+    public function updateStatusTemplate($codeTemplate)
+    {
+        $outgoingGoodTemplate = OutgoingGoodTemplate::where('code_template', $codeTemplate)->first();
+        if ($outgoingGoodTemplate) {
+            $outgoingGoodTemplate->status = 'Scanned'; // atau status sesuai kebutuhan
+            $outgoingGoodTemplate->save();
         }
     }
 }

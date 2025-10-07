@@ -1045,15 +1045,11 @@ class OutgoingGoodController extends Controller
             }
         }
 
-        if ($outgoingGood->assigned_to === 'group') {
-            // if($outgoingGood->handle_for_id !== $handleForId) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'Outgoing good not found'
-            //     ], 404);
-            // }
+        // Ubah status menjadi in_progress setelah scan QR oleh admin
+        if ($outgoingGood->status === 'ready' || $outgoingGood->status === 'pending' || $outgoingGood->status === 'waiting_admin') {
+            $outgoingGood->status = 'in_progress';
+            $outgoingGood->save();
         }
-
 
         return response()->json([
             'success' => true,

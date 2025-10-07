@@ -81,7 +81,7 @@ class BoxController extends Controller
                     ->first();
 
                 if ($latestTracking && in_array($latestTracking->status, ['out', 'delivery'])) {
-                    return response()->json(['error' => 'Box is not valid for retrieval'], 400);
+                    return response()->json(['error' => 'Box is currently scanned out and not available.'], 400);
                 }
             }
 
@@ -303,32 +303,34 @@ class BoxController extends Controller
     }
 
     public function store(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'number_box' => 'required|string',
-                'type_box' => 'required|string',
-                'status_box' => 'required|string',
-                'color_code_box' => 'required|string',
-            ]);
+{
+    try {
+        $request->validate([
+            'number_box' => 'required|string', 
+            'type_box' => 'required|string',  
+            'status_box' => 'required|string',
+            'color_code_box' => 'required|string', 
+        ]);
 
-            $plant = env('PLANT_CODE');
-            $box = new Box($request->all());
-            $box->plant = $plant;
-            $box->number_box_alias = $request->number_box;
-            $box->color_code_box = $box->color_code_box ?? Box::DEFAULTCOLOR;
-            $box->number_box = $plant . '-' . $box->type_box . '-' . $box->color_code_box . '-' . $box->number_box;
-            $box->qr_number = $box->number_box;
-            $box->qr_code = $this->generateQrCode($box->qr_number);
-            $box->save();
+        $plant = env('PLANT_CODE');
+        $box = new Box($request->all());
+        $box->number_box_alias = $request->number_box;
+        $colorCode = $request->color_code_box ?? Box::DEFAULTCOLOR;
+        $box->number_box = $box->number_box_alias; 
+        $box->plant = $plant;
+        $box->color_code_box = $colorCode;
+        $box->qr_number = $box->number_box; 
+        $box->qr_code = $this->generateQrCode($box->qr_number);
+        $box->save();
 
-            return response()->json($box, 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to create box', 'message' => $e->getMessage()], 500);
-        }
+        return response()->json($box, 201);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to create box', 'message' => $e->getMessage()], 500);
     }
+}
+
 
     public function show($id): JsonResponse
     {
@@ -364,9 +366,9 @@ class BoxController extends Controller
     {
         try {
             // $request->validate([
-            //     'number_box' => 'string',
-            //     'type_box' => 'integer',
-            //     'status_box' => 'string',
+            //     'number_box' => 'string',
+            //     'type_box' => 'integer',
+            //     'status_box' => 'string',
             // ]);
 
             $box = Box::findOrFail($id);
@@ -397,45 +399,47 @@ class BoxController extends Controller
         Storage::put('public/' . $fileName, $qrCode);
         return $fileName;
     }
-
     public function import(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'file' => 'required|mimes:xlsx,xls',
+{
+    try {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        $Excels = Excel::toArray(new BoxesImport, $request->file('file'));
+
+        $dataBoxes = [];
+        $plant = env('PLANT_CODE');
+        foreach ($Excels[0] as $row) {
+            $plant = !is_null($row['plant']) ? $row['plant'] : $plant;
+            $statusBox = $row['status_box'] ?? 'ready';
+            $colorCodeBox = !is_null($row['color_code_box']) ? $row['color_code_box'] : Box::DEFAULTCOLOR;
+            $typeBox = strval($row['type_box']);
+            
+            $numberBoxAlias = $row['number_box'];
+            $numberBox = $colorCodeBox . "-" . $numberBoxAlias;
+
+            $box = new Box([
+                'number_box' => $numberBox,
+                'number_box_alias' => $numberBoxAlias,
+                'type_box' => $typeBox,
+                'color_code_box' => $colorCodeBox,
+                'status_box' => $statusBox,
+                'plant' => $plant,
+                'qr_code' => $this->generateQrCode($numberBox),
+                'qr_number' => $numberBox,
             ]);
-
-            $Excels = Excel::toArray(new BoxesImport, $request->file('file'));
-
-            $dataBoxes = [];
-            $plant = env('PLANT_CODE');
-            foreach ($Excels[0] as $row) {
-                $plant = !is_null($row['plant']) ? $row['plant'] : $plant;
-                $statusBox = $row['status_box'] ?? 'ready';
-                $colorCodeBox = !is_null($row['color_code_box']) ? $row['color_code_box'] : Box::DEFAULTCOLOR;
-                $typeBox = strval($row['type_box']);
-                $numberBox = $plant . "-" . $typeBox . "-" . $colorCodeBox . "-" . $row['number_box'];
-                $box = new Box([
-                    'number_box' => $numberBox,
-                    'number_box_alias' => $row['number_box'],
-                    'type_box' => $typeBox,
-                    'color_code_box' => $colorCodeBox,
-                    'status_box' => $statusBox,
-                    'plant' => $plant,
-                    'qr_code' => $this->generateQrCode($numberBox),
-                    'qr_number' => $numberBox,
-                ]);
-                $box->save();
-                $dataBoxes[] = $box;
-            }
-
-            return response()->json($dataBoxes, 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to import boxes', 'message' => $e->getMessage()], 500);
+            $box->save();
+            $dataBoxes[] = $box;
         }
+
+        return response()->json($dataBoxes, 201);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to import boxes', 'message' => $e->getMessage()], 500);
     }
+}
 
     public function getTimelineBox(Request $request): JsonResponse
     {
