@@ -251,9 +251,9 @@ class CustomerController extends Controller
     public function getCustomerAliasList(Request $request)
     {
         if ($request->has('pluck_code_name')) {
-            $Customer = Customer::groupBy('code_name')->pluck('code_name');
+            $Customer = Customer::groupBy('plant')->pluck('plant');
         } else {
-            $Customer = Customer::select('code', 'code_name')->get();
+            $Customer = Customer::select('code', 'name', 'plant')->get();
         }
 
         return response()->json([

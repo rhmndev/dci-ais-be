@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\CompareDeliveryNote;
 use App\CompareDeliveryNoteAHM;
 use App\OrderCustomer;
+use App\Customer;
 use App\OrderCustomerAhm;
 use App\TrackingBox;
 use Carbon\Carbon;
@@ -370,6 +371,7 @@ class TrackingBoxController extends Controller
                 'kanban' => 'nullable|string',
                 'destination_code' => 'nullable|string',
                 'destination_aliases' => 'nullable|string',
+                'plant' => 'nullable|string',
                 'status' => 'required|string',
                 'scanned_by' => 'nullable|string',
             ]);
@@ -390,6 +392,7 @@ class TrackingBoxController extends Controller
                         'kanban' => $latestTracking->kanban ?? null,
                         'destination_code' => $latestTracking->destination_code,
                         'destination_aliases' => $latestTracking->destination_aliases,
+                        'plant' => $latestTracking->plant,
                         'date_time' => Carbon::now()->toDateTimeString(),
                     ]);
 
@@ -417,10 +420,12 @@ class TrackingBoxController extends Controller
                 ]);
 
                 $customer = $request->input('customer');
+                $customerData = Customer::where('name', $customer)->first();
+                $plant = $customerData ? $customerData->plant : null;
 
                 $kanban = $request->input('kanban');
 
-                $request->merge(['destination_code' => $customer, 'destination_aliases' => $customer]);
+                $request->merge(['destination_code' => $customer, 'destination_aliases' => $customer,  'plant' => $plant ]);
 
                 if ($kanban != null) {
                     $compareDeliveryNote = CompareDeliveryNote::where('kbn_no', $kanban)->first();
@@ -523,6 +528,7 @@ class TrackingBoxController extends Controller
                 'dn_number' => 'string',
                 'destination_code' => 'string',
                 'destination_aliases' => 'string',
+                'plant' => 'string',
                 'status' => 'string',
                 'date_time' => 'date',
                 'scanned_by' => 'string',
