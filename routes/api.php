@@ -5,6 +5,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OutgoingRequestController;
+use App\Http\Controllers\SupplierPortalSyncController;
 use App\Http\Controllers\CustomerController; 
 
 
@@ -668,3 +669,8 @@ Route::get('/kanbans/g/kanban-details', 'CompareDeliveryNoteController@getKanban
 // });
 
 Route::post('/outgoing-request/archived', [OutgoingRequestController::class, 'archived']);
+
+// Supplier Portal Sync endpoints
+Route::post('/supplier-portal/sync/retry-archive', [SupplierPortalSyncController::class, 'retrySyncArchive']);
+Route::get('/supplier-portal/sync/failed', [SupplierPortalSyncController::class, 'getFailedSyncs']);
+Route::get('/supplier-portal/test-connection', [SupplierPortalSyncController::class, 'testSupplierPortalConnection']);

@@ -18,6 +18,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class OutgoingGoodController extends Controller
 {
@@ -708,6 +711,12 @@ class OutgoingGoodController extends Controller
             $outgoingGood->is_completed = true;
             $outgoingGood->completed_at = Carbon::now();
             $outgoingGood->completed_by = auth()->user()->npk;
+            
+            // Auto-archive when completed
+            $outgoingGood->is_archived = true;
+            $outgoingGood->archived_at = now();
+            $outgoingGood->archived_by = auth()->user()->npk ?? 'portal_dcci_admin';
+            $outgoingGood->archived_reason = 'Auto-archived after completion by admin scan';
 
             if ($request->has('completion_notes')) {
                 $outgoingGood->completion_notes = $request->completion_notes;
@@ -725,6 +734,11 @@ class OutgoingGoodController extends Controller
         }
 
         $outgoingGood->save();
+
+        // Auto-sync to Portal Supplier if completed and archived
+        if ($request->status === 'completed' && $outgoingGood->is_archived) {
+            $this->syncArchiveToSupplierPortal($outgoingGood);
+        }
 
         // Update StockSlocTakeOutTemp records based on status
         if (in_array($request->status, ['completed', 'cancelled', 'waiting_tp'])) {
@@ -1065,11 +1079,18 @@ class OutgoingGoodController extends Controller
             $outgoingGood->status = 'completed';
             $outgoingGood->completed_tp_at = Carbon::now()->format('Y-m-d H:i:s');
             $outgoingGood->completed_tp_by = auth()->user()->npk;
+            $outgoingGood->is_archived = true;
+            $outgoingGood->archived_at = now();
+            $outgoingGood->archived_by = auth()->user()->npk ?? 'portal_dcci_admin';
+            $outgoingGood->archived_reason = 'Auto-archived after completion by admin scan';
             $outgoingGood->save();
+
+            // Sync archive status to Portal Supplier
+            $this->syncArchiveToSupplierPortal($outgoingGood);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Outgoing good marked as completed'
+                'message' => 'Outgoing good marked as completed and archived'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -1077,6 +1098,99 @@ class OutgoingGoodController extends Controller
                 'message' => 'Failed to mark outgoing good as completed',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Sync archive request to Portal Supplier
+     */
+    private function syncArchiveToSupplierPortal($outgoing, $goodReceiptRef = null, $archivedBy = null, $archivedReason = null)
+    {
+        try {
+            // Portal Supplier URL - adjust based on your environment
+            $supplierPortalUrl = env('SUPPLIER_PORTAL_URL', 'http://localhost:3001');
+            
+            Log::info('🔄 Syncing archive to Supplier Portal', [
+                'outgoing_number' => $outgoing->number,
+                'good_receipt_ref' => $goodReceiptRef,
+                'supplier_portal_url' => $supplierPortalUrl
+            ]);
+
+            $syncData = [
+                'outgoing_no' => $outgoing->number,
+                'po_number' => $outgoing->po_number ?? '',
+                'supplier_code' => $outgoing->supplier_code ?? '',
+                'supplier_id' => $outgoing->supplier_id ?? '',
+                'good_receipt_number' => $goodReceiptRef ?? $outgoing->good_receipt_ref,
+                'archived_by' => $archivedBy ?? $outgoing->archived_by ?? 'portal_dcci_admin',
+                'archived_reason' => $archivedReason ?? $outgoing->archived_reason ?? 'Auto-archived after admin scan and completion',
+                'archived_at' => $outgoing->archived_at ? $outgoing->archived_at->toISOString() : now()->toISOString(),
+                'dcci_travel_document_id' => $outgoing->travel_document_id ?? null,
+                'sj_number' => $outgoing->sj_number ?? null
+            ];
+
+            $client = new Client(['timeout' => 30]);
+            $response = $client->post($supplierPortalUrl . '/api/supplier/templates/archive-sync', [
+                'json' => $syncData,
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'User-Agent' => 'DCCI-Portal-Archive-Sync/1.0'
+                ]
+            ]);
+
+            if ($response->getStatusCode() === 200) {
+                Log::info('✅ Archive sync to Supplier Portal successful', [
+                    'outgoing_number' => $outgoing->number,
+                    'response' => $response->getBody()->getContents()
+                ]);
+                
+                // Update sync status in outgoing record
+                $outgoing->supplier_portal_sync_status = 'synced';
+                $outgoing->supplier_portal_sync_date = now();
+                $outgoing->save();
+                
+                return true;
+            } else {
+                Log::error('❌ Archive sync to Supplier Portal failed', [
+                    'outgoing_number' => $outgoing->number,
+                    'status' => $response->getStatusCode(),
+                    'response' => $response->getBody()->getContents()
+                ]);
+                
+                // Update sync status as failed
+                $outgoing->supplier_portal_sync_status = 'failed';
+                $outgoing->supplier_portal_sync_error = $response->getBody()->getContents();
+                $outgoing->supplier_portal_sync_date = now();
+                $outgoing->save();
+                
+                return false;
+            }
+        } catch (RequestException $e) {
+            Log::error('❌ RequestException during archive sync to Supplier Portal', [
+                'outgoing_number' => $outgoing->number,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Update sync status as failed
+            $outgoing->supplier_portal_sync_status = 'failed';
+            $outgoing->supplier_portal_sync_error = $e->getMessage();
+            $outgoing->supplier_portal_sync_date = now();
+            $outgoing->save();
+            
+            return false;
+        } catch (\Exception $e) {
+            Log::error('❌ Exception during archive sync to Supplier Portal', [
+                'outgoing_number' => $outgoing->number,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Update sync status as failed
+            $outgoing->supplier_portal_sync_status = 'failed';
+            $outgoing->supplier_portal_sync_error = $e->getMessage();
+            $outgoing->supplier_portal_sync_date = now();
+            $outgoing->save();
+            
+            return false;
         }
     }
 
