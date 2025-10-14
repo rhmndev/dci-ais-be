@@ -630,6 +630,7 @@ Route::group(['prefix' => 'stock-slocks'], function () {
 
 Route::group(['prefix' => 'tracking-boxes'], function () {
     Route::get('/', 'TrackingBoxController@index');
+    Route::get('/check-specific', 'TrackingBoxController@checkSpecificBox');
     Route::get('/show/{id}', 'TrackingBoxController@show');
     Route::delete('/{id}', 'TrackingBoxController@destroy');
     Route::post('/update/{id}', 'TrackingBoxController@update');

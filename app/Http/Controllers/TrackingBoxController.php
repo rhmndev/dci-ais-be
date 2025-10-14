@@ -19,6 +19,13 @@ class TrackingBoxController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
+            // Log incoming request for debugging
+            \Log::info('TrackingBox API Request', [
+                'params' => $request->all(),
+                'timestamp' => now(),
+                'user_agent' => $request->header('User-Agent')
+            ]);
+
             $query = TrackingBox::query();
 
             if ($request->has('number_box')) {
@@ -74,12 +81,56 @@ class TrackingBoxController extends Controller
                 });
             } else {
                 $perPage = $request->input('per_page', 15);
+                
+                // Order by created_at desc untuk menampilkan data terbaru
+                $query->orderBy('created_at', 'desc');
+                
                 $trackingBoxes = $query->paginate($perPage);
+                
+                // Log hasil query untuk debugging
+                \Log::info('TrackingBox Query Results', [
+                    'total' => $trackingBoxes->total(),
+                    'per_page' => $perPage,
+                    'current_page' => $trackingBoxes->currentPage(),
+                    'latest_record' => $trackingBoxes->items()[0] ?? null
+                ]);
             }
 
             return response()->json($trackingBoxes, 200);
         } catch (\Exception $e) {
+            \Log::error('TrackingBox API Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['error' => 'Failed to retrieve tracking boxes'], 500);
+        }
+    }
+
+    public function checkSpecificBox(Request $request): JsonResponse
+    {
+        try {
+            $numberBox = $request->input('number_box', '1601-6688-B01-99');
+            
+            $box = TrackingBox::where('number_box', $numberBox)->get();
+            
+            \Log::info('Specific Box Check', [
+                'number_box' => $numberBox,
+                'found_records' => $box->count(),
+                'records' => $box->toArray()
+            ]);
+            
+            return response()->json([
+                'number_box' => $numberBox,
+                'found' => $box->count() > 0,
+                'records' => $box->toArray()
+            ], 200);
+            
+        } catch (\Exception $e) {
+            \Log::error('Specific Box Check Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to check specific box'], 500);
         }
     }
 
