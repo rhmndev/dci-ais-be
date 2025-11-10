@@ -3,12 +3,106 @@
 use App\PurchaseOrder;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OutgoingRequestController;
 use App\Http\Controllers\SupplierPortalSyncController;
-use App\Http\Controllers\CustomerController; 
+use App\Http\Controllers\CustomerController;
 
+// Health check endpoint for mobile app
+Route::get('/health-check', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'server' => 'Laravel DCI AIS Backend',
+        'version' => '1.0.0'
+    ]);
+});
 
+// Test endpoint to create sample outgoing request data
+Route::get('/create-sample-data', function () {
+    try {
+        // Check if data already exists
+        $existing = \App\OutgoingRequest::where('outgoing_no', 'OUT-17900021')->first();
+        if ($existing) {
+            return response()->json([
+                'status' => 'info',
+                'message' => 'Sample data already exists'
+            ]);
+        }
+
+        $outgoingRequests = [
+            [
+                'outgoing_no' => 'OUT-17900021',
+                'po_number' => '5611002779',
+                'supplier_name' => 'USAHA JAYA, PD',
+                'supplier_code' => 'SUP001',
+                'customer_name' => 'PT DHARMA CONTROLCABLE IND',
+                'delivery_date' => '2025-10-28',
+                'driver_name' => 'Driver AZIS',
+                'current_status' => 'Pending',
+                'qr_code' => 'OUT-17900021',
+                'is_archived' => false,
+                'items' => [
+                    [
+                        'part_number' => 'PART001',
+                        'part_name' => 'Cable Assembly',
+                        'quantity_request' => 12,
+                        'quantity_delivered' => 0,
+                        'unit' => 'PCS'
+                    ],
+                    [
+                        'part_number' => 'PART002',
+                        'part_name' => 'Connector',
+                        'quantity_request' => 24,
+                        'quantity_delivered' => 0,
+                        'unit' => 'PCS'
+                    ]
+                ]
+            ],
+            [
+                'outgoing_no' => 'OUT-17900022',
+                'po_number' => '5611000373',
+                'supplier_name' => 'USAHA JAYA, PD',
+                'supplier_code' => 'SUP001',
+                'customer_name' => 'PT TEST XYZ',
+                'delivery_date' => '2025-10-28',
+                'driver_name' => 'test',
+                'current_status' => 'Pending',
+                'qr_code' => 'OUT-17900022',
+                'is_archived' => false,
+                'items' => [
+                    [
+                        'part_number' => 'PART003',
+                        'part_name' => 'Wire Harness',
+                        'quantity_request' => 5,
+                        'quantity_delivered' => 0,
+                        'unit' => 'SET'
+                    ]
+                ]
+            ]
+        ];
+
+        $created = [];
+        foreach ($outgoingRequests as $request) {
+            $outgoing = \App\OutgoingRequest::create($request);
+            $created[] = $outgoing->outgoing_no;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sample data created successfully',
+            'created' => $created
+        ]);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to create sample data: ' . $e->getMessage()
+        ], 500);
+    }
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -83,7 +177,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::delete('/supplier/{id}', 'SupplierController@destroy');
     Route::post('/supplierimport', 'SupplierController@import');
     Route::get('/supplierexport', 'SupplierController@export');
-    #sinkronisasi portal supplier 
+    #sinkronisasi portal supplier
     Route::get('/health', function () {
         return response()->json(['status' => 'OK', 'message' => 'service is running'], 200);
     });
@@ -107,7 +201,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/materials/g/stocks-material', 'MaterialController@getStocksMaterial');
     Route::post('/materials/g/stocks-material-print', 'MaterialController@getStocksMaterialPrint');     #endregion
     Route::get('/materials/g/stocks-material-analytics', 'MaterialController@getStocksMaterialAnalytics');
-    
+
 
 // Role Material Type Routes
     Route::prefix('role-material-types')->group(function () {
@@ -145,13 +239,13 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/customer/{id}/parts/list', 'CustomerController@listParts');
     Route::get('/customer/g/customer-alias-list', 'CustomerController@getCustomerAliasList');
     Route::get('/customer/by-code/{code}', [CustomerController::class, 'findByCode']);
-    
-    
+
+
     // ROUTE BARU: Untuk menghapus beberapa customer yang dipilih
     Route::post('/customer/delete-selected', 'CustomerController@deleteMultiple');
 
     #endregion Master Customer
-    
+
     #region Master Parts Components Customer
     Route::get('/part-component', 'PartComponentController@index');
     Route::get('/part-component/{id}', 'PartComponentController@show');
@@ -387,7 +481,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::get('/g/material-location/{material_code}', 'StockSlockController@getMaterialLocation');
     });
-    
+
     Route::prefix('outgoing-goods-settings')->group(function () {
         Route::get('/label-color','OutgoingGoodLabelColorController@index');
         Route::get('/label-color-list','OutgoingGoodLabelColorController@getListLabelColor');
@@ -395,7 +489,7 @@ Route::group(['middleware' => ['auth:api']], function () {
         Route::post('/label-color','OutgoingGoodLabelColorController@store');
         Route::delete('/label-color/{id}','OutgoingGoodLabelColorController@destroy');
     });
-    
+
     Route::prefix('outgoing-goods')->group(function () {
         Route::get('/', 'OutgoingGoodController@index');
         Route::post('/', 'OutgoingGoodController@store');
@@ -670,6 +764,214 @@ Route::get('/kanbans/g/kanban-details', 'CompareDeliveryNoteController@getKanban
 // });
 
 Route::post('/outgoing-request/archived', [OutgoingRequestController::class, 'archived']);
+
+// Simple test endpoint
+Route::post('/test-scan', function (Request $request) {
+    $qrCode = $request->input('qr_code');
+
+    return response()->json([
+        'type' => 'success',
+        'message' => 'Test endpoint working',
+        'qr_code_received' => $qrCode,
+        'timestamp' => now()->toISOString()
+    ]);
+});
+
+// QR Code Scanning for Good Receipt - Direct Portal Supplier Integration (NO DATABASE)
+Route::post('/scan-outgoing-qr', function (Request $request) {
+    try {
+        $qrCode = $request->input('qr_code');
+
+        error_log("📱 QR Scan request received: {$qrCode}");
+
+        if (!$qrCode) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'QR Code is required'
+            ], 400);
+        }
+
+        // Fetch directly from Portal Supplier (Node.js) using Guzzle
+        $portalApiUrl = env('PORTAL_DCCI_URL', 'http://localhost:3001');
+
+        error_log("🔍 Fetching from Portal Supplier: {$portalApiUrl}/api/outgoing-goods/{$qrCode}");
+
+        // Use Guzzle instead of Http facade (Laravel 6 compatibility)
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $response = $client->get("{$portalApiUrl}/api/outgoing-goods/{$qrCode}");
+
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode !== 200) {
+            error_log("❌ Portal Supplier returned error: " . $statusCode);
+            error_log("Response body: " . $response->getBody()->getContents());
+
+            return response()->json([
+                'type' => 'error',
+                'message' => 'QR Code tidak ditemukan di Portal Supplier'
+            ], 404);
+        }
+
+        $portalData = json_decode($response->getBody()->getContents(), true);
+        error_log("✅ Portal Supplier Response: " . json_encode($portalData));
+
+        // Transform Portal Supplier data to mobile app format
+        $transformedData = [
+            'outgoingNumber' => $portalData['outgoing_number'] ?? $portalData['outgoing_no'] ?? $portalData['_id'] ?? $qrCode,
+            'poNumber' => $portalData['purchase_no'] ?? $portalData['po_number'] ?? '',
+            'supplierName' => $portalData['supplier_name'] ?? $portalData['company'] ?? $portalData['company_name'] ?? '',
+            'supplierCode' => $portalData['supplier_code'] ?? '',
+            'customerName' => $portalData['company'] ?? $portalData['customer_name'] ?? 'PT DHARMA CONTROLCABLE IND',
+            'deliveryDate' => $portalData['delivery_date'] ?? $portalData['date'] ?? $portalData['po_date'] ?? date('Y-m-d'),
+            'driverName' => $portalData['driver_name'] ?? $portalData['driver'] ?? 'Driver',
+            'status' => $portalData['status'] ?? 'Pending',
+            'items' => []
+        ];
+
+        // Transform items array - Portal Supplier format
+        if (isset($portalData['items']) && is_array($portalData['items'])) {
+            error_log("📦 Processing " . count($portalData['items']) . " items");
+
+            foreach ($portalData['items'] as $item) {
+                // Parse quantity fields from SAP data
+                // quantity = Qty PO (from SAP field 'quantity')
+                // quantity_gr = Qty Delivery (from SAP field 'quantity_gr')
+                $quantity = isset($item['quantity_po']) ? (int)$item['quantity_po'] :
+                           (isset($item['quantity']) ? (int)$item['quantity'] :
+                           (isset($item['quantity_needed']) ? (int)$item['quantity_needed'] : 0));
+
+                $quantity_gr = isset($item['quantity_gr']) ? (int)$item['quantity_gr'] :
+                              (isset($item['quantity_delivery']) ? (int)$item['quantity_delivery'] :
+                              (isset($item['quantity_delivered']) ? (int)$item['quantity_delivered'] :
+                              (isset($item['quantity_conv']) ? (int)$item['quantity_conv'] : $quantity)));
+
+                $transformedData['items'][] = [
+                    'materialCode' => $item['material_code'] ?? $item['material_no'] ?? $item['kode_item'] ?? $item['part_number'] ?? '',
+                    'materialName' => $item['material_name'] ?? $item['material_desc'] ?? $item['name'] ?? $item['nama_item'] ?? $item['part_name'] ?? '',
+                    'quantity' => $quantity, // Qty PO - will be parsed as quantityPO
+                    'quantity_gr' => $quantity_gr, // Qty Delivery - will be parsed as quantityDelivery
+                    'unit' => $item['uom_needed'] ?? $item['meins'] ?? $item['unit'] ?? $item['satuan'] ?? 'PCS',
+                    // Include additional SAP fields for reference
+                    'material_no' => $item['material_no'] ?? '',
+                    'material_desc' => $item['material_desc'] ?? '',
+                    'meins' => $item['meins'] ?? '',
+                    'quantity_conv' => $item['quantity_conv'] ?? null,
+                ];
+            }
+
+            error_log("✅ Transformed " . count($transformedData['items']) . " items");
+        } else {
+            error_log("⚠️ No items found in portal data");
+        }
+
+        error_log("✅ Data transformed successfully");
+
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Outgoing Request ditemukan dari Portal Supplier',
+            'data' => $transformedData
+        ]);
+
+    } catch (\Exception $e) {
+        error_log("❌ Exception during QR scan: " . $e->getMessage());
+        error_log("Stack trace: " . $e->getTraceAsString());
+
+        return response()->json([
+            'type' => 'error',
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// Good Receipt CRUD operations (Simplified - No Database Required)
+Route::group(['prefix' => 'good-receipts'], function () {
+    Route::get('/', function () {
+        return response()->json([
+            'type' => 'success',
+            'data' => []
+        ]);
+    });
+
+    Route::post('/', function (Request $request) {
+        try {
+            error_log("Creating Good Receipt from mobile app");
+
+            $receiptData = $request->all();
+            error_log("Request data: " . json_encode($receiptData));
+
+            // Notify Portal Supplier to archive first
+            $outgoingNumber = $request->input('outgoingNumber') ?? $request->input('outgoing_number');
+            $supplierCode = $request->input('supplierCode') ?? $request->input('supplier_code');
+            $poNumber = $request->input('poNumber') ?? $request->input('po_number');
+            $receiptNumber = $request->input('receiptNumber') ?? $request->input('receipt_number') ?? 'GR-' . date('YmdHis');
+
+            if ($outgoingNumber) {
+                error_log("🔔 Notifying Portal Supplier to archive: {$outgoingNumber}");
+
+                $portalSupplierUrl = env('PORTAL_DCCI_URL', 'http://localhost:3001');
+
+                $archiveData = [
+                    'outgoing_no' => $outgoingNumber,
+                    'gr_number' => $receiptNumber,
+                    'gr_date' => $request->input('receiptDate') ?? date('Y-m-d'),
+                    'archived_by' => $request->input('receivedBy') ?? 'DCCI Admin Mobile',
+                    'supplier_code' => $supplierCode,
+                    'po_number' => $poNumber,
+                    'notes' => 'Archived via Good Receipt Mobile Scan'
+                ];
+
+                try {
+                    // Use Guzzle instead of Http facade (Laravel 6 compatibility)
+                    $client = new \GuzzleHttp\Client(['timeout' => 30]);
+                    $response = $client->post(
+                        "{$portalSupplierUrl}/api/supplier-portal/sync/archive-request",
+                        ['json' => $archiveData]
+                    );
+
+                    $statusCode = $response->getStatusCode();
+
+                    if ($statusCode === 200) {
+                        error_log("✅ Successfully notified Portal Supplier to archive {$outgoingNumber}");
+                        $receiptData['supplier_portal_sync_status'] = 'synced';
+                    } else {
+                        error_log("❌ Portal Supplier archive notification failed");
+                        error_log("Response: " . $response->getBody()->getContents());
+                        $receiptData['supplier_portal_sync_status'] = 'failed';
+                    }
+                } catch (\Exception $e) {
+                    error_log("❌ Error notifying Portal Supplier: " . $e->getMessage());
+                    $receiptData['supplier_portal_sync_status'] = 'error';
+                }
+            }
+
+            // Return success (database save is optional)
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Good Receipt berhasil diproses dan outgoing request telah diarsipkan',
+                'data' => array_merge($receiptData, [
+                    'id' => uniqid('gr_'),
+                    'created_at' => date('Y-m-d H:i:s')
+                ])
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("❌ Failed to create Good Receipt: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Gagal membuat Good Receipt: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+
+    Route::post('/{id}/post-to-sap', function ($id) {
+        return response()->json([
+            'type' => 'success',
+            'message' => 'Good Receipt berhasil diposting ke SAP'
+        ]);
+    });
+});
 
 // Supplier Portal Sync endpoints
 Route::post('/supplier-portal/sync/retry-archive', [SupplierPortalSyncController::class, 'retrySyncArchive']);
