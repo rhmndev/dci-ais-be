@@ -414,126 +414,124 @@ class TrackingBoxController extends Controller
     }
 
     public function store(Request $request): JsonResponse
-    {
-        try {
+{
+    try {
+        $request->validate([
+            'number_box' => 'required|string',
+            'dn_number' => 'nullable|string',
+            'kanban' => 'nullable|string',
+            'destination_code' => 'nullable|string',
+            'destination_aliases' => 'nullable|string',
+            'plant' => 'nullable|string',
+            'status' => 'required|string',
+            'scanned_by' => 'nullable|string',
+        ]);
+
+        $latestTracking = TrackingBox::where('number_box', $request->input('number_box'))
+            ->orderBy('date_time', 'desc')
+            ->first();
+
+        // === [1] JIKA SCAN IN & BOX SEBELUMNYA DELIVERY ===
+        if ($request->input('type') === 'in') {
+            if ($latestTracking && in_array($latestTracking->status, ['delivery', 'out'])) {
+                $latestTracking->status = 'incoming';
+                $latestTracking->incoming = 1;
+                $latestTracking->delivery = 0;
+                $latestTracking->scan_in_date = now();
+                $latestTracking->scanned_by = $request->input('scanned_by') ?? auth()->user()->npk;
+                $latestTracking->save();
+
+                return response()->json([
+                    'message' => 'Box successfully scanned in',
+                    'data' => $latestTracking
+                ], 200);
+            }
+
+            if ($latestTracking && in_array($latestTracking->status, ['incoming', 'in'])) {
+                return response()->json([
+                    'error' => 'Box is already in incoming state'
+                ], 400);
+            }
+        }
+
+        // === [2] PROSES KETIKA STATUSNYA DELIVERY / OUT ===
+        if (in_array($request->input('status'), ['delivery', 'out'])) {
             $request->validate([
-                'number_box' => 'required|string',
-                'dn_number' => 'nullable|string',
-                'kanban' => 'nullable|string',
-                'destination_code' => 'nullable|string',
-                'destination_aliases' => 'nullable|string',
-                'plant' => 'nullable|string',
-                'status' => 'required|string',
-                'scanned_by' => 'nullable|string',
+                'customer' => 'required|string',
             ]);
 
-            $latestTracking = TrackingBox::where('number_box', $request->input('number_box'))
+            $customer = $request->input('customer');
+            $customerData = Customer::where('name', $customer)->first();
+            $plant = $customerData ? $customerData->plant : null;
+            $kanban = $request->input('kanban');
+
+            $request->merge([
+                'destination_code' => $customer,
+                'destination_aliases' => $customer,
+                'plant' => $plant,
+            ]);
+
+            if ($kanban != null) {
+                $compareDeliveryNote = CompareDeliveryNote::where('kbn_no', $kanban)->first();
+                $compareDeliveryNoteAHM = CompareDeliveryNoteAHM::where('job_seq', $kanban)->first();
+
+                if ($compareDeliveryNote) {
+                    $customerOrder = $compareDeliveryNote->orderCustomer->customer;
+                    $plant = $compareDeliveryNote->orderCustomer->plant;
+                    $request->merge([
+                        'dn_number' => $compareDeliveryNote->dn_no,
+                        'customer' => $customerOrder,
+                        'plant' => $plant
+                    ]);
+                } elseif ($compareDeliveryNoteAHM) {
+                    $request->merge(['dn_number' => $compareDeliveryNoteAHM->dn_no]);
+                } else {
+                    return response()->json([
+                        'error' => 'Kanban not found in CompareDeliveryNote or CompareDeliveryNoteAHM'
+                    ], 404);
+                }
+            }
+        }
+
+        // === [3] JIKA STATUS RETURN / GO_BACK / INCOMING DARI SEBELUMNYA ===
+        if (in_array($request->input('status'), ['go_back', 'return', 'in', 'incoming'])) {
+            $previousDelivery = TrackingBox::where('number_box', $request->input('number_box'))
+                ->where('status', 'delivery')
                 ->orderBy('date_time', 'desc')
                 ->first();
 
-            if ($request->input('type') === 'in') {
-                if ($latestTracking && in_array($latestTracking->status, ['in', 'incoming'])) {
-                    return response()->json([
-                        'error' => 'Box is not valid for this action as its last status is ' . $latestTracking->status
-                    ], 400);
-                }
-
-                if ($latestTracking && in_array($latestTracking->status, ['out', 'delivery'])) {
-                    $request->merge([
-                        'kanban' => $latestTracking->kanban ?? null,
-                        'destination_code' => $latestTracking->destination_code,
-                        'destination_aliases' => $latestTracking->destination_aliases,
-                        'plant' => $latestTracking->plant,
-                        'date_time' => Carbon::now()->toDateTimeString(),
-                    ]);
-
-                    $trackingBox = TrackingBox::create($request->all());
-
-                    $trackingBox->scanned_by = $request->input('scanned_by') ?? auth()->user()->npk;
-                    $trackingBox->save();
-
-                    return response()->json([
-                        'message' => 'Tracking box created successfully',
-                        'data' => $trackingBox
-                    ], 201);
-                }
-            }
-
-            if ($latestTracking && in_array($latestTracking->status, ['out', 'delivery']) && !in_array($request->input('type'), ['in', 'incoming'])) {
-                return response()->json([
-                    'error' => 'Box is not valid for this action as its last status is ' . $latestTracking->status
-                ], 400);
-            }
-
-            if (in_array($request->input('status'), ['delivery', 'out'])) {
-                $request->validate([
-                    'customer' => 'required|string',
+            if ($previousDelivery) {
+                $request->merge([
+                    'dn_number' => $previousDelivery->dn_number,
+                    'kanban' => $previousDelivery->kanban,
                 ]);
-
-                $customer = $request->input('customer');
-                $customerData = Customer::where('name', $customer)->first();
-                $plant = $customerData ? $customerData->plant : null;
-
-                $kanban = $request->input('kanban');
-
-                $request->merge(['destination_code' => $customer, 'destination_aliases' => $customer,  'plant' => $plant ]);
-
-                if ($kanban != null) {
-                    $compareDeliveryNote = CompareDeliveryNote::where('kbn_no', $kanban)->first();
-                    $compareDeliveryNoteAHM = CompareDeliveryNoteAHM::where('job_seq', $kanban)->first();
-
-                    if ($compareDeliveryNote) {
-                        $customerOrder = $compareDeliveryNote->orderCustomer->customer;
-                        $plant = $compareDeliveryNote->orderCustomer->plant;
-                        $request->merge(['dn_number' => $compareDeliveryNote->dn_no, 'customer' => $customerOrder, 'plant' => $plant]);
-                    } elseif ($compareDeliveryNoteAHM) {
-                        $request->merge(['dn_number' => $compareDeliveryNoteAHM->dn_no]);
-                    } else {
-                        return response()->json([
-                            'error' => 'Kanban not found in CompareDeliveryNote or CompareDeliveryNoteAHM'
-                        ], 404);
-                    }
-                }
             }
-
-            if (in_array($request->input('status'), ['go_back', 'return', 'in', 'incoming'])) {
-                $previousDelivery = TrackingBox::where('number_box', $request->input('number_box'))
-                    ->where('status', 'delivery')
-                    ->orderBy('date_time', 'desc')
-                    ->first();
-
-                if ($previousDelivery) {
-                    $request->merge([
-                        'dn_number' => $previousDelivery->dn_number,
-                        'kanban' => $previousDelivery->kanban,
-                    ]);
-                }
-            }
-
-            $request->merge(['date_time' => Carbon::now()->toDateTimeString()]);
-
-            $trackingBox = TrackingBox::create($request->all());
-
-            $trackingBox->scanned_by = $request->input('scanned_by') ?? auth()->user()->npk;
-
-            $trackingBox->save();
-
-            return response()->json([
-                'message' => 'Tracking box created successfully',
-                'data' => $trackingBox
-            ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'error' => 'Validation failed',
-                'messages' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to create tracking box',
-                'message' => $e->getMessage()
-            ], 500);
         }
+
+        // === [4] SIMPAN SEBAGAI BARU JIKA BELUM PERNAH ADA ===
+        $request->merge(['date_time' => Carbon::now()->toDateTimeString()]);
+        $trackingBox = TrackingBox::create($request->all());
+        $trackingBox->scanned_by = $request->input('scanned_by') ?? auth()->user()->npk;
+        $trackingBox->save();
+
+        return response()->json([
+            'message' => 'Tracking box created successfully',
+            'data' => $trackingBox
+        ], 201);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'error' => 'Validation failed',
+            'messages' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to create tracking box',
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function getBoxStatus(Request $request): JsonResponse
     {
@@ -572,30 +570,45 @@ class TrackingBoxController extends Controller
     }
 
     public function update(Request $request, $id): JsonResponse
-    {
-        try {
-            $request->validate([
-                'number_box' => 'string',
-                'dn_number' => 'string',
-                'destination_code' => 'string',
-                'destination_aliases' => 'string',
-                'plant' => 'string',
-                'status' => 'string',
-                'date_time' => 'date',
-                'scanned_by' => 'string',
-            ]);
+{
+    try {
+        $request->validate([
+            'number_box' => 'string',
+            'dn_number' => 'string',
+            'destination_code' => 'string',
+            'destination_aliases' => 'string',
+            'plant' => 'string',
+            'status' => 'string',
+            'date_time' => 'date',
+            'scanned_by' => 'string',
+        ]);
 
-            $trackingBox = TrackingBox::findOrFail($id);
-            $trackingBox->update($request->all());
+        $trackingBox = TrackingBox::findOrFail($id);
 
-            $trackingBox->scanned_by = $request->input('scanned_by') ?? auth()->user()->npk;
-            $trackingBox->save();
+        // Ambil status lama sebelum diubah
+        $oldStatus = $trackingBox->status;
+        $newStatus = $request->input('status');
 
-            return response()->json($trackingBox, 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to update tracking box'], 500);
+        // Update data dasar
+        $trackingBox->fill($request->all());
+
+        // Kalau status berubah dari delivery -> incoming
+        if ($oldStatus === 'delivery' && $newStatus === 'incoming') {
+            $trackingBox->delivery = 0;      // hilangkan dari delivery
+            $trackingBox->incoming = 1;      // tandai sudah incoming
+            $trackingBox->scan_in_date = now();
         }
+
+        // Catat siapa yang scan
+        $trackingBox->scanned_by = $request->input('scanned_by') ?? auth()->user()->npk;
+
+        $trackingBox->save();
+
+        return response()->json($trackingBox, 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to update tracking box'], 500);
     }
+}
 
     public function destroy($id): JsonResponse
     {
