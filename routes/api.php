@@ -763,7 +763,70 @@ Route::get('/kanbans/g/kanban-details', 'CompareDeliveryNoteController@getKanban
 //         ]]);
 // });
 
-Route::post('/outgoing-request/archived', [OutgoingRequestController::class, 'archived']);
+// Archive Outgoing Request - Called from Mobile App after Good Receipt created
+Route::post('/outgoing-request/archived', function (Request $request) {
+    try {
+        $outgoingNumber = $request->input('outgoing_number');
+        $archivedBy = $request->input('archived_by', 'DCCI Admin Mobile');
+
+        error_log("📦 Archive request for Outgoing: {$outgoingNumber}");
+
+        if (!$outgoingNumber) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Outgoing number is required'
+            ], 400);
+        }
+
+        // Call Portal DCCI to archive
+        $portalApiUrl = env('PORTAL_DCCI_URL', 'http://localhost:3001');
+
+        $archiveData = [
+            'outgoing_no' => $outgoingNumber,
+            'gr_number' => $request->input('gr_number', 'GR-MOBILE-' . date('YmdHis')),
+            'gr_date' => $request->input('archived_at', date('Y-m-d H:i:s')),
+            'archived_by' => $archivedBy,
+            'notes' => 'Archived via Good Receipt Mobile App'
+        ];
+
+        error_log("🔔 Calling Portal DCCI to archive: {$portalApiUrl}/api/supplier-portal/sync/archive-request");
+
+        $client = new \GuzzleHttp\Client(['timeout' => 30]);
+        $response = $client->post(
+            "{$portalApiUrl}/api/supplier-portal/sync/archive-request",
+            ['json' => $archiveData]
+        );
+
+        $statusCode = $response->getStatusCode();
+        $responseData = json_decode($response->getBody()->getContents(), true);
+
+        if ($statusCode === 200) {
+            error_log("✅ Successfully archived {$outgoingNumber} in Portal DCCI");
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Outgoing request archived successfully',
+                'data' => $responseData
+            ]);
+        } else {
+            error_log("❌ Portal DCCI archive failed: " . $statusCode);
+
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Failed to archive in Portal DCCI',
+                'details' => $responseData
+            ], $statusCode);
+        }
+
+    } catch (\Exception $e) {
+        error_log("❌ Exception in archive: " . $e->getMessage());
+
+        return response()->json([
+            'type' => 'error',
+            'message' => 'Error archiving outgoing request: ' . $e->getMessage()
+        ], 500);
+    }
+});
 
 // Simple test endpoint
 Route::post('/test-scan', function (Request $request) {
@@ -814,6 +877,19 @@ Route::post('/scan-outgoing-qr', function (Request $request) {
 
         $portalData = json_decode($response->getBody()->getContents(), true);
         error_log("✅ Portal Supplier Response: " . json_encode($portalData));
+
+        $isArchived = $portalData['is_archived'] ?? false;
+        $archivedStatus = $portalData['archived_status'] ?? null;
+
+        if ($isArchived || $archivedStatus === 'archived' || ($portalData['status'] ?? '') === 'archived') {
+            error_log("⚠️ Outgoing Request already archived: {$qrCode}");
+
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Surat Jalan ini sudah pernah di-scan dan diproses. Tidak dapat di-scan ulang.',
+                'error_code' => 'ALREADY_SCANNED'
+            ], 409); // 409 Conflict
+        }
 
         // Transform Portal Supplier data to mobile app format
         $transformedData = [
