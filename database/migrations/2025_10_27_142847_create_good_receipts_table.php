@@ -33,14 +33,14 @@ class CreateGoodReceiptsTable extends Migration
             $table->json('items')->nullable();
             $table->dateTime('createdDate')->nullable();
             $table->dateTime('updatedDate')->nullable();
-            
+
             // Portal Supplier sync fields
             $table->string('supplier_portal_sync_status')->default('pending')->index();
             $table->dateTime('supplier_portal_sync_at')->nullable();
             $table->text('supplier_portal_sync_error')->nullable();
-            
+
             $table->timestamps();
-            
+
             // Indexes for better query performance
             $table->index(['receiptDate', 'status']);
             $table->index(['supplierCode', 'receiptDate']);

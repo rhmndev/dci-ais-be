@@ -965,14 +965,14 @@ Route::group(['prefix' => 'good-receipts'], function () {
     Route::get('/', function () {
         try {
             $goodReceipts = \App\GoodReceipt::orderBy('created_at', 'desc')->get();
-            
+
             return response()->json([
                 'type' => 'success',
                 'data' => $goodReceipts
             ]);
         } catch (\Exception $e) {
             error_log("❌ Failed to get Good Receipts: " . $e->getMessage());
-            
+
             return response()->json([
                 'type' => 'error',
                 'message' => 'Gagal mengambil data Good Receipt: ' . $e->getMessage()

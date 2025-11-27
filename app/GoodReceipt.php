@@ -8,7 +8,7 @@ class GoodReceipt extends Model
 {
     protected $connection = 'mongodb';
     protected $collection = 'good_receipts';
-    
+
     protected $fillable = [
         'receiptNumber',
         'gr_number', // Alias untuk web
