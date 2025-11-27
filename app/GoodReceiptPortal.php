@@ -4,9 +4,9 @@ namespace App;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class GoodReceipt extends Model
+class GoodReceiptPortal extends Model
 {
-    protected $connection = 'mongodb';
+    protected $connection = 'mongodb_portal';
     protected $collection = 'good_receipts';
     
     protected $fillable = [

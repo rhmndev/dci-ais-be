@@ -959,28 +959,90 @@ Route::post('/scan-outgoing-qr', function (Request $request) {
     }
 });
 
-// Good Receipt CRUD operations (Simplified - No Database Required)
+// Good Receipt CRUD operations
 Route::group(['prefix' => 'good-receipts'], function () {
+    // Get all Good Receipts
     Route::get('/', function () {
-        return response()->json([
-            'type' => 'success',
-            'data' => []
-        ]);
+        try {
+            $goodReceipts = \App\GoodReceipt::orderBy('created_at', 'desc')->get();
+            
+            return response()->json([
+                'type' => 'success',
+                'data' => $goodReceipts
+            ]);
+        } catch (\Exception $e) {
+            error_log("❌ Failed to get Good Receipts: " . $e->getMessage());
+            
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Gagal mengambil data Good Receipt: ' . $e->getMessage()
+            ], 500);
+        }
     });
 
+    // Create Good Receipt from Mobile Scan
     Route::post('/', function (Request $request) {
         try {
-            error_log("Creating Good Receipt from mobile app");
+            error_log("📝 Creating Good Receipt from mobile app");
 
             $receiptData = $request->all();
             error_log("Request data: " . json_encode($receiptData));
 
-            // Notify Portal Supplier to archive first
+            // Extract data
             $outgoingNumber = $request->input('outgoingNumber') ?? $request->input('outgoing_number');
             $supplierCode = $request->input('supplierCode') ?? $request->input('supplier_code');
             $poNumber = $request->input('poNumber') ?? $request->input('po_number');
             $receiptNumber = $request->input('receiptNumber') ?? $request->input('receipt_number') ?? 'GR-' . date('YmdHis');
 
+            // Parse dates with microseconds handling
+            $receiptDate = $request->input('receiptDate') ?? $request->input('receipt_date');
+            if ($receiptDate) {
+                // Remove microseconds if present (Laravel can't handle them)
+                $receiptDate = preg_replace('/\.\d+/', '', $receiptDate);
+                $receiptDate = \Carbon\Carbon::parse($receiptDate);
+            } else {
+                $receiptDate = now();
+            }
+
+            // Save to database portal_supplier_dcci (database yang sama dengan web)
+            $goodReceipt = \App\GoodReceiptPortal::create([
+                'receiptNumber' => $receiptNumber,
+                'gr_number' => $receiptNumber, // Alias untuk compatibility dengan web
+                'outgoingNumber' => $outgoingNumber,
+                'outgoing_no' => $outgoingNumber, // Alias untuk compatibility dengan web
+                'poNumber' => $poNumber,
+                'po_number' => $poNumber, // Alias untuk compatibility dengan web
+                'supplierName' => $request->input('supplierName') ?? $request->input('supplier_name'),
+                'supplier_name' => $request->input('supplierName') ?? $request->input('supplier_name'),
+                'supplierCode' => $supplierCode,
+                'supplier_code' => $supplierCode,
+                'userName' => $request->input('userName') ?? $request->input('user_name') ?? 'DCCI Admin Mobile',
+                'phone' => $request->input('phone') ?? '',
+                'fax' => $request->input('fax') ?? '',
+                'address' => $request->input('address') ?? '',
+                'receiptDate' => $receiptDate,
+                'gr_date' => $receiptDate->format('Y-m-d H:i:s'), // Format untuk web
+                'receivedBy' => $request->input('receivedBy') ?? $request->input('received_by') ?? 'Unknown',
+                'archived_by' => $request->input('receivedBy') ?? $request->input('received_by') ?? 'DCCI Admin Mobile',
+                'status' => $request->input('status') ?? 'Approved',
+                'archived_status' => 'Archived (Approved)', // Status untuk web
+                'sapStatus' => $request->input('sapStatus') ?? $request->input('sap_status') ?? 'Not Posted',
+                'items' => $request->input('items') ?? [],
+                'createdDate' => now(),
+                'updatedDate' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+                'archived_at' => now(),
+                'archived_reason' => 'Auto-archived after Good Receipt creation',
+                'notes' => 'Archived via Good Receipt Mobile Scan',
+                'sync_source' => 'portal_dcci_good_receipt_scan',
+                'source' => 'portal_dcci_good_receipt_scan',
+                'supplier_portal_sync_status' => 'pending'
+            ]);
+
+            error_log("✅ Good Receipt saved to portal_supplier_dcci database with ID: {$goodReceipt->id}");
+
+            // Notify Portal Supplier to archive
             if ($outgoingNumber) {
                 error_log("🔔 Notifying Portal Supplier to archive: {$outgoingNumber}");
 
@@ -997,7 +1059,6 @@ Route::group(['prefix' => 'good-receipts'], function () {
                 ];
 
                 try {
-                    // Use Guzzle instead of Http facade (Laravel 6 compatibility)
                     $client = new \GuzzleHttp\Client(['timeout' => 30]);
                     $response = $client->post(
                         "{$portalSupplierUrl}/api/supplier-portal/sync/archive-request",
@@ -1008,26 +1069,29 @@ Route::group(['prefix' => 'good-receipts'], function () {
 
                     if ($statusCode === 200) {
                         error_log("✅ Successfully notified Portal Supplier to archive {$outgoingNumber}");
-                        $receiptData['supplier_portal_sync_status'] = 'synced';
+                        $goodReceipt->update([
+                            'supplier_portal_sync_status' => 'synced',
+                            'supplier_portal_sync_at' => now()
+                        ]);
                     } else {
                         error_log("❌ Portal Supplier archive notification failed");
                         error_log("Response: " . $response->getBody()->getContents());
-                        $receiptData['supplier_portal_sync_status'] = 'failed';
+                        $goodReceipt->update(['supplier_portal_sync_status' => 'failed']);
                     }
                 } catch (\Exception $e) {
                     error_log("❌ Error notifying Portal Supplier: " . $e->getMessage());
-                    $receiptData['supplier_portal_sync_status'] = 'error';
+                    $goodReceipt->update([
+                        'supplier_portal_sync_status' => 'error',
+                        'supplier_portal_sync_error' => $e->getMessage()
+                    ]);
                 }
             }
 
-            // Return success (database save is optional)
+            // Return success with database ID
             return response()->json([
                 'type' => 'success',
-                'message' => 'Good Receipt berhasil diproses dan outgoing request telah diarsipkan',
-                'data' => array_merge($receiptData, [
-                    'id' => uniqid('gr_'),
-                    'created_at' => date('Y-m-d H:i:s')
-                ])
+                'message' => 'Good Receipt berhasil dibuat dan disimpan ke database',
+                'data' => $goodReceipt->fresh()
             ]);
 
         } catch (\Exception $e) {
