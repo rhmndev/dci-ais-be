@@ -307,6 +307,9 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/receiveGRDetail/{id}', 'GoodReceivingController@show');
 
     Route::post('/receiveGR', 'GoodReceivingController@update');
+    
+    // Route untuk repost manual ke SAP
+    Route::post('/receiveGR/repost-sap', 'GoodReceivingController@repostToSAP');
     #endregion
 
     Route::get('/shipping-addresses', 'ShippingAddressController@index');

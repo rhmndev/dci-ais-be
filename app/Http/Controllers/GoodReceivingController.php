@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use App\OutgoingGoodTemplate;
 use Illuminate\Support\Facades\Log;
+use App\Services\SAPGoodReceiptService;
 
 class GoodReceivingController extends Controller
 {
@@ -265,7 +266,7 @@ class GoodReceivingController extends Controller
             // Accept both PascalCase (from frontend) and snake_case
             $request->validate([
                 'GR_Number' => 'nullable|string',
-                'gr_number' => 'nullable|string', 
+                'gr_number' => 'nullable|string',
                 'SJ_Number' => 'nullable|string',
                 'sj_number' => 'nullable|string',
                 'PO_Number' => 'nullable|string',
@@ -286,14 +287,14 @@ class GoodReceivingController extends Controller
             $po_number = $request->PO_Number ?? $request->po_number;
             $vendor_id = $request->vendor ?? $request->vendor_id ?? $request->supplier_code;
             $gr_date = $request->GR_Date ?? $request->gr_date;
-            
+
             // Handle empty strings and null values
             $gr_number = !empty($gr_number) ? $gr_number : null;
             $sj_number = !empty($sj_number) ? $sj_number : null;
             $po_number = !empty($po_number) ? $po_number : null;
             $vendor_id = !empty($vendor_id) ? $vendor_id : null;
             $gr_date = !empty($gr_date) ? $gr_date : null;
-            
+
             $vendor = auth()->user()->vendor_code ?? $vendor_id;
 
             // If no GR_Number provided, generate one for new creation
@@ -305,7 +306,7 @@ class GoodReceivingController extends Controller
 
             // Try to find existing Good Receipt record
             $goodReceiving = GoodReceiving::where('GR_Number', $gr_number)->first();
-            
+
             // If not found and we have SJ_Number, try to find by SJ_Number
             if (!$goodReceiving && $sj_number) {
                 $goodReceiving = GoodReceiving::where('SJ_Number', $sj_number);
@@ -391,10 +392,17 @@ class GoodReceivingController extends Controller
             // Archive sync should happen when Good Receipt is created, not when SAP posts
             $this->triggerArchiveSync($goodReceiving, $sj_number);
 
+            // 📤 TRIGGER POST TO SAP - AUTO POSTING
+            // Post ke SAP setelah Good Receipt berhasil dibuat
+            $sapResult = $this->postToSAPAutomatic($goodReceiving, $sj_number);
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Good Receipt processed successfully',
                 'data' => $goodReceiving,
+                'sap_status' => $sapResult['success'] ? 'posted' : 'failed',
+                'sap_message' => $sapResult['message'] ?? null,
+                'sap_matdoc' => $sapResult['matdoc'] ?? null,
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -422,7 +430,7 @@ class GoodReceivingController extends Controller
         try {
             // Find corresponding outgoing good record by SJ_Number (which is outgoing_no)
             $outgoingNumber = $sj_number ?: $goodReceiving->SJ_Number;
-            
+
             if (!$outgoingNumber) {
                 Log::warning('⚠️ Cannot trigger archive sync: No outgoing number found', [
                     'gr_number' => $goodReceiving->GR_Number
@@ -437,7 +445,7 @@ class GoodReceivingController extends Controller
 
             // Portal Supplier URL
             $supplierPortalUrl = env('SUPPLIER_PORTAL_URL', 'http://localhost:3001');
-            
+
             $syncData = [
                 'outgoing_no' => $outgoingNumber,
                 'po_number' => $goodReceiving->PO_Number ?? '',
@@ -476,6 +484,241 @@ class GoodReceivingController extends Controller
                 'gr_number' => $goodReceiving->GR_Number ?? 'unknown',
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * 📤 POST TO SAP - Automatic Posting
+     * Dipanggil otomatis setelah Good Receipt berhasil dibuat
+     */
+    private function postToSAPAutomatic($goodReceiving, $sj_number)
+    {
+        try {
+            Log::info('🚀 Starting automatic SAP posting', [
+                'gr_number' => $goodReceiving->GR_Number,
+                'sj_number' => $sj_number
+            ]);
+
+            // Get PO Number dan Outgoing Number
+            $outgoingNumber = $sj_number ?: $goodReceiving->SJ_Number;
+            $poNumber = $goodReceiving->PO_Number;
+
+            if (!$outgoingNumber) {
+                Log::error('❌ Cannot post to SAP: No outgoing number', [
+                    'gr_number' => $goodReceiving->GR_Number
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'Cannot post to SAP: Outgoing number not found'
+                ];
+            }
+
+            if (!$poNumber) {
+                Log::error('❌ Cannot post to SAP: No PO number', [
+                    'gr_number' => $goodReceiving->GR_Number
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'Cannot post to SAP: PO number not found'
+                ];
+            }
+
+            // Get items from SAP PO List API
+            try {
+                $sapPoListUrl = "http://erpqas-dp.dharmap.com:8001/sap/zapi/ZMM_PO_LIST_SC?PO_NO={$poNumber}&sap-client=300";
+
+                Log::info('📞 Fetching PO items from SAP', [
+                    'url' => $sapPoListUrl,
+                    'po_number' => $poNumber
+                ]);
+
+                $client = new \GuzzleHttp\Client(['timeout' => 30, 'verify' => false]);
+                $response = $client->get($sapPoListUrl, [
+                    'auth' => ['dpm-einvc', 'Einvoice01'] // Basic Auth untuk SAP
+                ]);
+
+                $poData = json_decode($response->getBody()->getContents(), true);
+
+                if (!isset($poData['return']) || empty($poData['return'])) {
+                    throw new \Exception('No items found in PO from SAP');
+                }
+
+                Log::info('✅ PO items fetched from SAP', [
+                    'items_count' => count($poData['return'])
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('❌ Failed to fetch PO from SAP', [
+                    'error' => $e->getMessage()
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'Cannot fetch PO data from SAP: ' . $e->getMessage()
+                ];
+            }
+
+            // Prepare data untuk SAP dengan items dari PO
+            $receiptData = [
+                'receiptNumber' => $goodReceiving->GR_Number,
+                'outgoingNumber' => $outgoingNumber, // CRITICAL: Untuk Reference yang UNIK
+                'poNumber' => $poNumber,
+                'receiptDate' => $goodReceiving->GR_Date ?? now()->toDateString(),
+                'supplierCode' => $goodReceiving->vendor_id ?? '',
+                'items' => []
+            ];
+
+            // Get actual received quantities from GoodReceivingDetail
+            $goodReceivingDetails = GoodReceivingDetail::where('GR_Number', $goodReceiving->GR_Number)->get();
+
+            Log::info('📦 Found Good Receiving Details', [
+                'gr_number' => $goodReceiving->GR_Number,
+                'details_count' => $goodReceivingDetails->count()
+            ]);
+
+            // Map items with actual received qty from GoodReceivingDetail
+            foreach ($poData['return'] as $poItem) {
+                // Find matching detail by material code
+                $detail = $goodReceivingDetails->first(function($d) use ($poItem) {
+                    return $d->material_id === $poItem['material_no'];
+                });
+
+                // Use receive_qty from detail if available, otherwise use outstanding from PO
+                $receiveQty = $detail && isset($detail->receive_qty)
+                    ? $detail->receive_qty
+                    : ($poItem['outstanding'] ?? 0);
+
+                Log::info('📊 Item quantity mapping', [
+                    'material' => $poItem['material_no'],
+                    'detail_found' => $detail ? 'yes' : 'no',
+                    'receive_qty' => $receiveQty,
+                    'outstanding' => $poItem['outstanding'] ?? 0
+                ]);
+
+                $receiptData['items'][] = [
+                    'materialCode' => $poItem['material_no'] ?? '',
+                    'itemNo' => $poItem['item_no'] ?? '00010',
+                    'quantityDelivery' => $receiveQty, // ACTUAL received qty from user input
+                    'uom' => $poItem['meins'] ?? $poItem['meins_conv'] ?? 'PCE',
+                    'plant' => $poItem['plant'] ?? '1601',
+                    'storageLocation' => $poItem['warehouse'] ?? 'OH01',
+                    'batch' => '',
+                ];
+            }
+
+            Log::info('📦 Items prepared for SAP posting', [
+                'items_count' => count($receiptData['items']),
+                'items' => $receiptData['items']
+            ]);
+
+            if (empty($receiptData['items'])) {
+                Log::error('❌ Cannot post to SAP: No items found', [
+                    'po_number' => $poNumber
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'Cannot post to SAP: No items found'
+                ];
+            }
+
+            // Initialize SAP Service and post
+            $sapService = new SAPGoodReceiptService();
+            $result = $sapService->postGoodReceiptToSAP($receiptData);
+
+            // Update Good Receiving record dengan SAP status
+            if ($result['success']) {
+                $goodReceiving->sap_status = 'posted';
+                $goodReceiving->sap_posted_at = new \MongoDB\BSON\UTCDateTime(Carbon::now());
+                $goodReceiving->sap_matdoc = $result['matdoc'] ?? null;
+                $goodReceiving->sap_message = $result['message'] ?? 'Successfully posted to SAP';
+            } else {
+                $goodReceiving->sap_status = 'failed';
+                $goodReceiving->sap_error_message = $result['message'] ?? 'Failed to post to SAP';
+            }
+            $goodReceiving->save();
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error('❌ SAP automatic posting error', [
+                'gr_number' => $goodReceiving->GR_Number ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error posting to SAP: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * 🔄 REPOST TO SAP - Manual Retry
+     * Endpoint untuk repost manual kalau gagal auto-post
+     */
+    public function repostToSAP(Request $request)
+    {
+        try {
+            $request->validate([
+                'gr_number' => 'required|string',
+            ]);
+
+            $gr_number = $request->gr_number;
+
+            // Find Good Receipt
+            $goodReceiving = GoodReceiving::where('GR_Number', $gr_number)->first();
+
+            if (!$goodReceiving) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Good Receipt not found',
+                    'data' => null
+                ], 404);
+            }
+
+            // Get SJ Number
+            $sj_number = $goodReceiving->SJ_Number;
+
+            if (!$sj_number) {
+                return response()->json([
+                    'type' => 'failed',
+                    'message' => 'Outgoing number not found',
+                    'data' => null
+                ], 400);
+            }
+
+            Log::info('🔄 Manual repost to SAP requested', [
+                'gr_number' => $gr_number,
+                'sj_number' => $sj_number
+            ]);
+
+            // Repost to SAP
+            $sapResult = $this->postToSAPAutomatic($goodReceiving, $sj_number);
+
+            return response()->json([
+                'type' => $sapResult['success'] ? 'success' : 'failed',
+                'message' => $sapResult['message'] ?? 'Unknown result',
+                'data' => [
+                    'gr_number' => $gr_number,
+                    'sap_status' => $sapResult['success'] ? 'posted' : 'failed',
+                    'sap_matdoc' => $sapResult['matdoc'] ?? null,
+                ]
+            ], $sapResult['success'] ? 200 : 500);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+                'data' => null
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'failed',
+                'message' => 'Error reposting to SAP: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
     }
 
