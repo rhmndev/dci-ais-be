@@ -38,7 +38,12 @@ class Box extends Model
         [
             'code_color' => 'C01',
             'color_name' => 'cream',
-            'color' => '#00FF00',
+            'color' => '#fdff6cff',
+        ],
+        [
+            'code_color' => 'J01',
+            'color_name' => 'orange',
+            'color' => '#f09e40ff',
         ],
         // Add more colors as needed
     ];
@@ -51,15 +56,21 @@ class Box extends Model
             'available_colors' => ['B01'],
         ],
         [
+            'code_box' => 'TP391',
+            'name' => 'TP391 Rabbit box (335x1005x103 mm)',
+            'image' => 'https://www.ppcplastics.com/images/content/original-1409559967298.jpg',
+            'available_colors' => ['B01'],
+        ],
+        [
             'code_box' => '6655',
             'name' => '6655 Rabbit box (670 L x 335 W x 195 H)',
             'image' => 'https://rabbit-plastics.com/po-content/uploads/6655.jpg',
             'available_colors' => ['B01']
         ],
         [
-            'code_box' => '7006',
-            'name' => '7006 Rabbit box (P840 x L630 x T375 mm)',
-            'image' => 'https://static.wixstatic.com/media/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg/v1/fill/w_600,h_600,al_c,lg_1,q_85/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg',
+            'code_box' => '6653',
+            'name' => '6653 Rabbit box (670 L x 335 W x 100 H)',
+            'image' => 'https://www.rabbit-plastics.com/po-content/uploads/6653.jpg',
             'available_colors' => ['B01'],
         ],
         [
@@ -69,9 +80,9 @@ class Box extends Model
             'available_colors' => ['B01'],
         ],
         [
-            'code_box' => '6653',
-            'name' => '6653 Rabbit box (670 L x 335 W x 100 H)',
-            'image' => 'https://www.rabbit-plastics.com/po-content/uploads/6653.jpg',
+            'code_box' => '7006',
+            'name' => '7006 Rabbit box (P840 x L630 x T375 mm)',
+            'image' => 'https://static.wixstatic.com/media/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg/v1/fill/w_600,h_600,al_c,lg_1,q_85/db018d_5718eba64dfb48a9874e66b710e449a8~mv2.jpg',
             'available_colors' => ['B01'],
         ],
         [
@@ -80,6 +91,7 @@ class Box extends Model
             'image' => 'https://static.wixstatic.com/media/1648dd_faca01364e484a05a8555921fc7d0141~mv2.jpg/v1/fill/w_497,h_497,al_c,lg_1,q_80,enc_auto/1648dd_faca01364e484a05a8555921fc7d0141~mv2.jpg',
             'available_colors' => ['B01'],
         ],
+
     ];
 
     public static function getColorCodes($codeColor = null)
