@@ -557,55 +557,89 @@ class GoodReceivingController extends Controller
                 ];
             }
 
+            // Get vendor code from PO data (first item)
+            $vendorCode = isset($poData['return'][0]['vendor']) 
+                ? $poData['return'][0]['vendor'] 
+                : ($goodReceiving->vendor_id ?? '0000000000');
+
             // Prepare data untuk SAP dengan items dari PO
             $receiptData = [
                 'receiptNumber' => $goodReceiving->GR_Number,
-                'outgoingNumber' => $outgoingNumber, // CRITICAL: Untuk Reference yang UNIK
+                'outgoingNumber' => $outgoingNumber,
                 'poNumber' => $poNumber,
                 'receiptDate' => $goodReceiving->GR_Date ?? now()->toDateString(),
-                'supplierCode' => $goodReceiving->vendor_id ?? '',
+                'supplierCode' => $vendorCode, // Get from PO data
                 'items' => []
             ];
+            
+            Log::info('📋 Receipt data prepared', [
+                'gr_number' => $receiptData['receiptNumber'],
+                'po_number' => $receiptData['poNumber'],
+                'supplier_code' => $receiptData['supplierCode']
+            ]);
 
             // Get actual received quantities from GoodReceivingDetail
             $goodReceivingDetails = GoodReceivingDetail::where('GR_Number', $goodReceiving->GR_Number)->get();
-
+            
             Log::info('📦 Found Good Receiving Details', [
                 'gr_number' => $goodReceiving->GR_Number,
                 'details_count' => $goodReceivingDetails->count()
             ]);
 
-            // Map items with actual received qty from GoodReceivingDetail
-            foreach ($poData['return'] as $poItem) {
-                // Find matching detail by material code
-                $detail = $goodReceivingDetails->first(function($d) use ($poItem) {
-                    return $d->material_id === $poItem['material_no'];
-                });
-
-                // Use receive_qty from detail if available, otherwise use outstanding from PO
-                $receiveQty = $detail && isset($detail->receive_qty)
-                    ? $detail->receive_qty
-                    : ($poItem['outstanding'] ?? 0);
-
-                Log::info('📊 Item quantity mapping', [
-                    'material' => $poItem['material_no'],
-                    'detail_found' => $detail ? 'yes' : 'no',
-                    'receive_qty' => $receiveQty,
-                    'outstanding' => $poItem['outstanding'] ?? 0
+            if ($goodReceivingDetails->count() === 0) {
+                Log::error('❌ No Good Receiving Details found', [
+                    'gr_number' => $goodReceiving->GR_Number
                 ]);
+                return [
+                    'success' => false,
+                    'message' => 'Cannot post to SAP: No items in Good Receipt'
+                ];
+            }
 
+            // IMPORTANT: Only POST items that exist in Good Receipt Detail (Surat Jalan)
+            foreach ($goodReceivingDetails as $detail) {
+                // Find matching item from PO data untuk ambil master data (plant, warehouse, etc)
+                $poItem = null;
+                foreach ($poData['return'] as $item) {
+                    if ($item['material_no'] === $detail->material_id) {
+                        $poItem = $item;
+                        break;
+                    }
+                }
+                
+                if (!$poItem) {
+                    Log::warning('⚠️ Material not found in PO, skipping', [
+                        'material_id' => $detail->material_id
+                    ]);
+                    continue;
+                }
+                
+                // Use receive_qty from Good Receipt Detail (yang user input)
+                $receiveQty = $detail->receive_qty ?? 0;
+                
+                if ($receiveQty <= 0) {
+                    Log::warning('⚠️ Receive qty is 0, skipping', [
+                        'material_id' => $detail->material_id
+                    ]);
+                    continue;
+                }
+                
+                Log::info('✅ Adding item to SAP payload', [
+                    'material' => $detail->material_id,
+                    'receive_qty' => $receiveQty,
+                    'unit' => $detail->unit ?? $poItem['meins']
+                ]);
+                
                 $receiptData['items'][] = [
-                    'materialCode' => $poItem['material_no'] ?? '',
+                    'materialCode' => $detail->material_id,
                     'itemNo' => $poItem['item_no'] ?? '00010',
-                    'quantityDelivery' => $receiveQty, // ACTUAL received qty from user input
-                    'uom' => $poItem['meins'] ?? $poItem['meins_conv'] ?? 'PCE',
+                    'quantityDelivery' => $receiveQty, // Qty dari Good Receipt Detail
+                    'uom' => $detail->unit ?? $poItem['meins'] ?? 'PCE',
                     'plant' => $poItem['plant'] ?? '1601',
                     'storageLocation' => $poItem['warehouse'] ?? 'OH01',
                     'batch' => '',
                 ];
-            }
-
-            Log::info('📦 Items prepared for SAP posting', [
+            }            Log::info('📦 Items prepared for SAP posting', [
                 'items_count' => count($receiptData['items']),
                 'items' => $receiptData['items']
             ]);
