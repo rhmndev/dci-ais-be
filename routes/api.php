@@ -347,6 +347,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/purchase-orders/{id}', 'PurchaseOrderController@show');
     Route::post('/purchase-orders', 'PurchaseOrderController@store');
     Route::put('/purchase-orders/{id}', '@update');
+    Route::put('/purchase-orders/{id}', 'PurchaseOrderController@update');
     Route::put('/purchase-orders/{id}/status', 'PurchaseOrderController@updateStatus');
     Route::delete('/purchase-orders/{id}', 'PurchaseOrderController@destroy');
     Route::get('/purchase-order-dashboard-data', 'PurchaseOrderController@getDashboardData');
